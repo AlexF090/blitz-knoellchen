@@ -5,6 +5,7 @@
 </script>
 
 <svelte:head>
+	<title>Knöllchen-Blitz – Falschparker melden</title>
 	{#if pwaInfo?.webManifest?.linkTag}
 		<!-- eslint-disable-next-line svelte/no-at-html-tags -- statisch vom Build-Plugin erzeugt, keine Nutzereingabe -->
 		{@html pwaInfo.webManifest.linkTag}

@@ -7,6 +7,7 @@
 </script>
 
 <svelte:head>
+	<title>Knöllchen-Blitz</title>
 	<link rel="icon" href={favicon} />
 	<link rel="apple-touch-icon" href="/icons/icon-192.png" />
 	<meta name="theme-color" content="#1d4ed8" />

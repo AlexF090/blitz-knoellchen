@@ -12,6 +12,10 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Historie – Knöllchen-Blitz</title>
+</svelte:head>
+
 <main class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4">
 	<div class="flex items-center justify-between">
 		<h1 class="text-xl font-semibold">Historie</h1>
