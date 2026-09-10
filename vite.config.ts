@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-auto';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 export default defineConfig({
 	plugins: [
@@ -18,6 +19,41 @@ export default defineConfig({
 			// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
 			// See https://svelte.dev/docs/kit/adapters for more information about adapters.
 			adapter: adapter()
+		}),
+		SvelteKitPWA({
+			registerType: 'autoUpdate',
+			manifest: {
+				name: 'Knöllchen-Blitz',
+				short_name: 'Knöllchen',
+				description: 'Falschparker in unter 30 Sekunden an die Bußgeldstelle Köln melden.',
+				lang: 'de',
+				start_url: '/',
+				display: 'standalone',
+				background_color: '#ffffff',
+				theme_color: '#1d4ed8',
+				icons: [
+					{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+					{ src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+					{
+						src: '/icons/icon-maskable-512.png',
+						sizes: '512x512',
+						type: 'image/png',
+						purpose: 'maskable'
+					}
+				]
+			},
+			workbox: {
+				// Nur die App-Shell vorcachen, kein komplexes Runtime-Caching.
+				globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+				navigateFallbackDenylist: [/^\/api\//],
+				runtimeCaching: [
+					{
+						// /api/* darf nie gecacht werden — Geocoding/Send brauchen immer das Netz.
+						urlPattern: /^\/api\//,
+						handler: 'NetworkOnly'
+					}
+				]
+			}
 		})
 	],
 	test: {
