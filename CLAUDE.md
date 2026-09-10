@@ -1,133 +1,166 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Anleitung für Claude Code (claude.ai/code) in diesem Repository.
 
-## Projektstatus
+## Projektüberblick
 
-Dieses Repository enthält aktuell **nur den Auftrag** (`PROMPT.md`), aber noch keinen
-Code — kein `package.json`, kein SvelteKit-Projekt, keine Tests. `PROMPT.md` ist die
-verbindliche, vollständige Spezifikation für die PWA **"Knöllchen-Blitz"** (Meldung von
-Falschparkern an die Bußgeldstelle Köln per E-Mail, MVP-Ziel: Meldung in unter 30 Sekunden
-vom Smartphone aus).
+**Knöllchen-Blitz** ist eine Progressive Web App, mit der Falschparker der Bußgeldstelle Köln
+per E-Mail gemeldet werden können ("Fremdanzeige"). Zielgruppe: Menschen, die spontan im
+Alltag ein falsch geparktes Auto sehen und es in unter 30 Sekunden vom Smartphone aus melden
+wollen, ohne eine native Mail-App zu öffnen. Ablauf: Foto machen → App liest Datum/GPS aus den
+EXIF-Daten aus und ermittelt per Reverse-Geocoding eine Adresse → Verstoßart wählen → Absenden
+verschickt eine fertig formulierte E-Mail; die Anzeige erscheint danach in einer lokalen
+Historie. Der vollständige Auftrag mit allen Details steht in `PROMPT.md`.
 
-**Bevor du irgendetwas implementierst:**
+## Architekturentscheidungen (ADRs)
 
-1. Lies `PROMPT.md` vollständig — sie enthält Zielsetzung, Nicht-Ziele (YAGNI), verbindliche
-   Architekturentscheidungen, Tech-Stack, E-Mail-Vorlage, Teststrategie und Auftrag im Detail.
-2. Prüfe, ob `PLAN.md` bereits existiert. Falls nicht: gemäß `PROMPT.md` Abschnitt 10 zuerst
-   `PLAN.md` mit einem phasenweisen Implementierungsplan erstellen, danach eigenständig mit
-   der Umsetzung fortfahren (kein Warten auf Rückfrage, außer bei echten Blockern —
-   siehe `PROMPT.md` Abschnitt 12).
-3. Sobald das SvelteKit-Projekt aufgesetzt ist, diese Datei um tatsächliche Kommandos
-   (`dev`/`build`/`test`/`test:e2e`/`lint`/`check`) und die reale Ordnerstruktur ergänzen —
-   die Vorgaben unten sind die verbindlichen Ziele aus `PROMPT.md`, nicht der Ist-Zustand.
+### E-Mail-Versand über Resend, nie clientseitig
 
-> **Hinweis:** `PROMPT.md` wurde von einem ursprünglich Next.js/React-basierten Setup auf
-> **SvelteKit** umgestellt (siehe Git-Historie). Diese Datei folgt dem aktuellen Stand von
-> `PROMPT.md`. Falls du an eine ältere Next.js-Version dieses Dokuments gewöhnt bist: die
-> Next.js-spezifischen Pfade/Begriffe (`app/api/.../route.ts`) sind überholt — verbindlich ist
-> jetzt SvelteKit (`src/routes/.../+server.ts`).
+Eine beliebige, vom Nutzer eingegebene E-Mail-Adresse kann technisch nicht als `From` dienen
+(SPF/DKIM/DMARC würden das als Spoofing werten). Der Versand läuft daher über den
+Transactional-Email-Dienst **Resend** und ausschließlich über den serverseitigen Endpunkt
+`src/routes/api/send/+server.ts` — der API-Key darf nie ins Client-Bundle gelangen.
+`from` ist eine feste, per ENV konfigurierte Adresse; `reply_to` und `bcc` sind die vom Nutzer
+eingegebene E-Mail-Adresse (löst "Kopie im eigenen Postfach", ohne dass eine Nutzer-Adresse
+oder ein Passwort je den Server verlässt bzw. gebraucht wird).
 
-## Verbindliche Architekturentscheidungen (aus PROMPT.md Abschnitt 3)
+### Reverse Geocoding über einen eigenen Server-Proxy mit Fallback-Kette
 
-- **E-Mail-Versand:** Über `resend` (serverseitiger SvelteKit-Endpunkt
-  `src/routes/api/send/+server.ts`, nie clientseitig). `from` = feste ENV-Absenderadresse,
-  `reply_to` = Nutzer-E-Mail, `bcc` = Nutzer-E-Mail (Kopie ohne SMTP-Login-Risiko). Grund: Eine
-  beliebige Nutzer-Adresse kann wegen SPF/DKIM/DMARC nicht als `From` dienen. Secrets über
-  `$env/static/private` (bzw. `$env/dynamic/private`), niemals über `$env/*/public`, damit sie
-  garantiert nicht ins Client-Bundle gelangen.
-- **Reverse Geocoding:** Primär OpenStreetMap Nominatim über eigenen SvelteKit-Endpunkt
-  `src/routes/api/geocode/+server.ts` (Usage Policy, korrekter `User-Agent`, Rate-Limit),
-  Fallback auf BigDataCloud `reverse-geocode-client`. Scheitern beide: Adressfeld wird
-  editierbar/Pflicht, GPS-Koords werden trotzdem mitgeschickt. Fehlender GPS-EXIF-Tag ist
-  erwarteter Zustand, kein Fehler.
-- **Lokale Historie:** IndexedDB via `idb` (kein Server-Storage) — Nachschlage-Komfort, keine
-  dauerhafte Beweisquelle (das ist die abgeschickte E-Mail selbst); iOS kann Storage nach
-  längerer Inaktivität evictieren. Nutzerprofil in `localStorage`.
-- **Bildkompression:** Native Canvas API (`HTMLCanvasElement.toBlob`), keine zusätzliche
-  Dependency.
-- **PWA:** `@vite-pwa/sveltekit` (offizielles Vite/SvelteKit-PWA-Modul) statt handgeschriebenem
-  Manifest/Service Worker — einfache Precache-Strategie für die App-Shell, kein komplexes
-  Runtime-Caching. Ziel: Installierbarkeit (Android + iOS/Safari), Offline-Shell.
-  iOS/Safari kennt kein `beforeinstallprompt` — bei Erkennung von iOS/Safari zeigt die App
-  einen dezenten Banner-Hinweis ("Teilen → Zum Home-Bildschirm"), kein Modal.
+Primär **OpenStreetMap Nominatim** (kostenlos, kein Key), proxied über
+`src/routes/api/geocode/+server.ts` statt direkt vom Client — nötig, um die Nominatim Usage
+Policy einzuhalten (`User-Agent`-Pflicht-Header, max. 1 Request/Sekunde serverseitig
+gedrosselt). Schlägt Nominatim fehl, springt der Server automatisch auf **BigDataCloud**
+(`src/lib/geocode/reverseGeocode.ts`, providerbasiert und dadurch unabhängig testbar). Scheitern
+beide, wird das Adressfeld im Formular editierbar/Pflicht; ein fehlender GPS-EXIF-Tag ist ein
+erwarteter Zustand (sofortige manuelle Eingabe), kein Fehler.
 
-## Tech-Stack (verbindlich, siehe PROMPT.md Abschnitt 4)
+### Lokale Historie in IndexedDB, kein Server-Storage
 
-SvelteKit + TypeScript (`npx sv create`), Deployment auf Vercel (`@sveltejs/adapter-vercel`
-bzw. `adapter-auto`), Styling **Tailwind CSS**, `resend`, `idb`, `exifr` (EXIF-Auslesen,
-`DateTimeOriginal` + GPS), `@vite-pwa/sveltekit`, Vitest + `@testing-library/svelte` (Unit/
-Komponenten), Playwright (E2E), ESLint + Prettier (inkl. `eslint-plugin-svelte`).
+Versendete Anzeigen werden clientseitig über `idb` (`src/lib/history/db.ts`) in IndexedDB
+gespeichert — Nachschlage-Komfort, keine dauerhafte Beweisquelle (das ist die abgeschickte
+E-Mail selbst). iOS kann diesen Storage nach längerer Inaktivität evictieren. Es wird nur ein
+komprimiertes Foto-Thumbnail gespeichert, nie das Originalfoto. Das Nutzerprofil (Name,
+Adresse, E-Mail) liegt separat in `localStorage` (`src/lib/profile/profileStore.svelte.ts`),
+damit es beim nächsten Öffnen sofort vorausgefüllt ist.
 
-Kein zusätzliches Mocking-Framework (kein MSW) — Netzwerkaufrufe in Vitest über `vi.fn()`
-mocken, in Playwright über `page.route()` abfangen. Kein externes State-Management — reicht
-mit `svelte/store` bzw. Svelte-5-Runes.
+### Bildkompression über native Canvas API
 
-**Jede zusätzliche Dependency muss explizit begründet werden** — vor Einführung prüfen, ob
-Web-Standard-APIs (Canvas, Fetch, IndexedDB) ausreichen.
+Vor dem Versand wird das Foto über `HTMLCanvasElement`/`toBlob` verkleinert
+(`src/lib/image/compress.ts`) — bewusst ohne zusätzliche Dependency, da Web-Standard-APIs
+ausreichen und das die Payload unter dem Vercel-Function-Limit hält.
 
-## Von React/Next.js zu SvelteKit
+### PWA über `@vite-pwa/sveltekit`
 
-Dieses Projekt ist ein Umstieg von einem sonst React/Next.js-basierten Setup. Wichtige
-SvelteKit-Konventionen, die für spätere Wartung ohne tiefe Svelte-Vorerfahrung relevant sind:
+Manifest und Service Worker laufen über das offizielle Vite/SvelteKit-PWA-Modul statt über
+handgeschriebene Konfiguration (`vite.config.ts`). Die Strategie ist bewusst simpel gehalten:
+App-Shell wird vorgecacht, `/api/*` ist explizit `NetworkOnly` (Geocoding/Send dürfen nie
+gecacht werden). iOS/Safari kennt kein `beforeinstallprompt` — bei Erkennung
+(`src/lib/pwa/isIosSafari.ts`) zeigt `IosInstallBanner.svelte` einen dezenten, dismissable
+Hinweis ("Teilen → Zum Home-Bildschirm") statt eines Modals.
 
-- **Dateibasiertes Routing:** `src/routes/**/+page.svelte` = Seite (analog zu Next.js
-  `page.tsx`), `src/routes/**/+server.ts` = API-Endpunkt (analog zu Next.js Route Handlern,
-  `app/api/.../route.ts`).
-- **`load`-Funktionen** (`+page.ts`/`+page.server.ts`) übernehmen die Rolle von Server
-  Components/`getServerSideProps` — Daten werden vor dem Rendern geladen und der Komponente
-  als `data`-Prop übergeben.
-- **Runes** (`$state`, `$derived`, `$effect` in Svelte 5) ersetzen React-Hooks
-  (`useState`, `useMemo`, `useEffect`) für reaktiven State in `.svelte`-Dateien.
-- **Env-Trennung:** `$env/static/private` (nur Server, nie im Bundle) vs.
-  `$env/static/public` (auch Client) — bewusst strikter als Next.js' `NEXT_PUBLIC_`-Konvention.
+## Ordnerstruktur
 
-## Geplante Ordnerstruktur (sobald das Projekt aufgesetzt ist)
+| Pfad                                     | Zweck                                                                                     |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `src/routes/+page.svelte`                | Formular-Seite (bindet `ReportForm.svelte` ein)                                           |
+| `src/routes/historie/+page.svelte`       | Liste bereits versendeter Anzeigen aus IndexedDB                                          |
+| `src/routes/api/send/+server.ts`         | Serverseitiger E-Mail-Versand über Resend                                                 |
+| `src/routes/api/geocode/+server.ts`      | Reverse-Geocoding-Proxy (Nominatim + BigDataCloud-Fallback, Throttling)                   |
+| `src/lib/components/`                    | Svelte-Komponenten (`ReportForm.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
+| `src/lib/config/cities.ts`               | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import   |
+| `src/lib/config/cities.server.ts`        | Serverseitige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`       |
+| `src/lib/email/buildEmailBody.ts`        | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                      |
+| `src/lib/exif/parseExif.ts`              | Wrapper um `exifr`, robust gegen fehlende/korrupte EXIF-Tags                              |
+| `src/lib/geocode/reverseGeocode.ts`      | Providerbasierte Fallback-Logik, unabhängig von SvelteKit testbar                         |
+| `src/lib/geocode/client.ts`              | Ruft `/api/geocode` vom Client aus auf                                                    |
+| `src/lib/history/db.ts`                  | `idb`-Wrapper für die lokale Historie                                                     |
+| `src/lib/profile/profileStore.svelte.ts` | `localStorage`-Wrapper mit Svelte-5-Runes                                                 |
+| `src/lib/image/compress.ts`              | Canvas-basierte Bildkompression                                                           |
+| `src/lib/pwa/isIosSafari.ts`             | Reine, testbare UA-Erkennung für den iOS-Install-Hinweis                                  |
+| `src/lib/validation/formSchema.ts`       | Handgeschriebene Formular-Validierung                                                     |
+| `e2e/`                                   | Playwright-Tests + `fixtures/photo-with-gps.jpg` (EXIF-Testbild)                          |
+| `scripts/`                               | Einmalige Setup-Skripte (Icon-Generierung, EXIF-Fixture-Generierung) — nicht Teil der App |
 
-| Pfad                                | Zweck                                                                                                                                  |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/routes/`                       | Seiten (`+page.svelte`) und API-Endpunkte (`+server.ts`)                                                                               |
-| `src/routes/api/send/+server.ts`    | Serverseitiger E-Mail-Versand über `resend`                                                                                            |
-| `src/routes/api/geocode/+server.ts` | Reverse-Geocoding-Proxy (Nominatim + Fallback)                                                                                         |
-| `src/lib/`                          | Framework-unabhängige Business-Logik (E-Mail-Template, EXIF-Parsing, Geocoding-Fallback, Validierung) — pure, unit-testbare Funktionen |
-| `src/lib/config/cities.ts`          | Trennt Köln-spezifischen Text/Empfänger von generischer App-Logik (genau ein Eintrag `koeln`, siehe Mehrstädte-Fähigkeit unten)        |
+## Kommandos
 
-## Mehrstädte-Fähigkeit (nicht bauen, nur nicht blockieren)
-
-`src/lib/config/cities.ts` mit genau einem Eintrag `koeln` (Empfänger-Mail, Verstoßarten,
-`buildEmailBody`) trennt Köln-spezifischen Text/Empfänger von generischer App-Logik — ohne
-UI zur Stadtauswahl oder Mandantenfähigkeit zu bauen. Um hypothetisch eine weitere Stadt zu
-ergänzen, würde man dort einen zweiten Eintrag mit eigenem `recipientEmail`/`incidentTypes`/
-`buildEmailBody` hinzufügen — aktuell nicht umsetzen, siehe `PROMPT.md` Abschnitt 6.
-
-## Umgebungsvariablen (siehe PROMPT.md Abschnitt 7)
-
-```
-RESEND_API_KEY=            # Resend API Key
-EMAIL_FROM=                # z. B. onboarding@resend.dev (Testphase) oder verifizierte Domain
-RECIPIENT_EMAIL=           # für Testzwecke: eigene E-Mail; später: bussgeldstelle@stadt-koeln.de
-NOMINATIM_USER_AGENT=      # Pflicht-Header laut Nominatim Usage Policy, z. B. "knoellchen-blitz/1.0 (kontakt@example.com)"
+```bash
+npm run dev          # Dev-Server
+npm run build         # Production-Build
+npm run preview        # Production-Build lokal ansehen
+npm run check           # svelte-check (Typprüfung)
+npm run lint             # Prettier --check + ESLint
+npm run format            # Prettier --write
+npm run test:unit          # Vitest (Unit- + Komponententests, Node- und Browser-Projekt)
+npm run test:e2e            # Playwright (installiert Browser, baut + startet die App)
+npm run test                  # test:unit + test:e2e
 ```
 
-Alle Variablen mit `.env.example` dokumentieren, niemals echte Werte committen. Serverseitige
-Secrets ausschließlich über `$env/static/private` einbinden.
+## Coding-Konventionen
 
-## Coding-Grundsätze für dieses Projekt
-
-- KISS & DRY, keine vorzeitige Abstraktion (siehe Nicht-Ziele in `PROMPT.md` Abschnitt 2).
-- Business-Logik (E-Mail-Template, EXIF-Parsing, Geocoding-Fallback, Validierung) als reine,
-  unit-testbare Funktionen in `src/lib/`; `.svelte`-Komponenten dünn halten und primär für
-  Markup/Bindings nutzen.
+- Business-Logik (E-Mail-Template, EXIF-Parsing, Geocoding-Fallback, Validierung,
+  Bildkompression) liegt als reine, framework-unabhängige Funktion in `src/lib/` und wird ohne
+  Rendering-Overhead per Vitest getestet. `.svelte`-Dateien bleiben dünn: Markup, Bindings,
+  Aufruf der `src/lib/`-Funktionen.
+- Svelte 5 Runes (`$state`, `$derived`) statt `svelte/store` für reaktiven State — kein
+  externes State-Management nötig.
+- `interface` für Objektformen, `type` nur für Union/Intersection; `import type` für reine
+  Typ-Importe.
+- Kein Mocking-Framework (kein MSW): Netzwerkaufrufe in Vitest über `vi.fn()`/`vi.mock()`,
+  in Playwright über `page.route()`.
+- Jede zusätzliche Dependency muss begründet werden — vor dem Hinzufügen prüfen, ob
+  Web-Standard-APIs (Canvas, Fetch, IndexedDB) ausreichen.
 - Jeder externe Aufruf (Geocoding, E-Mail-Versand) braucht sichtbares Nutzer-Feedback bei
-  Fehlern und Retry ohne Datenverlust (Formulardaten dürfen bei einem Fehler nicht verloren
-  gehen).
-- Tests parallel zur Implementierung schreiben, nicht erst am Ende (siehe Teststrategie in
-  `PROMPT.md` Abschnitt 9).
+  Fehlern; Formulardaten dürfen bei einem Fehlschlag nicht verloren gehen (siehe
+  `ReportForm.svelte`: Fehlerpfad behält den State, kein Reset).
 
-## Rückfragen statt Improvisieren
+## Weitere Stadt hinzufügen (hypothetisch, aktuell nicht umgesetzt)
 
-Bei folgenden Punkten aus `PROMPT.md` Abschnitt 12 nachfragen statt selbst zu entscheiden:
-Feinschliff des Tailwind-Designs (falls Lighthouse-relevant), Feinschliff des
-E-Mail-Templates über den Vorschlag in Abschnitt 5 hinaus, unerwartete
-Resend-Sandbox-Einschränkungen, unerwartete Konflikte zwischen `@vite-pwa/sveltekit` und dem
-gewählten Vercel-Adapter.
+Aktuell ist ausschließlich Köln aktiv, aber die Struktur blockiert eine spätere Erweiterung
+nicht:
+
+1. In `src/lib/config/cities.ts` einen zweiten Eintrag im `CITIES`-Record ergänzen (`id`,
+   `label`, `incidentTypes`, `buildEmailBody`).
+2. In `src/lib/config/cities.server.ts` die zugehörige Empfänger-E-Mail in
+   `RECIPIENT_EMAILS` ergänzen (eigene ENV-Variable, da `$env/static/private` nur
+   serverseitig importierbar ist).
+3. Keine UI zur Stadtauswahl bauen, solange nicht explizit gefordert — das ist bewusst
+   außerhalb des aktuellen Scopes (YAGNI).
+
+## Umgebungsvariablen
+
+| Variable               | Zweck                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`       | API-Key für den E-Mail-Versand über Resend.                                             |
+| `EMAIL_FROM`           | Feste Absenderadresse (Resend-Sandbox-Adresse oder verifizierte Domain).                |
+| `RECIPIENT_EMAIL`      | Empfänger der Anzeige-Mail (Testphase: eigene Adresse; Produktion: Bußgeldstelle Köln). |
+| `NOMINATIM_USER_AGENT` | Pflicht-`User-Agent`-Header für Nominatim-Anfragen laut dessen Usage Policy.            |
+
+Immer über `.env.example` dokumentieren, echte Werte nie committen. Serverseitige Secrets
+ausschließlich über `$env/static/private` einbinden (siehe `cities.server.ts`,
+`api/send/+server.ts`, `api/geocode/+server.ts`), niemals über `$env/*/public`.
+
+## Umstieg von React/Next.js
+
+Dieses Projekt ist technisch ein Umstieg von einem ursprünglich React/Next.js-basierten Setup
+auf SvelteKit. Wichtige Entsprechungen für die Wartung ohne tiefe Svelte-Vorerfahrung:
+
+- **Dateibasiertes Routing:** `src/routes/**/+page.svelte` entspricht Next.js'
+  `app/**/page.tsx`; `src/routes/**/+server.ts` entspricht einem Next.js Route Handler
+  (`app/api/.../route.ts`).
+- **`load`-Funktionen** (`+page.ts`/`+page.server.ts`) übernehmen die Rolle von Server
+  Components/`getServerSideProps`: Daten werden vor dem Rendern geladen und der Komponente als
+  `data`-Prop übergeben. In diesem Projekt wird das aktuell nicht gebraucht — Formular und
+  Historie laden clientseitig (IndexedDB ist ohnehin nur im Browser verfügbar).
+- **Runes** (`$state`, `$derived`, `$effect`) ersetzen React-Hooks (`useState`, `useMemo`,
+  `useEffect`) für reaktiven State in `.svelte`- bzw. `.svelte.ts`-Dateien.
+- **Env-Trennung:** `$env/static/private` (nur Server, nie im Bundle) vs.
+  `$env/static/public` (auch Client) — strikter als Next.js' `NEXT_PUBLIC_`-Konvention; ein
+  versehentlicher Client-Import von `$env/static/private` schlägt beim Build fehl statt still
+  Secrets zu leaken (Grund für die Trennung `cities.ts`/`cities.server.ts`).
+
+## Bekannte Tooling-Einschränkung
+
+Lighthouse ≥ v12 hat die eigenständige PWA-Kategorie entfernt (kein Score mehr dafür). Die
+PWA-Anforderungen aus `PROMPT.md` Abschnitt 8 werden stattdessen manuell verifiziert: Manifest
+unter `/manifest.webmanifest` (Name, Icons 192/512/maskable, `display: standalone`) und
+Service-Worker-Generierung beim Build (`@vite-pwa/sveltekit`, siehe Build-Output).
