@@ -10,7 +10,7 @@ const EMPTY: ParsedExif = { date: null, time: null, gps: null };
 
 export async function parseExif(file: Blob): Promise<ParsedExif> {
 	try {
-		const data = await exifr.parse(file, { gps: true, pick: ['DateTimeOriginal'] });
+		const data = await exifr.parse(file, { gps: true });
 		if (!data) return EMPTY;
 
 		let date: string | null = null;
