@@ -11,6 +11,7 @@ Falschparkern an die Bußgeldstelle Köln per E-Mail, MVP-Ziel: Meldung in unter
 vom Smartphone aus).
 
 **Bevor du irgendetwas implementierst:**
+
 1. Lies `PROMPT.md` vollständig — sie enthält Zielsetzung, Nicht-Ziele (YAGNI), verbindliche
    Architekturentscheidungen, Tech-Stack, E-Mail-Vorlage, Teststrategie und Auftrag im Detail.
 2. Prüfe, ob `PLAN.md` bereits existiert. Falls nicht: gemäß `PROMPT.md` Abschnitt 10 zuerst
@@ -83,13 +84,13 @@ SvelteKit-Konventionen, die für spätere Wartung ohne tiefe Svelte-Vorerfahrung
 
 ## Geplante Ordnerstruktur (sobald das Projekt aufgesetzt ist)
 
-| Pfad | Zweck |
-| ---- | ----- |
-| `src/routes/` | Seiten (`+page.svelte`) und API-Endpunkte (`+server.ts`) |
-| `src/routes/api/send/+server.ts` | Serverseitiger E-Mail-Versand über `resend` |
-| `src/routes/api/geocode/+server.ts` | Reverse-Geocoding-Proxy (Nominatim + Fallback) |
-| `src/lib/` | Framework-unabhängige Business-Logik (E-Mail-Template, EXIF-Parsing, Geocoding-Fallback, Validierung) — pure, unit-testbare Funktionen |
-| `src/lib/config/cities.ts` | Trennt Köln-spezifischen Text/Empfänger von generischer App-Logik (genau ein Eintrag `koeln`, siehe Mehrstädte-Fähigkeit unten) |
+| Pfad                                | Zweck                                                                                                                                  |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/routes/`                       | Seiten (`+page.svelte`) und API-Endpunkte (`+server.ts`)                                                                               |
+| `src/routes/api/send/+server.ts`    | Serverseitiger E-Mail-Versand über `resend`                                                                                            |
+| `src/routes/api/geocode/+server.ts` | Reverse-Geocoding-Proxy (Nominatim + Fallback)                                                                                         |
+| `src/lib/`                          | Framework-unabhängige Business-Logik (E-Mail-Template, EXIF-Parsing, Geocoding-Fallback, Validierung) — pure, unit-testbare Funktionen |
+| `src/lib/config/cities.ts`          | Trennt Köln-spezifischen Text/Empfänger von generischer App-Logik (genau ein Eintrag `koeln`, siehe Mehrstädte-Fähigkeit unten)        |
 
 ## Mehrstädte-Fähigkeit (nicht bauen, nur nicht blockieren)
 
