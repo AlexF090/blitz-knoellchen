@@ -22,7 +22,7 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 	await page.locator('#address').fill('Musterstraße 1, 50667 Köln');
 	await page.locator('#email').fill('max@example.com');
 
-	await page.locator('#photo').setInputFiles(FIXTURE);
+	await page.locator('#photo-pool-input').setInputFiles(FIXTURE);
 
 	await expect(page.locator('#locationStreet')).toHaveValue('Domkloster');
 	await expect(page.locator('#locationHouseNumber')).toHaveValue('4');
@@ -32,6 +32,7 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 
 	await page.getByLabel('Parken auf dem Gehweg').check();
 	await page.getByLabel('Parken im Halteverbot').check();
+	await page.getByLabel('Kennzeichen').fill('K-AB 1234');
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
 

@@ -9,7 +9,7 @@ test('Geocoding-Fehler: manuelles Adressfeld wird Pflicht', async ({ page }) => 
 	await page.route('**/api/geocode**', (route) => route.fulfill({ status: 500, json: {} }));
 
 	await page.goto('/');
-	await page.locator('#photo').setInputFiles(FIXTURE);
+	await page.locator('#photo-pool-input').setInputFiles(FIXTURE);
 
 	await expect(
 		page.getByText('Adresse konnte nicht vollständig automatisch ermittelt werden')
