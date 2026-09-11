@@ -24,8 +24,8 @@
 		class="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-primary-600 px-4 py-3 text-sm text-white shadow-card"
 	>
 		<p class="flex flex-wrap items-center gap-1">
-			Installiere die App: Tippe auf <Share class="inline h-4 w-4 shrink-0" aria-hidden="true" />
-			„Teilen“ und dann auf <SquarePlus class="inline h-4 w-4 shrink-0" aria-hidden="true" /> „Zum Home-Bildschirm“.
+			Installiere die App: Tippe auf <Share class="inline size-4 shrink-0" aria-hidden="true" />
+			„Teilen“ und dann auf <SquarePlus class="inline size-4 shrink-0" aria-hidden="true" /> „Zum Home-Bildschirm“.
 		</p>
 		<button
 			type="button"

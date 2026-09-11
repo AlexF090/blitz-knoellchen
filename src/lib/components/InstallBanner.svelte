@@ -23,7 +23,7 @@
 		class="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-primary-600 px-4 py-3 text-sm text-white shadow-card"
 	>
 		<p class="flex items-center gap-2">
-			<SquarePlus class="h-5 w-5 shrink-0" aria-hidden="true" />
+			<SquarePlus class="size-5 shrink-0" aria-hidden="true" />
 			Installiere die App für schnellen Zugriff.
 		</p>
 		<div class="flex shrink-0 items-center gap-2">

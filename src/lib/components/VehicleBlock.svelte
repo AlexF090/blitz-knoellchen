@@ -112,12 +112,12 @@
 			onclick={openResetDialog}
 			aria-label={total > 1 ? 'Fahrzeug/Vorfall entfernen' : 'Fahrzeug/Vorfall zurücksetzen'}
 			title={total > 1 ? 'Entfernen' : 'Zurücksetzen'}
-			class="flex h-9 w-9 items-center justify-center rounded-full text-error-fg hover:bg-error-fg/10"
+			class="flex size-9 items-center justify-center rounded-full text-error-fg hover:bg-error-fg/10"
 		>
 			{#if total > 1}
-				<Trash2 class="h-5 w-5" aria-hidden="true" />
+				<Trash2 class="size-5" aria-hidden="true" />
 			{:else}
-				<RotateCcw class="h-5 w-5" aria-hidden="true" />
+				<RotateCcw class="size-5" aria-hidden="true" />
 			{/if}
 		</button>
 	</div>
@@ -134,7 +134,7 @@
 								<img
 									src={objectUrl(photo.blob)}
 									alt="Foto {photo.fileName}"
-									class="h-14 w-14 rounded-control border border-border object-cover"
+									class="size-14 rounded-control border border-border object-cover"
 								/>
 							{/if}
 						{/each}
@@ -332,7 +332,7 @@
 							type="checkbox"
 							checked={vehicle.incidentTypeIds.includes(type.id)}
 							onchange={(e) => toggleIncidentType(type.id, e.currentTarget.checked)}
-							class="h-4 w-4 rounded border-border"
+							class="size-4 rounded border-border"
 						/>
 						{type.label}
 					</label>
