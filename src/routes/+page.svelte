@@ -12,10 +12,12 @@
 	{/if}
 </svelte:head>
 
-<main class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4">
+<main
+	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
+>
 	<div class="flex items-center justify-between">
-		<h1 class="text-xl font-semibold">Knöllchen-Blitz</h1>
-		<a href={resolve('/historie')} class="text-sm text-blue-700 underline">Historie</a>
+		<h1 class="text-xl font-semibold text-ink md:text-2xl">Knöllchen-Blitz</h1>
+		<a href={resolve('/historie')} class="text-sm text-primary-600 underline">Historie</a>
 	</div>
 	<ReportForm />
 </main>
