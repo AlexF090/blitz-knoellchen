@@ -1,4 +1,6 @@
-export async function fetchAddress(lat: number, lon: number): Promise<string | null> {
+import type { GeocodeAddress } from './geocodeAddress';
+
+export async function fetchAddress(lat: number, lon: number): Promise<GeocodeAddress | null> {
 	try {
 		const response = await fetch(`/api/geocode?lat=${lat}&lon=${lon}`);
 		if (!response.ok) return null;

@@ -1,4 +1,5 @@
 import type { EmailTemplateInput } from '$lib/config/cities';
+import { formatAddress } from '$lib/geocode/formatAddress';
 
 export interface EmailContent {
 	subject: string;
@@ -12,11 +13,17 @@ export function buildEmailBody(input: EmailTemplateInput): EmailContent {
 	const notesLine = input.notes?.trim() ? input.notes.trim() : '-';
 	const incidentLabels = input.incidentTypes.map((t) => t.label).join(', ');
 	const incidentDescriptions = input.incidentTypes.map((t) => `- ${t.description}`).join('\n');
+	const locationLine = formatAddress({
+		street: input.locationStreet,
+		houseNumber: input.locationHouseNumber,
+		postcode: input.locationPostcode,
+		city: input.locationCity
+	});
 
 	const body = `Sehr geehrte Damen und Herren,
 
 hiermit zeige ich, ${input.firstName} ${input.lastName}, wohnhaft in ${input.address}, an,
-dass am ${input.date} um ${input.time} Uhr in der ${input.locationAddress} folgender Sachverhalt
+dass am ${input.date} um ${input.time} Uhr in der ${locationLine} folgender Sachverhalt
 vorlag:
 
 ${incidentDescriptions}

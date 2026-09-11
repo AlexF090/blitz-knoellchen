@@ -8,7 +8,10 @@ const baseInput: EmailTemplateInput = {
 	address: 'Musterstraße 1, 50667 Köln',
 	date: '01.03.2026',
 	time: '14:30',
-	locationAddress: 'Domkloster 4, 50667 Köln',
+	locationStreet: 'Domkloster',
+	locationHouseNumber: '4',
+	locationPostcode: '50667',
+	locationCity: 'Köln',
 	incidentTypes: [
 		{ label: 'Parken auf dem Gehweg', description: 'Das Fahrzeug parkte auf dem Gehweg.' }
 	],
@@ -57,6 +60,11 @@ describe('buildEmailBody', () => {
 	it('setzt Platzhalter für fehlenden Freitext', () => {
 		const result = buildEmailBody({ ...baseInput, notes: undefined });
 		expect(result.body).toContain('Weitere Angaben: -');
+	});
+
+	it('baut die Tatort-Adresse auch ohne Hausnummer zusammen', () => {
+		const result = buildEmailBody({ ...baseInput, locationHouseNumber: undefined });
+		expect(result.body).toContain('in der Domkloster, 50667 Köln');
 	});
 
 	it('behält Sonderzeichen (ö/ä/ü/ß) korrekt bei', () => {
