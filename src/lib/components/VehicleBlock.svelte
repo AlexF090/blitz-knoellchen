@@ -217,7 +217,7 @@
 
 		<div class="mt-3 rounded-control border border-border p-3">
 			<p class="text-sm font-medium text-ink">Tatort</p>
-			<div class="mt-2 grid grid-cols-2 gap-3">
+			<div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
 				<div class="min-w-0">
 					<label for="date-{vehicle.id}" class="block text-sm font-medium text-ink"
 						>Datum <span class="text-error-fg">*</span></label
