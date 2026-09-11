@@ -1,6 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { Resend } from 'resend';
-import { RESEND_API_KEY, EMAIL_FROM } from '$env/static/private';
+import { BREVO_API_KEY, EMAIL_FROM } from '$env/static/private';
 import { CITIES } from '$lib/config/cities';
 import { getRecipientEmail } from '$lib/config/cities.server';
 import {
@@ -12,7 +11,7 @@ import {
 } from '$lib/validation/formSchema';
 import type { RequestHandler } from './$types';
 
-const resend = new Resend(RESEND_API_KEY);
+const BREVO_SEND_URL = 'https://api.brevo.com/v3/smtp/email';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const formData = await request.formData();
@@ -83,25 +82,33 @@ export const POST: RequestHandler = async ({ request }) => {
 		vehicleTotal
 	});
 
-	const attachments = await Promise.all(
+	const attachment = await Promise.all(
 		photos.map(async (photo) => ({
-			filename: photo.fileName,
-			content: Buffer.from(await photo.blob.arrayBuffer())
+			name: photo.fileName,
+			content: Buffer.from(await photo.blob.arrayBuffer()).toString('base64')
 		}))
 	);
 
 	try {
-		const { error } = await resend.emails.send({
-			from: EMAIL_FROM,
-			to: getRecipientEmail(city.id),
-			replyTo: data.email,
-			bcc: data.email,
-			subject,
-			text: body,
-			attachments
+		const response = await fetch(BREVO_SEND_URL, {
+			method: 'POST',
+			headers: {
+				'api-key': BREVO_API_KEY,
+				'Content-Type': 'application/json',
+				Accept: 'application/json'
+			},
+			body: JSON.stringify({
+				sender: { email: EMAIL_FROM },
+				to: [{ email: getRecipientEmail(city.id) }],
+				replyTo: { email: data.email },
+				bcc: [{ email: data.email }],
+				subject,
+				textContent: body,
+				attachment
+			})
 		});
 
-		if (error) return json({ error: 'Versand fehlgeschlagen.' }, { status: 502 });
+		if (!response.ok) return json({ error: 'Versand fehlgeschlagen.' }, { status: 502 });
 
 		return json({ ok: true });
 	} catch {
