@@ -27,11 +27,11 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 
 	await page.locator('#photo-pool-input').setInputFiles(FIXTURE);
 
-	await expect(page.locator('#locationStreet')).toHaveValue('Domkloster');
-	await expect(page.locator('#locationHouseNumber')).toHaveValue('4');
-	await expect(page.locator('#locationPostcode')).toHaveValue('50667');
-	await expect(page.locator('#locationCity')).toHaveValue('Köln');
-	await expect(page.locator('#date')).toHaveValue('2026-03-01');
+	await expect(page.locator('[id^="locationStreet-"]')).toHaveValue('Domkloster');
+	await expect(page.locator('[id^="locationHouseNumber-"]')).toHaveValue('4');
+	await expect(page.locator('[id^="locationPostcode-"]')).toHaveValue('50667');
+	await expect(page.locator('[id^="locationCity-"]')).toHaveValue('Köln');
+	await expect(page.locator('[id^="date-"]')).toHaveValue('2026-03-01');
 
 	await page.getByLabel('Parken auf dem Gehweg').check();
 	await page.getByLabel('Parken im Halteverbot').check();

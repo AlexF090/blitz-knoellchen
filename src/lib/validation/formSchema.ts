@@ -1,7 +1,15 @@
+import type { GeocodeAddress } from '$lib/geocode/geocodeAddress';
+
 export interface PhotoEntry {
 	id: string;
 	blob: Blob;
 	fileName: string;
+	gps: { lat: number; lon: number } | null;
+	date: string | null;
+	time: string | null;
+	// Cache des Reverse-Geocoding-Ergebnisses: undefined = noch nicht versucht,
+	// null = versucht, aber fehlgeschlagen/unvollständig.
+	resolvedAddress?: GeocodeAddress | null;
 }
 
 export const MAX_PHOTOS_PER_VEHICLE = 3;
@@ -18,9 +26,26 @@ export interface VehicleEntry {
 	licensePlate: string;
 	incidentTypeIds: string[];
 	notes?: string;
+	date: string;
+	time: string;
+	locationStreet: string;
+	locationHouseNumber?: string;
+	locationPostcode: string;
+	locationCity: string;
 }
 
-export type VehicleErrors = Partial<Record<'licensePlate' | 'incidentTypeIds', string>> & {
+export type VehicleErrors = Partial<
+	Record<
+		| 'licensePlate'
+		| 'incidentTypeIds'
+		| 'date'
+		| 'time'
+		| 'locationStreet'
+		| 'locationPostcode'
+		| 'locationCity',
+		string
+	>
+> & {
 	photoIds?: string;
 };
 
@@ -32,12 +57,6 @@ export interface ReportFormData {
 	addressPostcode: string;
 	addressCity: string;
 	email: string;
-	date: string;
-	time: string;
-	locationStreet: string;
-	locationHouseNumber?: string;
-	locationPostcode: string;
-	locationCity: string;
 	photos: PhotoEntry[];
 	vehicles: VehicleEntry[];
 }
@@ -92,6 +111,27 @@ const validateVehicle = (vehicle: VehicleEntry, photos: PhotoEntry[]): VehicleEr
 		errors.photoIds = 'Ungültige Foto-Zuordnung.';
 	}
 
+	if (!vehicle.date.trim()) {
+		errors.date = 'Datum ist erforderlich.';
+	} else if (!isValidCalendarDate(vehicle.date.trim())) {
+		errors.date = 'Datum ist ungültig.';
+	} else if (vehicle.date.trim() > new Date().toISOString().slice(0, 10)) {
+		errors.date = 'Datum darf nicht in der Zukunft liegen.';
+	}
+	if (!vehicle.time.trim()) {
+		errors.time = 'Uhrzeit ist erforderlich.';
+	} else if (!TIME_PATTERN.test(vehicle.time.trim())) {
+		errors.time = 'Uhrzeit ist ungültig.';
+	}
+
+	if (!vehicle.locationStreet.trim()) errors.locationStreet = 'Straße ist erforderlich.';
+	if (!vehicle.locationPostcode.trim()) {
+		errors.locationPostcode = 'Postleitzahl ist erforderlich.';
+	} else if (!POSTCODE_PATTERN.test(vehicle.locationPostcode.trim())) {
+		errors.locationPostcode = 'Postleitzahl muss aus 5 Ziffern bestehen.';
+	}
+	if (!vehicle.locationCity.trim()) errors.locationCity = 'Ort ist erforderlich.';
+
 	return errors;
 };
 
@@ -119,25 +159,6 @@ export const validateProfileFields = (data: ProfileFields): ProfileErrors => {
 export const validateReportForm = (data: ReportFormData): FormErrors => {
 	const errors: FormErrors = { ...validateProfileFields(data) };
 
-	if (!data.date.trim()) {
-		errors.date = 'Datum ist erforderlich.';
-	} else if (!isValidCalendarDate(data.date.trim())) {
-		errors.date = 'Datum ist ungültig.';
-	} else if (data.date.trim() > new Date().toISOString().slice(0, 10)) {
-		errors.date = 'Datum darf nicht in der Zukunft liegen.';
-	}
-	if (!data.time.trim()) {
-		errors.time = 'Uhrzeit ist erforderlich.';
-	} else if (!TIME_PATTERN.test(data.time.trim())) {
-		errors.time = 'Uhrzeit ist ungültig.';
-	}
-	if (!data.locationStreet.trim()) errors.locationStreet = 'Straße ist erforderlich.';
-	if (!data.locationPostcode.trim()) {
-		errors.locationPostcode = 'Postleitzahl ist erforderlich.';
-	} else if (!POSTCODE_PATTERN.test(data.locationPostcode.trim())) {
-		errors.locationPostcode = 'Postleitzahl muss aus 5 Ziffern bestehen.';
-	}
-	if (!data.locationCity.trim()) errors.locationCity = 'Ort ist erforderlich.';
 	const maxPoolPhotos = getMaxPoolPhotos(data.vehicles.length);
 	if (data.photos.length === 0) {
 		errors.photos = 'Mindestens ein Foto ist erforderlich.';

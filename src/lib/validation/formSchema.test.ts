@@ -12,7 +12,10 @@ import {
 const makePhoto = (): PhotoEntry => ({
 	id: crypto.randomUUID(),
 	blob: new Blob(['x'], { type: 'image/jpeg' }),
-	fileName: 'beweisfoto.jpg'
+	fileName: 'beweisfoto.jpg',
+	gps: null,
+	date: null,
+	time: null
 });
 
 const makeVehicle = (overrides: Partial<VehicleEntry> = {}, photoIds: string[]): VehicleEntry => ({
@@ -21,6 +24,12 @@ const makeVehicle = (overrides: Partial<VehicleEntry> = {}, photoIds: string[]):
 	licensePlate: 'K-AB 1234',
 	incidentTypeIds: ['gehweg'],
 	notes: '',
+	date: '2026-03-01',
+	time: '14:30',
+	locationStreet: 'Domkloster',
+	locationHouseNumber: '4',
+	locationPostcode: '50667',
+	locationCity: 'Köln',
 	...overrides
 });
 
@@ -34,12 +43,6 @@ const makeValidData = (): ReportFormData => {
 		addressPostcode: '50667',
 		addressCity: 'Köln',
 		email: 'max@example.com',
-		date: '2026-03-01',
-		time: '14:30',
-		locationStreet: 'Domkloster',
-		locationHouseNumber: '4',
-		locationPostcode: '50667',
-		locationCity: 'Köln',
 		photos: [photo],
 		vehicles: [makeVehicle({}, [photo.id])]
 	};
@@ -60,15 +63,13 @@ describe('validateReportForm', () => {
 
 	it('meldet fehlende Pflichtfelder', () => {
 		const data = makeValidData();
-		const errors = validateReportForm({
-			...data,
-			locationStreet: '',
-			locationPostcode: '',
-			locationCity: ''
-		});
-		expect(errors.locationStreet).toBeDefined();
-		expect(errors.locationPostcode).toBeDefined();
-		expect(errors.locationCity).toBeDefined();
+		data.vehicles[0].locationStreet = '';
+		data.vehicles[0].locationPostcode = '';
+		data.vehicles[0].locationCity = '';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].locationStreet).toBeDefined();
+		expect(errors.vehicles?.[0].locationPostcode).toBeDefined();
+		expect(errors.vehicles?.[0].locationCity).toBeDefined();
 		expect(isFormValid(errors)).toBe(false);
 	});
 
@@ -204,31 +205,34 @@ describe('validateReportForm', () => {
 
 	it('meldet ungültige Postleitzahl', () => {
 		const data = makeValidData();
+		data.vehicles[0].locationPostcode = 'abcde';
 		const errors = validateReportForm({
 			...data,
-			addressPostcode: '123',
-			locationPostcode: 'abcde'
+			addressPostcode: '123'
 		});
 		expect(errors.addressPostcode).toBeDefined();
-		expect(errors.locationPostcode).toBeDefined();
+		expect(errors.vehicles?.[0].locationPostcode).toBeDefined();
 	});
 
 	it('meldet ungültiges Datum', () => {
 		const data = makeValidData();
-		const errors = validateReportForm({ ...data, date: '2026-02-30' });
-		expect(errors.date).toBeDefined();
+		data.vehicles[0].date = '2026-02-30';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].date).toBeDefined();
 	});
 
 	it('meldet Datum in der Zukunft', () => {
 		const data = makeValidData();
-		const errors = validateReportForm({ ...data, date: '2999-01-01' });
-		expect(errors.date).toBeDefined();
+		data.vehicles[0].date = '2999-01-01';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].date).toBeDefined();
 	});
 
 	it('meldet ungültige Uhrzeit', () => {
 		const data = makeValidData();
-		const errors = validateReportForm({ ...data, time: '25:99' });
-		expect(errors.time).toBeDefined();
+		data.vehicles[0].time = '25:99';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].time).toBeDefined();
 	});
 });
 
