@@ -47,28 +47,6 @@
 	<p class="text-sm text-ink-muted">Mindestens ein Foto ist erforderlich, maximal {maxPhotos}.</p>
 
 	<div class="mt-3 grid grid-cols-3 gap-2">
-		{#if processing}
-			<div
-				class="relative flex aspect-square items-center justify-center overflow-hidden rounded-control border border-border bg-surface-sunken"
-				role="status"
-				aria-label="Foto wird verarbeitet…"
-			>
-				<svg
-					viewBox="0 0 24 24"
-					fill="none"
-					class="h-6 w-6 animate-spin text-ink-muted"
-					aria-hidden="true"
-				>
-					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25" />
-					<path
-						d="M22 12a10 10 0 0 0-10-10"
-						stroke="currentColor"
-						stroke-width="3"
-						stroke-linecap="round"
-					/>
-				</svg>
-			</div>
-		{/if}
 		{#each photos as photo (photo.id)}
 			<div class="relative aspect-square overflow-hidden rounded-control border border-border">
 				<button
@@ -120,7 +98,30 @@
 			</div>
 		{/each}
 
-		{#if photos.length < maxPhotos}
+		{#if processing}
+			<div
+				class="relative flex aspect-square items-center justify-center overflow-hidden rounded-control border border-border bg-surface-sunken"
+				role="status"
+				aria-label="Foto wird verarbeitet…"
+			>
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					class="h-6 w-6 animate-spin text-ink-muted"
+					aria-hidden="true"
+				>
+					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25" />
+					<path
+						d="M22 12a10 10 0 0 0-10-10"
+						stroke="currentColor"
+						stroke-width="3"
+						stroke-linecap="round"
+					/>
+				</svg>
+			</div>
+		{/if}
+
+		{#if photos.length < maxPhotos && !processing}
 			<label
 				for="photo-pool-input"
 				class="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-control border-2 border-dashed border-border text-xs text-ink-muted"
