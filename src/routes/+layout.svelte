@@ -1,6 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import Footer from '$lib/components/Footer.svelte';
 	import IosInstallBanner from '$lib/components/IosInstallBanner.svelte';
 
 	let { children } = $props();
@@ -19,4 +20,5 @@
 </svelte:head>
 
 {@render children()}
+<Footer />
 <IosInstallBanner />

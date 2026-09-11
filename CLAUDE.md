@@ -131,42 +131,44 @@ Verstößen (z. B. Gehweg + Kreuzungsbereich) klar strukturiert.
 
 ### Versionsnummer: einzige Quelle der Wahrheit ist `package.json`
 
-Die in der App angezeigte Versionsnummer (Fußzeile des Formulars, `src/lib/components/
-ReportForm.svelte`) wird nicht hartcodiert, sondern zur Build-Zeit aus `package.json`s
+Die in der App angezeigte Versionsnummer (site-weiter Footer, `src/lib/components/
+Footer.svelte`) wird nicht hartcodiert, sondern zur Build-Zeit aus `package.json`s
 `version`-Feld injiziert — per `define: { __APP_VERSION__: ... }` in `vite.config.ts`, global
 typisiert in `src/app.d.ts`. So gibt es nur eine Stelle, an der die Version gepflegt wird; ein
 manuelles Nachziehen der UI-Anzeige entfällt.
 
-**Nach jedem Push oder Merge auf `main` muss die Version in `package.json` hochgezählt werden**
-(`npm version patch|minor|major`, je nach Umfang der Änderung — SemVer). Das ist aktuell noch
-nicht automatisiert (kein Git-Hook, kein CI-Schritt); bis dahin manuell vor bzw. direkt nach dem
-Merge erledigen.
+**Die Patch-Version wird bei jedem Commit automatisch hochgezählt** — ein Husky-Pre-Commit-Hook
+(`.husky/pre-commit`) führt `npm version patch --no-git-tag-version --allow-same-version` aus
+und staged `package.json`/`package-lock.json`, bevor der Commit abgeschlossen wird. Der Bump
+landet dadurch atomar im selben Commit, kein separater Versions-Commit, kein `--amend` nötig.
+Für Minor-/Major-Sprünge (Breaking Changes, größere Features) den Patch-Bump danach manuell per
+`npm version minor|major --no-git-tag-version` korrigieren.
 
 ## Ordnerstruktur
 
-| Pfad                                     | Zweck                                                                                     |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `src/routes/+page.svelte`                | Formular-Seite (bindet `ReportForm.svelte` ein)                                           |
-| `src/routes/historie/+page.svelte`       | Liste bereits versendeter Anzeigen aus IndexedDB                                          |
-| `src/routes/api/send/+server.ts`         | Serverseitiger E-Mail-Versand über Brevo                                                  |
-| `src/routes/api/geocode/+server.ts`      | Reverse-Geocoding-Proxy (LocationIQ + BigDataCloud-Fallback, Throttling)                  |
-| `src/lib/components/`                    | Svelte-Komponenten (`ReportForm.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
-| `src/lib/config/cities.ts`               | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import   |
-| `src/lib/config/cities.server.ts`        | Serverseitige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`       |
-| `src/lib/email/buildEmailBody.ts`        | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                      |
-| `src/lib/exif/parseExif.ts`              | Wrapper um `exifreader`, robust gegen fehlende/korrupte EXIF-Tags                         |
-| `src/lib/image/embedExif.ts`             | Bettet Datum/GPS (`piexifjs`) nach Konvertierung/Kompression zurück ins JPEG              |
-| `src/lib/geocode/reverseGeocode.ts`      | Providerbasierte Fallback-Logik, unabhängig von SvelteKit testbar                         |
-| `src/lib/geocode/geocodeAddress.ts`      | `GeocodeAddress`-Interface (Straße/Hausnr./PLZ/Ort), von Server und Client geteilt        |
-| `src/lib/geocode/formatAddress.ts`       | Reine Funktion: `GeocodeAddress`-Felder → ein Adress-String (E-Mail-Text, Historie)       |
-| `src/lib/geocode/client.ts`              | Ruft `/api/geocode` vom Client aus auf                                                    |
-| `src/lib/history/db.ts`                  | `idb`-Wrapper für die lokale Historie                                                     |
-| `src/lib/profile/profileStore.svelte.ts` | `localStorage`-Wrapper mit Svelte-5-Runes                                                 |
-| `src/lib/image/compress.ts`              | Canvas-basierte Bildkompression                                                           |
-| `src/lib/pwa/isIosSafari.ts`             | Reine, testbare UA-Erkennung für den iOS-Install-Hinweis                                  |
-| `src/lib/validation/formSchema.ts`       | Handgeschriebene Formular-Validierung                                                     |
-| `e2e/`                                   | Playwright-Tests + `fixtures/photo-with-gps.jpg` (EXIF-Testbild)                          |
-| `scripts/`                               | Einmalige Setup-Skripte (Icon-Generierung, EXIF-Fixture-Generierung) — nicht Teil der App |
+| Pfad                                     | Zweck                                                                                                      |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `src/routes/+page.svelte`                | Formular-Seite (bindet `ReportForm.svelte` ein)                                                            |
+| `src/routes/historie/+page.svelte`       | Liste bereits versendeter Anzeigen aus IndexedDB                                                           |
+| `src/routes/api/send/+server.ts`         | Serverseitiger E-Mail-Versand über Brevo                                                                   |
+| `src/routes/api/geocode/+server.ts`      | Reverse-Geocoding-Proxy (LocationIQ + BigDataCloud-Fallback, Throttling)                                   |
+| `src/lib/components/`                    | Svelte-Komponenten (`ReportForm.svelte`, `Footer.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
+| `src/lib/config/cities.ts`               | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import                    |
+| `src/lib/config/cities.server.ts`        | Serverseitige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`                        |
+| `src/lib/email/buildEmailBody.ts`        | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                                       |
+| `src/lib/exif/parseExif.ts`              | Wrapper um `exifreader`, robust gegen fehlende/korrupte EXIF-Tags                                          |
+| `src/lib/image/embedExif.ts`             | Bettet Datum/GPS (`piexifjs`) nach Konvertierung/Kompression zurück ins JPEG                               |
+| `src/lib/geocode/reverseGeocode.ts`      | Providerbasierte Fallback-Logik, unabhängig von SvelteKit testbar                                          |
+| `src/lib/geocode/geocodeAddress.ts`      | `GeocodeAddress`-Interface (Straße/Hausnr./PLZ/Ort), von Server und Client geteilt                         |
+| `src/lib/geocode/formatAddress.ts`       | Reine Funktion: `GeocodeAddress`-Felder → ein Adress-String (E-Mail-Text, Historie)                        |
+| `src/lib/geocode/client.ts`              | Ruft `/api/geocode` vom Client aus auf                                                                     |
+| `src/lib/history/db.ts`                  | `idb`-Wrapper für die lokale Historie                                                                      |
+| `src/lib/profile/profileStore.svelte.ts` | `localStorage`-Wrapper mit Svelte-5-Runes                                                                  |
+| `src/lib/image/compress.ts`              | Canvas-basierte Bildkompression                                                                            |
+| `src/lib/pwa/isIosSafari.ts`             | Reine, testbare UA-Erkennung für den iOS-Install-Hinweis                                                   |
+| `src/lib/validation/formSchema.ts`       | Handgeschriebene Formular-Validierung                                                                      |
+| `e2e/`                                   | Playwright-Tests + `fixtures/photo-with-gps.jpg` (EXIF-Testbild)                                           |
+| `scripts/`                               | Einmalige Setup-Skripte (Icon-Generierung, EXIF-Fixture-Generierung) — nicht Teil der App                  |
 
 ## Kommandos
 
