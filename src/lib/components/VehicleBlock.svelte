@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { RotateCcw, Trash2 } from '@lucide/svelte';
 	import type { IncidentType } from '$lib/config/cities';
 	import { validateVehicle } from '$lib/validation/formSchema';
 	import type { PhotoEntry, VehicleEntry, VehicleErrors } from '$lib/validation/formSchema';
@@ -15,6 +16,7 @@
 		maxPhotos: number;
 		geocodeWarning?: string;
 		onRemove: () => void;
+		onReset: () => void;
 		onPhotoToggled?: (photoId: string, selected: boolean) => void;
 	}
 
@@ -28,10 +30,24 @@
 		maxPhotos,
 		geocodeWarning,
 		onRemove,
+		onReset,
 		onPhotoToggled
 	}: Props = $props();
 
 	let open = $state(true);
+	let resetDialog: HTMLDialogElement | undefined;
+
+	const openResetDialog = () => resetDialog?.showModal();
+
+	const confirmReset = () => {
+		resetDialog?.close();
+		if (total > 1) onRemove();
+		else onReset();
+	};
+
+	const handleResetBackdropClick = (event: MouseEvent) => {
+		if (event.target === resetDialog) resetDialog.close();
+	};
 
 	const objectUrl = (blob: Blob) => URL.createObjectURL(blob);
 
@@ -44,6 +60,11 @@
 					city: vehicle.locationCity
 				})
 			: '';
+
+	const formatDateDMY = (isoDate: string) => {
+		const [year, month, day] = isoDate.split('-');
+		return `${day}.${month}.${year}`;
+	};
 
 	const summaryIncidentTypes = () =>
 		incidentTypes
@@ -86,11 +107,19 @@
 		<h3 class="text-sm font-semibold text-ink">
 			{total > 1 ? `Fahrzeug/Vorfall ${index + 1}` : 'Fahrzeug/Vorfall'}
 		</h3>
-		{#if total > 1}
-			<button type="button" onclick={onRemove} class="text-sm text-error-fg underline">
-				Entfernen
-			</button>
-		{/if}
+		<button
+			type="button"
+			onclick={openResetDialog}
+			aria-label={total > 1 ? 'Fahrzeug/Vorfall entfernen' : 'Fahrzeug/Vorfall zurücksetzen'}
+			title={total > 1 ? 'Entfernen' : 'Zurücksetzen'}
+			class="flex h-9 w-9 items-center justify-center rounded-full text-error-fg hover:bg-error-fg/10"
+		>
+			{#if total > 1}
+				<Trash2 class="h-5 w-5" aria-hidden="true" />
+			{:else}
+				<RotateCcw class="h-5 w-5" aria-hidden="true" />
+			{/if}
+		</button>
 	</div>
 
 	{#if !open}
@@ -125,7 +154,9 @@
 			<div>
 				<dt class="text-xs font-medium text-ink-muted">Datum / Uhrzeit</dt>
 				<dd class="text-ink">
-					{vehicle.date && vehicle.time ? `${vehicle.date}, ${vehicle.time} Uhr` : '—'}
+					{vehicle.date && vehicle.time
+						? `${formatDateDMY(vehicle.date)}, ${vehicle.time} Uhr`
+						: '—'}
 				</dd>
 			</div>
 			<div>
@@ -356,3 +387,74 @@
 		{/if}
 	</div>
 </div>
+
+<dialog
+	bind:this={resetDialog}
+	onclick={handleResetBackdropClick}
+	class="m-auto w-[90vw] max-w-sm rounded-card bg-surface p-4 shadow-card backdrop:bg-ink/70 sm:p-6"
+>
+	<h3 class="text-sm font-semibold text-ink">
+		{total > 1 ? 'Fahrzeug/Vorgang entfernen?' : 'Fahrzeug/Vorgang zurücksetzen?'}
+	</h3>
+	<p class="mt-1 text-sm text-ink-muted">
+		{total > 1
+			? 'Dieser Datensatz wird unwiderruflich aus der Anzeige entfernt.'
+			: 'Die bereits eingetragenen Daten werden unwiderruflich gelöscht.'}
+	</p>
+
+	<dl class="mt-3 flex flex-col gap-2 text-sm">
+		{#if vehicle.photoIds.length > 0}
+			<div>
+				<dt class="text-xs font-medium text-ink-muted">Foto Auswahl</dt>
+				<dd class="text-ink">{vehicle.photoIds.length}</dd>
+			</div>
+		{/if}
+		{#if vehicle.licensePlate}
+			<div>
+				<dt class="text-xs font-medium text-ink-muted">Kennzeichen</dt>
+				<dd class="text-ink">{vehicle.licensePlate}</dd>
+			</div>
+		{/if}
+		{#if summaryAddress()}
+			<div>
+				<dt class="text-xs font-medium text-ink-muted">Tatort</dt>
+				<dd class="text-ink">{summaryAddress()}</dd>
+			</div>
+		{/if}
+		{#if vehicle.date && vehicle.time}
+			<div>
+				<dt class="text-xs font-medium text-ink-muted">Datum / Uhrzeit</dt>
+				<dd class="text-ink">{formatDateDMY(vehicle.date)}, {vehicle.time} Uhr</dd>
+			</div>
+		{/if}
+		{#if summaryIncidentTypes()}
+			<div>
+				<dt class="text-xs font-medium text-ink-muted">Art des Verstoßes</dt>
+				<dd class="text-ink">{summaryIncidentTypes()}</dd>
+			</div>
+		{/if}
+		{#if vehicle.notes}
+			<div>
+				<dt class="text-xs font-medium text-ink-muted">Weitere Angaben</dt>
+				<dd class="text-ink">{vehicle.notes}</dd>
+			</div>
+		{/if}
+	</dl>
+
+	<div class="mt-4 flex gap-2">
+		<button
+			type="button"
+			onclick={() => resetDialog?.close()}
+			class="flex-1 rounded-control border border-primary-500 py-2.5 text-sm font-semibold text-primary-600"
+		>
+			Abbrechen
+		</button>
+		<button
+			type="button"
+			onclick={confirmReset}
+			class="flex-1 rounded-control bg-error-fg py-2.5 text-sm font-semibold text-white"
+		>
+			Entfernen
+		</button>
+	</div>
+</dialog>
