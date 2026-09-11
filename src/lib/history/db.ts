@@ -9,6 +9,8 @@ export interface HistoryEntry {
 	locationAddress: string;
 	incidentTypeLabels: string[];
 	licensePlate?: string;
+	make?: string;
+	color?: string;
 	notes?: string;
 	thumbnails: Blob[];
 }
@@ -17,10 +19,10 @@ export interface UserProfile {
 	firstName: string;
 	lastName: string;
 	addressStreet: string;
-	addressHouseNumber: string;
 	addressPostcode: string;
 	addressCity: string;
 	email: string;
+	phone?: string;
 }
 
 interface StoredUserProfile extends UserProfile {
@@ -104,23 +106,15 @@ export const getProfile = async (): Promise<UserProfile | undefined> => {
 	const db = await getDb();
 	const stored = await db.get(PROFILE_STORE_NAME, PROFILE_KEY);
 	if (!stored) return undefined;
-	const {
-		firstName,
-		lastName,
-		addressStreet,
-		addressHouseNumber,
-		addressPostcode,
-		addressCity,
-		email
-	} = stored;
+	const { firstName, lastName, addressStreet, addressPostcode, addressCity, email, phone } = stored;
 	return {
 		firstName,
 		lastName,
 		addressStreet,
-		addressHouseNumber,
 		addressPostcode,
 		addressCity,
-		email
+		email,
+		phone
 	};
 };
 
@@ -137,9 +131,12 @@ const isValidVehicle = (value: unknown): value is VehicleEntry => {
 		Array.isArray(vehicle.photoIds) &&
 		vehicle.photoIds.every((id) => typeof id === 'string') &&
 		typeof vehicle.licensePlate === 'string' &&
+		typeof vehicle.make === 'string' &&
+		typeof vehicle.color === 'string' &&
 		Array.isArray(vehicle.incidentTypeIds) &&
 		typeof vehicle.date === 'string' &&
 		typeof vehicle.time === 'string' &&
+		(vehicle.timeMode === 'halteverstoss' || vehicle.timeMode === 'parkverstoss') &&
 		typeof vehicle.locationStreet === 'string' &&
 		typeof vehicle.locationPostcode === 'string' &&
 		typeof vehicle.locationCity === 'string'

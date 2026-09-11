@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { RotateCcw, Trash2 } from '@lucide/svelte';
 	import type { IncidentType } from '$lib/config/cities';
+	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import { validateVehicle } from '$lib/validation/formSchema';
 	import type { PhotoEntry, VehicleEntry, VehicleErrors } from '$lib/validation/formSchema';
 	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
+	import { VEHICLE_MAKES } from '$lib/config/vehicleMakes';
 	import { formatAddress } from '$lib/geocode/formatAddress';
+	import AddressAutocomplete from './AddressAutocomplete.svelte';
 
 	interface Props {
 		vehicle: VehicleEntry;
@@ -65,6 +68,16 @@
 	const formatDateDMY = (isoDate: string) => {
 		const [year, month, day] = isoDate.split('-');
 		return `${day}.${month}.${year}`;
+	};
+
+	const formatTimeRange = (v: VehicleEntry) => (v.endTime ? `${v.time}–${v.endTime}` : v.time);
+
+	const selectHalteverstoss = () => {
+		vehicle.timeMode = 'halteverstoss';
+		vehicle.endTime = '';
+	};
+	const selectParkverstoss = () => {
+		vehicle.timeMode = 'parkverstoss';
 	};
 
 	const summaryIncidentTypes = () =>
@@ -149,6 +162,10 @@
 				<dd class="text-ink">{vehicle.licensePlate || '—'}</dd>
 			</div>
 			<div>
+				<dt class="text-xs font-medium text-ink-muted">Fahrzeug</dt>
+				<dd class="text-ink">{vehicle.make} · {vehicle.color || '—'}</dd>
+			</div>
+			<div>
 				<dt class="text-xs font-medium text-ink-muted">Tatort</dt>
 				<dd class="text-ink">{summaryAddress() || '—'}</dd>
 			</div>
@@ -156,7 +173,7 @@
 				<dt class="text-xs font-medium text-ink-muted">Datum / Uhrzeit</dt>
 				<dd class="text-ink">
 					{vehicle.date && vehicle.time
-						? `${formatDateDMY(vehicle.date)}, ${vehicle.time} Uhr`
+						? `${formatDateDMY(vehicle.date)}, ${formatTimeRange(vehicle)} Uhr`
 						: '—'}
 				</dd>
 			</div>
@@ -219,7 +236,42 @@
 
 		<div class="mt-3 rounded-control border border-border p-3">
 			<p class="text-sm font-medium text-ink">Tatort</p>
-			<div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+			<fieldset class="mt-2">
+				<legend class="text-sm font-medium text-ink">Art der Zeitangabe</legend>
+				<div class="mt-1 flex flex-wrap gap-4 text-sm text-ink">
+					<label class="flex cursor-pointer items-center gap-1.5">
+						<input
+							type="radio"
+							name="timeMode-{vehicle.id}"
+							checked={vehicle.timeMode !== 'parkverstoss'}
+							onchange={selectHalteverstoss}
+							class="size-4 border-border"
+						/>
+						Halteverstoß (Einzelzeitpunkt)
+					</label>
+					<label class="flex cursor-pointer items-center gap-1.5">
+						<input
+							type="radio"
+							name="timeMode-{vehicle.id}"
+							checked={vehicle.timeMode === 'parkverstoss'}
+							onchange={selectParkverstoss}
+							class="size-4 border-border"
+						/>
+						Parkverstoß (Zeitraum, mind. 4 Min.)
+					</label>
+				</div>
+				{#if vehicle.timeMode === 'parkverstoss'}
+					<p class="mt-1 text-xs text-ink-muted">
+						Für die Ahndung eines Parkverstoßes muss das Fahrzeug mindestens 4 Minuten durchgängig
+						geparkt gewesen sein.
+					</p>
+				{/if}
+			</fieldset>
+
+			<div
+				class={`mt-2 grid grid-cols-1 gap-3 ${vehicle.timeMode === 'parkverstoss' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
+			>
 				<div class="min-w-0">
 					<label for="date-{vehicle.id}" class="block text-sm font-medium text-ink"
 						>Datum <span class="text-error-fg">*</span></label
@@ -243,7 +295,8 @@
 				</div>
 				<div class="min-w-0">
 					<label for="time-{vehicle.id}" class="block text-sm font-medium text-ink"
-						>Uhrzeit <span class="text-error-fg">*</span></label
+						>{vehicle.timeMode === 'parkverstoss' ? 'Von' : 'Uhrzeit'}
+						<span class="text-error-fg">*</span></label
 					>
 					<input
 						id="time-{vehicle.id}"
@@ -262,28 +315,39 @@
 							{errors.time}
 						</p>{/if}
 				</div>
+				{#if vehicle.timeMode === 'parkverstoss'}
+					<div class="min-w-0">
+						<label for="endTime-{vehicle.id}" class="block text-sm font-medium text-ink"
+							>Bis <span class="text-error-fg">*</span></label
+						>
+						<input
+							id="endTime-{vehicle.id}"
+							type="time"
+							bind:value={vehicle.endTime}
+							required
+							aria-required="true"
+							{...ariaFieldProps(`endTime-${vehicle.id}`, errors?.endTime)}
+							class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
+						/>
+						{#if errors?.endTime}<p
+								id="endTime-{vehicle.id}-error"
+								role="alert"
+								class="text-sm text-error-fg"
+							>
+								{errors.endTime}
+							</p>{/if}
+					</div>
+				{/if}
 			</div>
 			<div class="mt-2 grid grid-cols-[2fr_1fr] gap-3">
-				<div class="min-w-0">
-					<label for="locationStreet-{vehicle.id}" class="block text-sm font-medium text-ink"
-						>Straße <span class="text-error-fg">*</span></label
-					>
-					<input
-						id="locationStreet-{vehicle.id}"
-						bind:value={vehicle.locationStreet}
-						required
-						aria-required="true"
-						{...ariaFieldProps(`locationStreet-${vehicle.id}`, errors?.locationStreet)}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-					{#if errors?.locationStreet}<p
-							id="locationStreet-{vehicle.id}-error"
-							role="alert"
-							class="text-sm text-error-fg"
-						>
-							{errors.locationStreet}
-						</p>{/if}
-				</div>
+				<AddressAutocomplete
+					id="locationStreet-{vehicle.id}"
+					label="Straße"
+					required
+					error={errors?.locationStreet}
+					bind:value={vehicle.locationStreet}
+					onSelect={(suggestion) => applyAddressSuggestion(vehicle, suggestion, true)}
+				/>
 				<div class="min-w-0">
 					<label for="locationHouseNumber-{vehicle.id}" class="block text-sm font-medium text-ink"
 						>Hausnr.</label
@@ -362,6 +426,57 @@
 					{errors.licensePlate}
 				</p>{/if}
 		</div>
+
+		<div class="mt-3 grid grid-cols-2 gap-3">
+			<div class="min-w-0">
+				<label for="make-{vehicle.id}" class="block text-sm font-medium text-ink"
+					>Marke <span class="text-error-fg">*</span></label
+				>
+				<input
+					id="make-{vehicle.id}"
+					list="vehicle-makes-{vehicle.id}"
+					bind:value={vehicle.make}
+					required
+					aria-required="true"
+					{...ariaFieldProps(`make-${vehicle.id}`, errors?.make)}
+					class="mt-1 w-full rounded-control border border-border p-2"
+				/>
+				<datalist id="vehicle-makes-{vehicle.id}">
+					{#each VEHICLE_MAKES as make (make)}<option value={make}></option>{/each}
+				</datalist>
+				{#if errors?.make}<p
+						id="make-{vehicle.id}-error"
+						role="alert"
+						class="text-sm text-error-fg"
+					>
+						{errors.make}
+					</p>{/if}
+			</div>
+			<div class="min-w-0">
+				<label for="color-{vehicle.id}" class="block text-sm font-medium text-ink"
+					>Farbe <span class="text-error-fg">*</span></label
+				>
+				<input
+					id="color-{vehicle.id}"
+					placeholder="z. B. Rot, hell, dunkel"
+					bind:value={vehicle.color}
+					required
+					aria-required="true"
+					{...ariaFieldProps(`color-${vehicle.id}`, errors?.color)}
+					class="mt-1 w-full rounded-control border border-border p-2"
+				/>
+				{#if errors?.color}<p
+						id="color-{vehicle.id}-error"
+						role="alert"
+						class="text-sm text-error-fg"
+					>
+						{errors.color}
+					</p>{/if}
+			</div>
+		</div>
+		<p class="mt-1 text-xs text-ink-muted">
+			Genaue Farbe unbekannt? Auch Beschreibungen wie „hell" oder „dunkel" reichen aus.
+		</p>
 
 		<fieldset class="mt-3">
 			<legend class="block text-sm font-medium text-ink"
@@ -457,6 +572,12 @@
 				<dd class="text-ink">{vehicle.licensePlate}</dd>
 			</div>
 		{/if}
+		{#if vehicle.color}
+			<div>
+				<dt class="text-xs font-medium text-ink-muted">Fahrzeug</dt>
+				<dd class="text-ink">{vehicle.make} · {vehicle.color}</dd>
+			</div>
+		{/if}
 		{#if summaryAddress()}
 			<div>
 				<dt class="text-xs font-medium text-ink-muted">Tatort</dt>
@@ -466,7 +587,7 @@
 		{#if vehicle.date && vehicle.time}
 			<div>
 				<dt class="text-xs font-medium text-ink-muted">Datum / Uhrzeit</dt>
-				<dd class="text-ink">{formatDateDMY(vehicle.date)}, {vehicle.time} Uhr</dd>
+				<dd class="text-ink">{formatDateDMY(vehicle.date)}, {formatTimeRange(vehicle)} Uhr</dd>
 			</div>
 		{/if}
 		{#if summaryIncidentTypes()}

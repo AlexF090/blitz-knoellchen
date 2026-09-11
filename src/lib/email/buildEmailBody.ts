@@ -19,6 +19,7 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 			? `${SUBJECT_BASE} – Fahrzeug ${input.vehicleIndex}/${input.vehicleTotal}`
 			: SUBJECT_BASE;
 	const licensePlateLine = input.licensePlate?.trim() ? input.licensePlate.trim() : 'nicht erfasst';
+	const vehicleDescriptionLine = `${input.make?.trim() || 'unbekannt'} (Farbe: ${input.color?.trim() || 'nicht angegeben'})`;
 	const notes = input.notes?.trim();
 	const incidentLabels = input.incidentTypes.map((t) => t.label).join(', ');
 	const incidentDescriptions = input.incidentTypes.map((t) => `- ${t.description}`).join('\n');
@@ -30,7 +31,6 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 	});
 	const addressLine = formatAddress({
 		street: input.addressStreet,
-		houseNumber: input.addressHouseNumber,
 		postcode: input.addressPostcode,
 		city: input.addressCity
 	});
@@ -38,20 +38,25 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 		input.photoCount > 1
 			? `${input.photoCount} Beweisfotos sind dieser E-Mail beigefügt.`
 			: 'Ein Beweisfoto ist dieser E-Mail beigefügt.';
+	const timeLine = input.endTime?.trim()
+		? `in der Zeit von ${input.time} Uhr bis ${input.endTime.trim()} Uhr`
+		: `um ${input.time} Uhr`;
+	const phoneLine = input.phone?.trim() ? ` sowie telefonisch unter ${input.phone.trim()}` : '';
 
 	const body = `Sehr geehrte Damen und Herren,
 
 hiermit zeige ich, ${input.firstName} ${input.lastName}, wohnhaft in ${addressLine}, an,
-dass am ${formatGermanDate(input.date)} um ${input.time} Uhr in der ${locationLine} folgender Sachverhalt
+dass am ${formatGermanDate(input.date)} ${timeLine} in der ${locationLine} folgender Sachverhalt
 vorlag:
 
 ${incidentDescriptions}
 
 Art des Verstoßes: ${incidentLabels}
 Kennzeichen des Fahrzeugs: ${licensePlateLine}
+Fahrzeug: ${vehicleDescriptionLine}
 ${notes ? `Weitere Angaben: ${notes}\n\n` : ''}${photoLine}
 
-Ich stehe für Rückfragen und ggf. als Zeuge zur Verfügung und bin unter dieser E-Mail-Adresse
+Ich stehe für Rückfragen und ggf. als Zeuge zur Verfügung und bin unter dieser E-Mail-Adresse${phoneLine}
 erreichbar.
 
 Mit freundlichen Grüßen

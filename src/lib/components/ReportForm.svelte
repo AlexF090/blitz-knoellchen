@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { CITIES } from '$lib/config/cities';
 	import { parseExif } from '$lib/exif/parseExif';
+	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
 	import { fetchAddress } from '$lib/geocode/client';
 	import { formatAddress } from '$lib/geocode/formatAddress';
 	import { addEntry, clearDraft, getDraft, saveDraft } from '$lib/history/db';
@@ -13,6 +14,7 @@
 		getMaxPoolPhotos,
 		isFormValid,
 		MAX_PHOTOS_PER_VEHICLE,
+		normalizeLicensePlate,
 		validateProfileFields,
 		validateReportForm,
 		type PhotoEntry,
@@ -21,6 +23,7 @@
 		type VehicleErrors
 	} from '$lib/validation/formSchema';
 	import { tick } from 'svelte';
+	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import PhotoPool from './PhotoPool.svelte';
 	import VehicleBlock from './VehicleBlock.svelte';
 
@@ -31,10 +34,13 @@
 		id: crypto.randomUUID(),
 		photoIds: [],
 		licensePlate: '',
+		make: 'Unbekannt',
+		color: '',
 		incidentTypeIds: [],
 		notes: '',
 		date: '',
 		time: '',
+		timeMode: 'halteverstoss',
 		locationStreet: '',
 		locationHouseNumber: '',
 		locationPostcode: '',
@@ -45,10 +51,10 @@
 		firstName: '',
 		lastName: '',
 		addressStreet: '',
-		addressHouseNumber: '',
 		addressPostcode: '',
 		addressCity: '',
 		email: '',
+		phone: '',
 		photos: [],
 		vehicles: []
 	});
@@ -74,10 +80,10 @@
 				if (!form.firstName) form.firstName = profile.firstName;
 				if (!form.lastName) form.lastName = profile.lastName;
 				if (!form.addressStreet) form.addressStreet = profile.addressStreet;
-				if (!form.addressHouseNumber) form.addressHouseNumber = profile.addressHouseNumber;
 				if (!form.addressPostcode) form.addressPostcode = profile.addressPostcode;
 				if (!form.addressCity) form.addressCity = profile.addressCity;
 				if (!form.email) form.email = profile.email;
+				if (!form.phone) form.phone = profile.phone;
 
 				const profileErrors = validateProfileFields(form);
 				if (Object.keys(profileErrors).length === 0) isEditingProfile = false;
@@ -120,10 +126,10 @@
 			firstName: form.firstName,
 			lastName: form.lastName,
 			addressStreet: form.addressStreet,
-			addressHouseNumber: form.addressHouseNumber ?? '',
 			addressPostcode: form.addressPostcode,
 			addressCity: form.addressCity,
-			email: form.email
+			email: form.email,
+			phone: form.phone
 		});
 	};
 
@@ -172,10 +178,7 @@
 		if (!photo.gps) return;
 
 		const address = await resolvePhotoAddress(photo);
-		if (address?.street) vehicle.locationStreet ||= address.street;
-		if (address?.houseNumber) vehicle.locationHouseNumber ||= address.houseNumber;
-		if (address?.postcode) vehicle.locationPostcode ||= address.postcode;
-		if (address?.city) vehicle.locationCity ||= address.city;
+		applyAddressSuggestion(vehicle, address ?? {}, false);
 
 		if (!address?.street || !address?.city) {
 			vehicleGeocodeWarnings = {
@@ -275,10 +278,10 @@
 			firstName: '',
 			lastName: '',
 			addressStreet: '',
-			addressHouseNumber: '',
 			addressPostcode: '',
 			addressCity: '',
 			email: '',
+			phone: '',
 			photos: [],
 			vehicles: []
 		};
@@ -305,10 +308,13 @@
 		'photoIds',
 		'date',
 		'time',
+		'endTime',
 		'locationStreet',
 		'locationPostcode',
 		'locationCity',
 		'licensePlate',
+		'make',
+		'color',
 		'incidentTypeIds'
 	];
 
@@ -374,12 +380,14 @@
 				body.set('firstName', form.firstName);
 				body.set('lastName', form.lastName);
 				body.set('addressStreet', form.addressStreet);
-				body.set('addressHouseNumber', form.addressHouseNumber ?? '');
 				body.set('addressPostcode', form.addressPostcode);
 				body.set('addressCity', form.addressCity);
 				body.set('email', form.email);
+				body.set('phone', form.phone ?? '');
 				body.set('date', vehicle.date);
 				body.set('time', vehicle.time);
+				body.set('timeMode', vehicle.timeMode);
+				body.set('endTime', vehicle.endTime ?? '');
 				body.set('locationStreet', vehicle.locationStreet);
 				body.set('locationHouseNumber', vehicle.locationHouseNumber ?? '');
 				body.set('locationPostcode', vehicle.locationPostcode);
@@ -387,6 +395,8 @@
 				body.set('vehicleIndex', String(index + 1));
 				body.set('vehicleTotal', String(form.vehicles.length));
 				body.set('licensePlate', vehicle.licensePlate);
+				body.set('make', vehicle.make);
+				body.set('color', vehicle.color);
 				for (const id of vehicle.incidentTypeIds) body.append('incidentTypeIds', id);
 				body.set('notes', vehicle.notes ?? '');
 				vehiclePhotos.forEach((photo, pIdx) =>
@@ -415,14 +425,19 @@
 							city: vehicle.locationCity
 						}),
 						incidentTypeLabels: incidentTypes.map((t) => t.label),
-						licensePlate: vehicle.licensePlate,
+						licensePlate: normalizeLicensePlate(vehicle.licensePlate),
+						make: vehicle.make,
+						color: vehicle.color,
 						notes: vehicle.notes,
 						thumbnails: vehiclePhotos.map((photo) => photo.blob)
 					});
 				}
 			}
 
-			sendResults = results.map((r) => ({ licensePlate: r.vehicle.licensePlate, ok: r.ok }));
+			sendResults = results.map((r) => ({
+				licensePlate: normalizeLicensePlate(r.vehicle.licensePlate),
+				ok: r.ok
+			}));
 
 			const failedCount = results.filter((r) => !r.ok).length;
 			if (failedCount === results.length) {
@@ -536,41 +551,24 @@
 					</div>
 				</div>
 
-				<div class="mt-3 grid grid-cols-[2fr_1fr] gap-3">
-					<div class="min-w-0">
-						<label for="addressStreet" class="block text-sm font-medium text-ink"
-							>Straße <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="addressStreet"
-							autocomplete="address-line1"
-							required
-							aria-required="true"
-							{...ariaFieldProps('addressStreet', errors.addressStreet)}
-							bind:value={form.addressStreet}
-							onblur={saveProfileFields}
-							class="mt-1 w-full rounded-control border border-border p-2"
-						/>
-						{#if errors.addressStreet}<p
-								id="addressStreet-error"
-								role="alert"
-								class="text-sm text-error-fg"
-							>
-								{errors.addressStreet}
-							</p>{/if}
-					</div>
-					<div class="min-w-0">
-						<label for="addressHouseNumber" class="block text-sm font-medium text-ink"
-							>Hausnr.</label
-						>
-						<input
-							id="addressHouseNumber"
-							autocomplete="address-line2"
-							bind:value={form.addressHouseNumber}
-							onblur={saveProfileFields}
-							class="mt-1 w-full rounded-control border border-border p-2"
-						/>
-					</div>
+				<div class="mt-3">
+					<AddressAutocomplete
+						id="addressStreet"
+						label="Straße und Hausnr."
+						required
+						autocompleteAttr="address-line1"
+						placeholder="z. B. Musterstraße 12"
+						error={errors.addressStreet}
+						bind:value={form.addressStreet}
+						onBlur={saveProfileFields}
+						onSelect={(suggestion) => {
+							form.addressStreet = [suggestion.street, suggestion.houseNumber]
+								.filter(Boolean)
+								.join(' ');
+							if (suggestion.postcode) form.addressPostcode = suggestion.postcode;
+							if (suggestion.city) form.addressCity = suggestion.city;
+						}}
+					/>
 				</div>
 
 				<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
@@ -641,6 +639,19 @@
 						</p>{/if}
 				</div>
 
+				<div class="mt-3">
+					<label for="phone" class="block text-sm font-medium text-ink">Telefonnummer</label>
+					<input
+						id="phone"
+						type="tel"
+						autocomplete="tel"
+						placeholder="z. B. 0221 12345678"
+						bind:value={form.phone}
+						onblur={saveProfileFields}
+						class="mt-1 w-full rounded-control border border-border p-2"
+					/>
+				</div>
+
 				<button
 					type="button"
 					onclick={onSaveProfile}
@@ -651,9 +662,10 @@
 			{:else}
 				<div class="mt-3 text-sm text-ink">
 					<p>{form.firstName} {form.lastName}</p>
-					<p>{form.addressStreet} {form.addressHouseNumber}</p>
+					<p>{form.addressStreet}</p>
 					<p>{form.addressPostcode} {form.addressCity}</p>
 					<p>{form.email}</p>
+					{#if form.phone}<p>{form.phone}</p>{/if}
 				</div>
 
 				<button

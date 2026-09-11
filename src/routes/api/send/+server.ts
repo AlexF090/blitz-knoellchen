@@ -5,6 +5,7 @@ import { getRecipientEmail } from '$lib/config/cities.server';
 import {
 	validateReportForm,
 	isFormValid,
+	normalizeLicensePlate,
 	type PhotoEntry,
 	type ReportFormData,
 	type VehicleEntry
@@ -25,14 +26,19 @@ export const POST: RequestHandler = async ({ request }) => {
 		date: null,
 		time: null
 	}));
+	const timeMode = formData.get('timeMode') === 'parkverstoss' ? 'parkverstoss' : 'halteverstoss';
 	const vehicle: VehicleEntry = {
 		id: '0',
 		photoIds: photos.map((photo) => photo.id),
-		licensePlate: String(formData.get('licensePlate') ?? ''),
+		licensePlate: normalizeLicensePlate(String(formData.get('licensePlate') ?? '')),
+		make: String(formData.get('make') ?? ''),
+		color: String(formData.get('color') ?? ''),
 		incidentTypeIds: formData.getAll('incidentTypeIds').map(String),
 		notes: String(formData.get('notes') ?? '') || undefined,
 		date: String(formData.get('date') ?? ''),
 		time: String(formData.get('time') ?? ''),
+		timeMode,
+		endTime: String(formData.get('endTime') ?? '') || undefined,
 		locationStreet: String(formData.get('locationStreet') ?? ''),
 		locationHouseNumber: String(formData.get('locationHouseNumber') ?? '') || undefined,
 		locationPostcode: String(formData.get('locationPostcode') ?? ''),
@@ -45,10 +51,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		firstName: String(formData.get('firstName') ?? ''),
 		lastName: String(formData.get('lastName') ?? ''),
 		addressStreet: String(formData.get('addressStreet') ?? ''),
-		addressHouseNumber: String(formData.get('addressHouseNumber') ?? '') || undefined,
 		addressPostcode: String(formData.get('addressPostcode') ?? ''),
 		addressCity: String(formData.get('addressCity') ?? ''),
 		email: String(formData.get('email') ?? ''),
+		phone: String(formData.get('phone') ?? '') || undefined,
 		photos,
 		vehicles: [vehicle]
 	};
@@ -68,17 +74,20 @@ export const POST: RequestHandler = async ({ request }) => {
 		firstName: data.firstName,
 		lastName: data.lastName,
 		addressStreet: data.addressStreet,
-		addressHouseNumber: data.addressHouseNumber,
 		addressPostcode: data.addressPostcode,
 		addressCity: data.addressCity,
+		phone: data.phone,
 		date: vehicle.date,
 		time: vehicle.time,
+		endTime: vehicle.endTime,
 		locationStreet: vehicle.locationStreet,
 		locationHouseNumber: vehicle.locationHouseNumber,
 		locationPostcode: vehicle.locationPostcode,
 		locationCity: vehicle.locationCity,
 		incidentTypes: incidentTypes.map((t) => ({ label: t.label, description: t.description })),
 		licensePlate: vehicle.licensePlate,
+		make: vehicle.make,
+		color: vehicle.color,
 		notes: vehicle.notes,
 		photoCount: photos.length,
 		vehicleIndex,

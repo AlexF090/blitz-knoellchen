@@ -6,10 +6,10 @@ const EMPTY_PROFILE: UserProfile = {
 	firstName: '',
 	lastName: '',
 	addressStreet: '',
-	addressHouseNumber: '',
 	addressPostcode: '',
 	addressCity: '',
-	email: ''
+	email: '',
+	phone: ''
 };
 
 export const createProfileStore = () => {

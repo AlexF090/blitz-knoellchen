@@ -28,10 +28,13 @@ const makeVehicle = (overrides: Partial<VehicleEntry> = {}): VehicleEntry => ({
 	id: crypto.randomUUID(),
 	photoIds: [],
 	licensePlate: 'K-AB 1234',
+	make: 'Unbekannt',
+	color: 'Rot',
 	incidentTypeIds: ['gehweg'],
 	notes: '',
 	date: '2026-09-11',
 	time: '12:00',
+	timeMode: 'halteverstoss',
 	locationStreet: 'Domkloster',
 	locationHouseNumber: '4',
 	locationPostcode: '50667',
@@ -89,8 +92,7 @@ describe('user profile', () => {
 		const profile: UserProfile = {
 			firstName: 'Max',
 			lastName: 'Mustermann',
-			addressStreet: 'Musterstraße',
-			addressHouseNumber: '1',
+			addressStreet: 'Musterstraße 1',
 			addressPostcode: '50667',
 			addressCity: 'Köln',
 			email: 'max@example.com'
@@ -103,8 +105,7 @@ describe('user profile', () => {
 		await saveProfile({
 			firstName: 'Erika',
 			lastName: 'Musterfrau',
-			addressStreet: 'Musterweg',
-			addressHouseNumber: '2',
+			addressStreet: 'Musterweg 2',
 			addressPostcode: '50668',
 			addressCity: 'Köln',
 			email: 'erika@example.com'
