@@ -9,7 +9,7 @@ const baseInput: EmailTemplateInput = {
 	addressHouseNumber: '1',
 	addressPostcode: '50667',
 	addressCity: 'Köln',
-	date: '01.03.2026',
+	date: '2026-03-01',
 	time: '14:30',
 	locationStreet: 'Domkloster',
 	locationHouseNumber: '4',
