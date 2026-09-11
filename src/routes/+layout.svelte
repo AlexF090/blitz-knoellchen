@@ -4,6 +4,7 @@
 	import Footer from '$lib/components/Footer.svelte';
 	import InstallBanner from '$lib/components/InstallBanner.svelte';
 	import IosInstallBanner from '$lib/components/IosInstallBanner.svelte';
+	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 
 	let { children } = $props();
 </script>
@@ -20,7 +21,9 @@
 	/>
 </svelte:head>
 
-{@render children()}
+<PullToRefresh>
+	{@render children()}
+</PullToRefresh>
 <Footer />
 <IosInstallBanner />
 <InstallBanner />
