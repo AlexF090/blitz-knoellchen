@@ -27,6 +27,20 @@ Dependencies). `from`/`sender` ist eine feste, per ENV konfigurierte Adresse; `r
 `bcc` sind die vom Nutzer eingegebene E-Mail-Adresse (löst "Kopie im eigenen Postfach", ohne
 dass eine Nutzer-Adresse oder ein Passwort je den Server verlässt bzw. gebraucht wird).
 
+**`EMAIL_FROM` muss eine in Brevo domain-authentifizierte Adresse sein, keine private
+Adresse eines fremden Großanbieters.** Ursprünglich stand hier testweise eine private
+`@icloud.com`-Adresse — Brevo meldete den Versand trotzdem als `delivered` (SMTP-Annahme durch
+den Empfänger-Server), Proton Mail zeigte die Mail dem Empfänger aber mit der Warnung "Diese
+E-Mail hat die Domain-Authentifizierungsanforderungen nicht bestanden" an bzw. ließ sie in
+anderen Fällen (GMX, freenet.de) gar nicht erst ankommen. Grund: Große Provider wie
+`icloud.com` haben eine strikte DMARC-Policy; da Brevos sendende IPs nicht als autorisierter
+Absender für eine fremde Domain SPF-/DKIM-aligned sein können, scheitert die
+DMARC-Alignment-Prüfung beim Empfänger nach der SMTP-Annahme — für Brevo selbst unsichtbar
+(daher weiterhin `delivered` im Log), für den Empfänger aber als Spoofing-Verdacht sichtbar
+oder die Mail wird kommentarlos verworfen. `EMAIL_FROM` muss daher auf eine selbst besessene
+Domain zeigen, die in Brevo unter Senders & IPs → Domains per SPF-/DKIM-DNS-Records
+authentifiziert wurde — keine Adresse bei Apple/Google/Microsoft/GMX/freenet o.ä.
+
 ### Reverse Geocoding über einen eigenen Server-Proxy mit Fallback-Kette
 
 Primär **LocationIQ** (API-kompatibel zu Nominatim, gleiche Datenbasis/Genauigkeit,
