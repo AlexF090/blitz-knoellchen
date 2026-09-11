@@ -16,7 +16,8 @@ const baseInput: EmailTemplateInput = {
 		{ label: 'Parken auf dem Gehweg', description: 'Das Fahrzeug parkte auf dem Gehweg.' }
 	],
 	licensePlate: 'K-AB 1234',
-	notes: 'Fahrzeug stand seit über einer Stunde dort.'
+	notes: 'Fahrzeug stand seit über einer Stunde dort.',
+	photoCount: 1
 };
 
 describe('buildEmailBody', () => {
@@ -65,6 +66,28 @@ describe('buildEmailBody', () => {
 	it('baut die Tatort-Adresse auch ohne Hausnummer zusammen', () => {
 		const result = buildEmailBody({ ...baseInput, locationHouseNumber: undefined });
 		expect(result.body).toContain('in der Domkloster, 50667 Köln');
+	});
+
+	it('erwähnt ein einzelnes Beweisfoto im Singular', () => {
+		const result = buildEmailBody(baseInput);
+		expect(result.body).toContain('Ein Beweisfoto ist dieser E-Mail beigefügt.');
+	});
+
+	it('erwähnt mehrere Beweisfotos im Plural mit Anzahl', () => {
+		const result = buildEmailBody({ ...baseInput, photoCount: 3 });
+		expect(result.body).toContain('3 Beweisfotos sind dieser E-Mail beigefügt.');
+	});
+
+	it('behält den normalen Betreff bei nur einem Fahrzeug', () => {
+		const result = buildEmailBody({ ...baseInput, vehicleIndex: 1, vehicleTotal: 1 });
+		expect(result.subject).toBe('Anzeige einer Verkehrsordnungswidrigkeit (Falschparken)');
+	});
+
+	it('ergänzt den Betreff um Fahrzeug-Index bei mehreren Fahrzeugen', () => {
+		const result = buildEmailBody({ ...baseInput, vehicleIndex: 2, vehicleTotal: 3 });
+		expect(result.subject).toBe(
+			'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken) – Fahrzeug 2/3'
+		);
 	});
 
 	it('behält Sonderzeichen (ö/ä/ü/ß) korrekt bei', () => {

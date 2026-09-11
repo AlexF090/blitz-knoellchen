@@ -6,9 +6,13 @@ export interface EmailContent {
 	body: string;
 }
 
-const SUBJECT = 'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken)';
+const SUBJECT_BASE = 'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken)';
 
 export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
+	const subject =
+		input.vehicleTotal && input.vehicleTotal > 1
+			? `${SUBJECT_BASE} – Fahrzeug ${input.vehicleIndex}/${input.vehicleTotal}`
+			: SUBJECT_BASE;
 	const licensePlateLine = input.licensePlate?.trim() ? input.licensePlate.trim() : 'nicht erfasst';
 	const notesLine = input.notes?.trim() ? input.notes.trim() : '-';
 	const incidentLabels = input.incidentTypes.map((t) => t.label).join(', ');
@@ -19,6 +23,10 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 		postcode: input.locationPostcode,
 		city: input.locationCity
 	});
+	const photoLine =
+		input.photoCount > 1
+			? `${input.photoCount} Beweisfotos sind dieser E-Mail beigefügt.`
+			: 'Ein Beweisfoto ist dieser E-Mail beigefügt.';
 
 	const body = `Sehr geehrte Damen und Herren,
 
@@ -32,7 +40,7 @@ Art des Verstoßes: ${incidentLabels}
 Kennzeichen des Fahrzeugs: ${licensePlateLine}
 Weitere Angaben: ${notesLine}
 
-Ein Beweisfoto ist dieser E-Mail beigefügt.
+${photoLine}
 
 Ich stehe für Rückfragen und ggf. als Zeuge zur Verfügung und bin unter dieser E-Mail-Adresse
 erreichbar.
@@ -40,5 +48,5 @@ erreichbar.
 Mit freundlichen Grüßen
 ${input.firstName} ${input.lastName}`;
 
-	return { subject: SUBJECT, body };
+	return { subject, body };
 };
