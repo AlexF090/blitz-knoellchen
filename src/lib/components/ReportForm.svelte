@@ -66,25 +66,31 @@
 	// Bearbeiten-Modus aufblitzt und dann auf den Lese-Modus umschaltet.
 	$effect(() => {
 		(async () => {
-			const [, draft] = await Promise.all([profileStore.load(), getDraft()]);
-			const profile = profileStore.value;
-			if (!form.firstName) form.firstName = profile.firstName;
-			if (!form.lastName) form.lastName = profile.lastName;
-			if (!form.addressStreet) form.addressStreet = profile.addressStreet;
-			if (!form.addressHouseNumber) form.addressHouseNumber = profile.addressHouseNumber;
-			if (!form.addressPostcode) form.addressPostcode = profile.addressPostcode;
-			if (!form.addressCity) form.addressCity = profile.addressCity;
-			if (!form.email) form.email = profile.email;
+			try {
+				const [, draft] = await Promise.all([profileStore.load(), getDraft()]);
+				const profile = profileStore.value;
+				if (!form.firstName) form.firstName = profile.firstName;
+				if (!form.lastName) form.lastName = profile.lastName;
+				if (!form.addressStreet) form.addressStreet = profile.addressStreet;
+				if (!form.addressHouseNumber) form.addressHouseNumber = profile.addressHouseNumber;
+				if (!form.addressPostcode) form.addressPostcode = profile.addressPostcode;
+				if (!form.addressCity) form.addressCity = profile.addressCity;
+				if (!form.email) form.email = profile.email;
 
-			const profileErrors = validateProfileFields(form);
-			if (Object.keys(profileErrors).length === 0) isEditingProfile = false;
+				const profileErrors = validateProfileFields(form);
+				if (Object.keys(profileErrors).length === 0) isEditingProfile = false;
 
-			if (draft) {
-				form.vehicles = draft.vehicles;
-				form.photos = draft.photos;
+				if (draft) {
+					form.vehicles = draft.vehicles;
+					form.photos = draft.photos;
+				}
+			} catch (error) {
+				// Ein defekter/inkompatibler Alt-Entwurf darf das Formular nie dauerhaft im
+				// Lade-Skeleton hängen lassen — im Fehlerfall startet die App leer statt gar nicht.
+				console.error('Fehler beim Laden von Profil/Entwurf:', error);
+			} finally {
+				formReady = true;
 			}
-
-			formReady = true;
 		})();
 	});
 
@@ -593,5 +599,6 @@
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- Platzhalter, Route folgt später -->
 			<a href="/datenschutz" class="underline">Datenschutz</a>
 		</p>
+		<p class="mt-1 text-center text-xs text-ink-muted">v1.0.1</p>
 	</div>
 </form>
