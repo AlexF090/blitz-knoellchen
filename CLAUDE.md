@@ -186,6 +186,10 @@ npm run test                  # test:unit + test:e2e
 - Jeder externe Aufruf (Geocoding, E-Mail-Versand) braucht sichtbares Nutzer-Feedback bei
   Fehlern; Formulardaten dürfen bei einem Fehlschlag nicht verloren gehen (siehe
   `ReportForm.svelte`: Fehlerpfad behält den State, kein Reset).
+- Farben ausschließlich als `oklch()` — kein `#hex`, `rgb()`/`rgba()`, `hsl()`/`hsla()` oder
+  benannte CSS-Farben (`white`, `red`, …) mehr. Neue Design-Tokens gehören in den
+  `@theme`-Block in `src/routes/layout.css`; Komponenten referenzieren ausschließlich diese
+  Tokens über Tailwind-Utility-Klassen, nie rohe Farbwerte im Markup.
 
 ## Weitere Stadt hinzufügen (hypothetisch, aktuell nicht umgesetzt)
 
