@@ -1,20 +1,9 @@
 // Einmaliges Setup-Skript: erzeugt einfache PNG-Platzhalter-Icons ohne zusätzliche
 // Bildbearbeitungs-Dependency (nur Node-Bordmittel: zlib für PNG-Kompression).
-import { deflateSync } from 'node:zlib';
 import { writeFileSync } from 'node:fs';
+import { deflateSync } from 'node:zlib';
 
-function crc32(buf) {
-	let c;
-	const table = crc32.table ?? (crc32.table = makeTable());
-	let crc = 0xffffffff;
-	for (let i = 0; i < buf.length; i++) {
-		c = table[(crc ^ buf[i]) & 0xff];
-		crc = (crc >>> 8) ^ c;
-	}
-	return (crc ^ 0xffffffff) >>> 0;
-}
-
-function makeTable() {
+const makeTable = () => {
 	const table = new Array(256);
 	for (let n = 0; n < 256; n++) {
 		let c = n;
@@ -24,20 +13,31 @@ function makeTable() {
 		table[n] = c >>> 0;
 	}
 	return table;
-}
+};
 
-function chunk(type, data) {
+const crc32 = (buf) => {
+	let c;
+	const table = crc32.table ?? (crc32.table = makeTable());
+	let crc = 0xffffffff;
+	for (let i = 0; i < buf.length; i++) {
+		c = table[(crc ^ buf[i]) & 0xff];
+		crc = (crc >>> 8) ^ c;
+	}
+	return (crc ^ 0xffffffff) >>> 0;
+};
+
+const chunk = (type, data) => {
 	const typeBuf = Buffer.from(type, 'ascii');
 	const lenBuf = Buffer.alloc(4);
 	lenBuf.writeUInt32BE(data.length, 0);
 	const crcBuf = Buffer.alloc(4);
 	crcBuf.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])), 0);
 	return Buffer.concat([lenBuf, typeBuf, data, crcBuf]);
-}
+};
 
 // Zeichnet ein abgerundetes "K" auf blauem Grund, Padding proportional zur Größe
 // (maskable Icons brauchen sichere Zone in der Mitte ~80% der Fläche).
-function drawIcon(size, { maskable = false } = {}) {
+const drawIcon = (size, { maskable = false } = {}) => {
 	const bg = [0x1d, 0x4e, 0xd8]; // Tailwind blue-700-ish
 	const fg = [0xff, 0xff, 0xff];
 	const pixels = Buffer.alloc(size * size * 4);
@@ -97,7 +97,7 @@ function drawIcon(size, { maskable = false } = {}) {
 		chunk('IDAT', idat),
 		chunk('IEND', Buffer.alloc(0))
 	]);
-}
+};
 
 writeFileSync('static/icons/icon-192.png', drawIcon(192));
 writeFileSync('static/icons/icon-512.png', drawIcon(512));
