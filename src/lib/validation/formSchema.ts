@@ -92,7 +92,7 @@ const isValidCalendarDate = (value: string): boolean => {
 	);
 };
 
-const validateVehicle = (vehicle: VehicleEntry, photos: PhotoEntry[]): VehicleErrors => {
+export const validateVehicle = (vehicle: VehicleEntry, photos: PhotoEntry[]): VehicleErrors => {
 	const errors: VehicleErrors = {};
 
 	if (!vehicle.licensePlate.trim()) {
