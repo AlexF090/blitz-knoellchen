@@ -21,7 +21,7 @@
 {#if visible}
 	<div
 		role="note"
-		class="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-blue-700 px-4 py-3 text-sm text-white shadow-lg"
+		class="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-primary-600 px-4 py-3 text-sm text-white shadow-card"
 	>
 		<p>
 			Installiere die App: Tippe auf <span aria-hidden="true">⬆️</span> „Teilen“ und dann „Zum Home-Bildschirm“.
