@@ -151,7 +151,6 @@
 		id="photo-pool-input"
 		type="file"
 		accept="image/*"
-		capture="environment"
 		multiple
 		onchange={onFileSelected}
 		class="sr-only"
