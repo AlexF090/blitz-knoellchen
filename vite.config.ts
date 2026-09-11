@@ -35,8 +35,8 @@ export default defineConfig({
 				lang: 'de',
 				start_url: '/',
 				display: 'standalone',
-				background_color: 'oklch(97.48% 0.0028 128.49)',
-				theme_color: 'oklch(97.48% 0.0028 128.49)',
+				background_color: 'oklch(100% 0 0)',
+				theme_color: 'oklch(100% 0 0)',
 				icons: [
 					{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
 					{ src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
