@@ -14,15 +14,18 @@ Historie. Der vollständige Auftrag mit allen Details steht in `PROMPT.md`.
 
 ## Architekturentscheidungen (ADRs)
 
-### E-Mail-Versand über Resend, nie clientseitig
+### E-Mail-Versand über Brevo, nie clientseitig
 
 Eine beliebige, vom Nutzer eingegebene E-Mail-Adresse kann technisch nicht als `From` dienen
 (SPF/DKIM/DMARC würden das als Spoofing werten). Der Versand läuft daher über den
-Transactional-Email-Dienst **Resend** und ausschließlich über den serverseitigen Endpunkt
-`src/routes/api/send/+server.ts` — der API-Key darf nie ins Client-Bundle gelangen.
-`from` ist eine feste, per ENV konfigurierte Adresse; `reply_to` und `bcc` sind die vom Nutzer
-eingegebene E-Mail-Adresse (löst "Kopie im eigenen Postfach", ohne dass eine Nutzer-Adresse
-oder ein Passwort je den Server verlässt bzw. gebraucht wird).
+Transactional-Email-Dienst **Brevo** (EU-Anbieter, DSGVO-konform) und ausschließlich über den
+serverseitigen Endpunkt `src/routes/api/send/+server.ts` — der API-Key darf nie ins
+Client-Bundle gelangen. Brevo wird bewusst per `fetch` gegen die REST-API
+(`https://api.brevo.com/v3/smtp/email`) angesprochen statt über das `@getbrevo/brevo`-SDK, da
+Web-Standard-APIs für den einzelnen Sende-Call ausreichen (siehe Coding-Konvention zu
+Dependencies). `from`/`sender` ist eine feste, per ENV konfigurierte Adresse; `replyTo` und
+`bcc` sind die vom Nutzer eingegebene E-Mail-Adresse (löst "Kopie im eigenen Postfach", ohne
+dass eine Nutzer-Adresse oder ein Passwort je den Server verlässt bzw. gebraucht wird).
 
 ### Reverse Geocoding über einen eigenen Server-Proxy mit Fallback-Kette
 
@@ -132,7 +135,7 @@ Verstößen (z. B. Gehweg + Kreuzungsbereich) klar strukturiert.
 | ---------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `src/routes/+page.svelte`                | Formular-Seite (bindet `ReportForm.svelte` ein)                                           |
 | `src/routes/historie/+page.svelte`       | Liste bereits versendeter Anzeigen aus IndexedDB                                          |
-| `src/routes/api/send/+server.ts`         | Serverseitiger E-Mail-Versand über Resend                                                 |
+| `src/routes/api/send/+server.ts`         | Serverseitiger E-Mail-Versand über Brevo                                                  |
 | `src/routes/api/geocode/+server.ts`      | Reverse-Geocoding-Proxy (LocationIQ + BigDataCloud-Fallback, Throttling)                  |
 | `src/lib/components/`                    | Svelte-Komponenten (`ReportForm.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
 | `src/lib/config/cities.ts`               | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import   |
@@ -201,8 +204,8 @@ nicht:
 
 | Variable             | Zweck                                                                                   |
 | -------------------- | --------------------------------------------------------------------------------------- |
-| `RESEND_API_KEY`     | API-Key für den E-Mail-Versand über Resend.                                             |
-| `EMAIL_FROM`         | Feste Absenderadresse (Resend-Sandbox-Adresse oder verifizierte Domain).                |
+| `BREVO_API_KEY`      | API-Key für den E-Mail-Versand über Brevo.                                              |
+| `EMAIL_FROM`         | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain).              |
 | `RECIPIENT_EMAIL`    | Empfänger der Anzeige-Mail (Testphase: eigene Adresse; Produktion: Bußgeldstelle Köln). |
 | `LOCATIONIQ_API_KEY` | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider).    |
 
