@@ -11,7 +11,10 @@ export interface IncidentType {
 export interface EmailTemplateInput {
 	firstName: string;
 	lastName: string;
-	address: string;
+	addressStreet: string;
+	addressHouseNumber?: string;
+	addressPostcode: string;
+	addressCity: string;
 	date: string;
 	time: string;
 	locationStreet: string;

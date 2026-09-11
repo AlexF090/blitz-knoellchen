@@ -5,7 +5,10 @@ import type { EmailTemplateInput } from '$lib/config/cities';
 const baseInput: EmailTemplateInput = {
 	firstName: 'Max',
 	lastName: 'Mustermann',
-	address: 'Musterstraße 1, 50667 Köln',
+	addressStreet: 'Musterstraße',
+	addressHouseNumber: '1',
+	addressPostcode: '50667',
+	addressCity: 'Köln',
 	date: '01.03.2026',
 	time: '14:30',
 	locationStreet: 'Domkloster',

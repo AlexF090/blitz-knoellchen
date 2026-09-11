@@ -36,7 +36,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	const data: ReportFormData = {
 		firstName: String(formData.get('firstName') ?? ''),
 		lastName: String(formData.get('lastName') ?? ''),
-		address: String(formData.get('address') ?? ''),
+		addressStreet: String(formData.get('addressStreet') ?? ''),
+		addressHouseNumber: String(formData.get('addressHouseNumber') ?? '') || undefined,
+		addressPostcode: String(formData.get('addressPostcode') ?? ''),
+		addressCity: String(formData.get('addressCity') ?? ''),
 		email: String(formData.get('email') ?? ''),
 		date: String(formData.get('date') ?? ''),
 		time: String(formData.get('time') ?? ''),
@@ -62,7 +65,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	const { subject, body } = city.buildEmailBody({
 		firstName: data.firstName,
 		lastName: data.lastName,
-		address: data.address,
+		addressStreet: data.addressStreet,
+		addressHouseNumber: data.addressHouseNumber,
+		addressPostcode: data.addressPostcode,
+		addressCity: data.addressCity,
 		date: data.date,
 		time: data.time,
 		locationStreet: data.locationStreet,

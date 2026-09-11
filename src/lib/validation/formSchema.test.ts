@@ -27,7 +27,10 @@ const makeValidData = (): ReportFormData => {
 	return {
 		firstName: 'Max',
 		lastName: 'Mustermann',
-		address: 'Musterstraße 1, 50667 Köln',
+		addressStreet: 'Musterstraße',
+		addressHouseNumber: '1',
+		addressPostcode: '50667',
+		addressCity: 'Köln',
 		email: 'max@example.com',
 		date: '2026-03-01',
 		time: '14:30',
