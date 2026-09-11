@@ -474,6 +474,8 @@
 				{sendResults.length > 1
 					? `Alle ${sendResults.length} Anzeigen erfolgreich versendet.`
 					: 'Anzeige erfolgreich versendet.'}
+				Du erhältst eine Kopie per E-Mail — prüfe bei Bedarf auch deinen Spam-Ordner, falls sie nicht
+				im Posteingang ankommt.
 			</p>
 		{:else}
 			<p role="alert" class="rounded-card bg-warning-bg p-3 text-warning-fg">

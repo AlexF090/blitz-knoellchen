@@ -8,7 +8,7 @@ absenden.
 ## Voraussetzungen
 
 - Node.js ≥ 20
-- Ein [Resend](https://resend.com)-Account (kostenloses Kontingent reicht für die Testphase)
+- Ein [Brevo](https://brevo.com)-Account (kostenloses Kontingent reicht für die Testphase)
 
 ## Setup
 
@@ -20,31 +20,32 @@ cp .env.example .env
 `.env` mit echten Werten füllen (siehe [Umgebungsvariablen](#umgebungsvariablen)). `.env` ist
 in `.gitignore` und darf nie committet werden.
 
-### Resend einrichten
+### Brevo einrichten
 
-1. Account auf [resend.com](https://resend.com) anlegen, API Key erzeugen → `RESEND_API_KEY`.
-2. Für die Testphase kann `EMAIL_FROM=onboarding@resend.dev` (Resend-Sandbox-Adresse) genutzt
-   werden. Für den echten Betrieb: eigene Domain in Resend verifizieren und als `EMAIL_FROM`
-   eintragen.
+1. Account auf [brevo.com](https://brevo.com) anlegen, API Key erzeugen (Settings → SMTP & API
+   → API Keys) → `BREVO_API_KEY`.
+2. `EMAIL_FROM` muss eine Adresse einer selbst besessenen Domain sein, die in Brevo unter
+   „Senders & IPs → Domains“ per SPF-/DKIM-DNS-Records authentifiziert wurde — anders als bei
+   manchen anderen Anbietern gibt es keine kostenlose Sandbox-Absenderadresse ohne eigene
+   Domain. Eine fremde Adresse (Gmail, GMX, iCloud, …) funktioniert nicht: ohne eigenen
+   DNS-Zugriff scheitert die DMARC-Alignment-Prüfung bei strengen Empfängern (siehe ADR
+   „E-Mail-Versand über Brevo“ in [`CLAUDE.md`](./CLAUDE.md)).
 3. `RECIPIENT_EMAIL` während der Testphase auf die eigene E-Mail-Adresse setzen, um den
    kompletten Versand zu prüfen, ohne echte Anzeigen zu verschicken. Für den Produktivbetrieb
    auf die tatsächliche Bußgeldstelle-Adresse (z. B. `bussgeldstelle@stadt-koeln.de`) ändern.
-4. Hinweis: Resend-Sandbox-Absender können in der Praxis nur an die beim Resend-Account
-   verifizierte Adresse senden. Für einen offenen Empfängerkreis wird eine verifizierte eigene
-   Domain benötigt.
 
-### Nominatim einrichten
+### LocationIQ einrichten
 
-Kein API-Key nötig, aber die
-[Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/) verlangt
-einen aussagekräftigen `User-Agent`-Header:
+Account auf [locationiq.com](https://locationiq.com) anlegen, Access Token erzeugen →
+`LOCATIONIQ_API_KEY`. Kostenloser Tarif: 5.000 Requests/Tag, 2 Req/Sekunde — der Server
+drosselt zusätzlich serverseitig auf 1 Req/Sekunde. Wird für Reverse-Geocoding (Tatort-Adresse
+aus Foto-GPS) und Adress-Autocomplete genutzt.
 
-```
-NOMINATIM_USER_AGENT=blitz-knoellchen/1.0 (deine-email@example.com)
-```
-
-Schlägt Nominatim fehl (Rate-Limit erreicht, Dienst down), fällt der Server automatisch auf
-[BigDataCloud](https://www.bigdatacloud.com/) zurück (kostenlos, kein Key nötig).
+Schlägt LocationIQ fehl (Rate-Limit erreicht, Dienst down), fällt der Server beim
+Reverse-Geocoding automatisch auf [BigDataCloud](https://www.bigdatacloud.com/) zurück
+(kostenlos, kein Key nötig, liefert aber nur orts-/stadtteilgenaue statt hausnummer-genaue
+Adressen). Für Autocomplete gibt es keinen Fallback — bei Fehler bleibt die Vorschlagsliste
+einfach leer.
 
 ## Lokale Entwicklung
 
@@ -67,8 +68,8 @@ wählt.
 
 1. Repository mit Vercel verbinden (Vercel erkennt SvelteKit automatisch).
 2. In den Vercel-Projekteinstellungen unter „Environment Variables“ alle vier Variablen aus
-   `.env.example` eintragen (`RESEND_API_KEY`, `EMAIL_FROM`, `RECIPIENT_EMAIL`,
-   `NOMINATIM_USER_AGENT`).
+   `.env.example` eintragen (`BREVO_API_KEY`, `EMAIL_FROM`, `RECIPIENT_EMAIL`,
+   `LOCATIONIQ_API_KEY`).
 3. Deploy auslösen (Push auf den verbundenen Branch reicht).
 
 ## Installation auf dem Smartphone
@@ -83,11 +84,11 @@ iOS.
 
 ## Umgebungsvariablen
 
-| Variable               | Zweck                                                                                   |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| `RESEND_API_KEY`       | API-Key für den E-Mail-Versand über Resend.                                             |
-| `EMAIL_FROM`           | Feste Absenderadresse (Resend-Sandbox oder verifizierte Domain).                        |
-| `RECIPIENT_EMAIL`      | Empfänger der Anzeige-Mail (Testphase: eigene Adresse; Produktion: Bußgeldstelle Köln). |
-| `NOMINATIM_USER_AGENT` | Pflicht-Header für Nominatim-Reverse-Geocoding-Anfragen laut Usage Policy.              |
+| Variable             | Zweck                                                                                   |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| `BREVO_API_KEY`      | API-Key für den E-Mail-Versand über Brevo.                                              |
+| `EMAIL_FROM`         | Feste Absenderadresse (in Brevo authentifizierte eigene Domain).                        |
+| `RECIPIENT_EMAIL`    | Empfänger der Anzeige-Mail (Testphase: eigene Adresse; Produktion: Bußgeldstelle Köln). |
+| `LOCATIONIQ_API_KEY` | Access-Token für die LocationIQ Reverse-Geocoding-/Autocomplete-API.                    |
 
 Details zu Architekturentscheidungen und Codebase-Konventionen: siehe [`CLAUDE.md`](./CLAUDE.md).
