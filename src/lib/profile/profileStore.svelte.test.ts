@@ -1,27 +1,35 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createProfileStore } from './profileStore.svelte';
 
 describe('profileStore', () => {
-	beforeEach(() => {
-		localStorage.clear();
+	it('startet mit leerem Profil', () => {
+		const store = createProfileStore();
+		expect(store.value).toEqual({
+			firstName: '',
+			lastName: '',
+			addressStreet: '',
+			addressHouseNumber: '',
+			addressPostcode: '',
+			addressCity: '',
+			email: ''
+		});
 	});
 
-	it('startet mit leerem Profil ohne gespeicherte Daten', () => {
+	it('persistiert das Profil in der IndexedDB und lädt es in einem neuen Store wieder', async () => {
 		const store = createProfileStore();
-		expect(store.value).toEqual({ firstName: '', lastName: '', address: '', email: '' });
-	});
-
-	it('persistiert das Profil in localStorage', () => {
-		const store = createProfileStore();
-		store.save({
+		await store.save({
 			firstName: 'Max',
 			lastName: 'Mustermann',
-			address: 'Musterstraße 1, 50667 Köln',
+			addressStreet: 'Musterstraße',
+			addressHouseNumber: '1',
+			addressPostcode: '50667',
+			addressCity: 'Köln',
 			email: 'max@example.com'
 		});
 		expect(store.value.firstName).toBe('Max');
 
 		const reloaded = createProfileStore();
+		await reloaded.load();
 		expect(reloaded.value.firstName).toBe('Max');
 		expect(reloaded.value.email).toBe('max@example.com');
 	});

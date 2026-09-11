@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { addEntry, getEntry, listEntries, type HistoryEntry } from './db';
+import {
+	addEntry,
+	getEntry,
+	listEntries,
+	getProfile,
+	saveProfile,
+	type HistoryEntry,
+	type UserProfile
+} from './db';
 
 const makeEntry = (overrides: Partial<HistoryEntry> = {}): HistoryEntry => {
 	return {
@@ -33,5 +41,35 @@ describe('history db', () => {
 		const olderIndex = entries.findIndex((e) => e.id === older.id);
 		const newerIndex = entries.findIndex((e) => e.id === newer.id);
 		expect(newerIndex).toBeLessThan(olderIndex);
+	});
+});
+
+describe('user profile', () => {
+	it('speichert und liest ein Profil', async () => {
+		const profile: UserProfile = {
+			firstName: 'Max',
+			lastName: 'Mustermann',
+			addressStreet: 'Musterstraße',
+			addressHouseNumber: '1',
+			addressPostcode: '50667',
+			addressCity: 'Köln',
+			email: 'max@example.com'
+		};
+		await saveProfile(profile);
+		expect(await getProfile()).toEqual(profile);
+	});
+
+	it('überschreibt ein bestehendes Profil beim erneuten Speichern', async () => {
+		await saveProfile({
+			firstName: 'Erika',
+			lastName: 'Musterfrau',
+			addressStreet: 'Musterweg',
+			addressHouseNumber: '2',
+			addressPostcode: '50668',
+			addressCity: 'Köln',
+			email: 'erika@example.com'
+		});
+		const loaded = await getProfile();
+		expect(loaded?.firstName).toBe('Erika');
 	});
 });
