@@ -398,7 +398,7 @@
 
 			{#if isEditingProfile}
 				<div class="mt-3 grid grid-cols-2 gap-3">
-					<div>
+					<div class="min-w-0">
 						<label for="firstName" class="block text-sm font-medium text-ink"
 							>Vorname <span class="text-error-fg">*</span></label
 						>
@@ -413,7 +413,7 @@
 						/>
 						{#if errors.firstName}<p class="text-sm text-error-fg">{errors.firstName}</p>{/if}
 					</div>
-					<div>
+					<div class="min-w-0">
 						<label for="lastName" class="block text-sm font-medium text-ink"
 							>Nachname <span class="text-error-fg">*</span></label
 						>
@@ -431,7 +431,7 @@
 				</div>
 
 				<div class="mt-3 grid grid-cols-[2fr_1fr] gap-3">
-					<div>
+					<div class="min-w-0">
 						<label for="addressStreet" class="block text-sm font-medium text-ink"
 							>Straße <span class="text-error-fg">*</span></label
 						>
@@ -448,7 +448,7 @@
 								{errors.addressStreet}
 							</p>{/if}
 					</div>
-					<div>
+					<div class="min-w-0">
 						<label for="addressHouseNumber" class="block text-sm font-medium text-ink"
 							>Hausnr.</label
 						>
@@ -463,7 +463,7 @@
 				</div>
 
 				<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
-					<div>
+					<div class="min-w-0">
 						<label for="addressPostcode" class="block text-sm font-medium text-ink"
 							>PLZ <span class="text-error-fg">*</span></label
 						>
@@ -480,7 +480,7 @@
 								{errors.addressPostcode}
 							</p>{/if}
 					</div>
-					<div>
+					<div class="min-w-0">
 						<label for="addressCity" class="block text-sm font-medium text-ink"
 							>Ort <span class="text-error-fg">*</span></label
 						>

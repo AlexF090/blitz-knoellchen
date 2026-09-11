@@ -187,7 +187,7 @@
 		<div class="mt-3 rounded-control border border-border p-3">
 			<p class="text-sm font-medium text-ink">Tatort</p>
 			<div class="mt-2 grid grid-cols-2 gap-3">
-				<div>
+				<div class="min-w-0">
 					<label for="date-{vehicle.id}" class="block text-sm font-medium text-ink"
 						>Datum <span class="text-error-fg">*</span></label
 					>
@@ -197,11 +197,11 @@
 						bind:value={vehicle.date}
 						required
 						aria-required="true"
-						class="mt-1 w-full rounded-control border border-border p-2"
+						class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
 					/>
 					{#if errors?.date}<p class="text-sm text-error-fg">{errors.date}</p>{/if}
 				</div>
-				<div>
+				<div class="min-w-0">
 					<label for="time-{vehicle.id}" class="block text-sm font-medium text-ink"
 						>Uhrzeit <span class="text-error-fg">*</span></label
 					>
@@ -211,13 +211,13 @@
 						bind:value={vehicle.time}
 						required
 						aria-required="true"
-						class="mt-1 w-full rounded-control border border-border p-2"
+						class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
 					/>
 					{#if errors?.time}<p class="text-sm text-error-fg">{errors.time}</p>{/if}
 				</div>
 			</div>
 			<div class="mt-2 grid grid-cols-[2fr_1fr] gap-3">
-				<div>
+				<div class="min-w-0">
 					<label for="locationStreet-{vehicle.id}" class="block text-sm font-medium text-ink"
 						>Straße <span class="text-error-fg">*</span></label
 					>
@@ -232,7 +232,7 @@
 							{errors.locationStreet}
 						</p>{/if}
 				</div>
-				<div>
+				<div class="min-w-0">
 					<label for="locationHouseNumber-{vehicle.id}" class="block text-sm font-medium text-ink"
 						>Hausnr.</label
 					>
@@ -245,7 +245,7 @@
 			</div>
 			{#if geocodeWarning}<p class="mt-1 text-sm text-warning-fg">{geocodeWarning}</p>{/if}
 			<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
-				<div>
+				<div class="min-w-0">
 					<label for="locationPostcode-{vehicle.id}" class="block text-sm font-medium text-ink"
 						>PLZ <span class="text-error-fg">*</span></label
 					>
@@ -260,7 +260,7 @@
 							{errors.locationPostcode}
 						</p>{/if}
 				</div>
-				<div>
+				<div class="min-w-0">
 					<label for="locationCity-{vehicle.id}" class="block text-sm font-medium text-ink"
 						>Ort <span class="text-error-fg">*</span></label
 					>
