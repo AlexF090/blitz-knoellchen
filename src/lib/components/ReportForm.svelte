@@ -58,7 +58,7 @@
 	let sendError = $state<string | null>(null);
 	let sendResults = $state<{ licensePlate: string; ok: boolean }[]>([]);
 	let submitting = $state(false);
-	let profileSaved = $state(false);
+	let isEditingProfile = $state(true);
 
 	$effect(() => {
 		profileStore.load().then(() => {
@@ -70,6 +70,9 @@
 			if (!form.addressPostcode) form.addressPostcode = profile.addressPostcode;
 			if (!form.addressCity) form.addressCity = profile.addressCity;
 			if (!form.email) form.email = profile.email;
+
+			const profileErrors = validateProfileFields(form);
+			if (Object.keys(profileErrors).length === 0) isEditingProfile = false;
 		});
 	});
 
@@ -91,8 +94,11 @@
 		if (Object.keys(profileErrors).length > 0) return;
 
 		await saveProfileFields();
-		profileSaved = true;
-		setTimeout(() => (profileSaved = false), 3000);
+		isEditingProfile = false;
+	};
+
+	const onEditProfile = () => {
+		isEditingProfile = true;
 	};
 
 	let usageCounts = $derived.by(() => {
@@ -330,129 +336,145 @@
 	{/if}
 
 	<div class="rounded-card bg-surface p-4 shadow-card sm:p-6">
-		<div class="flex items-center justify-between gap-3">
-			<h2 class="text-sm font-semibold tracking-wide text-ink-muted uppercase">Deine Angaben</h2>
+		<h2 class="text-sm font-semibold tracking-wide text-ink-muted uppercase">Deine Angaben</h2>
+
+		{#if isEditingProfile}
+			<div class="mt-3 grid grid-cols-2 gap-3">
+				<div>
+					<label for="firstName" class="block text-sm font-medium text-ink"
+						>Vorname <span class="text-error-fg">*</span></label
+					>
+					<input
+						id="firstName"
+						autocomplete="given-name"
+						required
+						aria-required="true"
+						bind:value={form.firstName}
+						onblur={saveProfileFields}
+						class="mt-1 w-full rounded-control border border-border p-2"
+					/>
+					{#if errors.firstName}<p class="text-sm text-error-fg">{errors.firstName}</p>{/if}
+				</div>
+				<div>
+					<label for="lastName" class="block text-sm font-medium text-ink"
+						>Nachname <span class="text-error-fg">*</span></label
+					>
+					<input
+						id="lastName"
+						autocomplete="family-name"
+						required
+						aria-required="true"
+						bind:value={form.lastName}
+						onblur={saveProfileFields}
+						class="mt-1 w-full rounded-control border border-border p-2"
+					/>
+					{#if errors.lastName}<p class="text-sm text-error-fg">{errors.lastName}</p>{/if}
+				</div>
+			</div>
+
+			<div class="mt-3 grid grid-cols-[2fr_1fr] gap-3">
+				<div>
+					<label for="addressStreet" class="block text-sm font-medium text-ink"
+						>Straße <span class="text-error-fg">*</span></label
+					>
+					<input
+						id="addressStreet"
+						autocomplete="address-line1"
+						required
+						aria-required="true"
+						bind:value={form.addressStreet}
+						onblur={saveProfileFields}
+						class="mt-1 w-full rounded-control border border-border p-2"
+					/>
+					{#if errors.addressStreet}<p class="text-sm text-error-fg">{errors.addressStreet}</p>{/if}
+				</div>
+				<div>
+					<label for="addressHouseNumber" class="block text-sm font-medium text-ink">Hausnr.</label>
+					<input
+						id="addressHouseNumber"
+						autocomplete="address-line2"
+						bind:value={form.addressHouseNumber}
+						onblur={saveProfileFields}
+						class="mt-1 w-full rounded-control border border-border p-2"
+					/>
+				</div>
+			</div>
+
+			<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
+				<div>
+					<label for="addressPostcode" class="block text-sm font-medium text-ink"
+						>PLZ <span class="text-error-fg">*</span></label
+					>
+					<input
+						id="addressPostcode"
+						autocomplete="postal-code"
+						required
+						aria-required="true"
+						bind:value={form.addressPostcode}
+						onblur={saveProfileFields}
+						class="mt-1 w-full rounded-control border border-border p-2"
+					/>
+					{#if errors.addressPostcode}<p class="text-sm text-error-fg">
+							{errors.addressPostcode}
+						</p>{/if}
+				</div>
+				<div>
+					<label for="addressCity" class="block text-sm font-medium text-ink"
+						>Ort <span class="text-error-fg">*</span></label
+					>
+					<input
+						id="addressCity"
+						autocomplete="address-level2"
+						required
+						aria-required="true"
+						bind:value={form.addressCity}
+						onblur={saveProfileFields}
+						class="mt-1 w-full rounded-control border border-border p-2"
+					/>
+					{#if errors.addressCity}<p class="text-sm text-error-fg">{errors.addressCity}</p>{/if}
+				</div>
+			</div>
+
+			<div class="mt-3">
+				<label for="email" class="block text-sm font-medium text-ink"
+					>Deine E-Mail-Adresse <span class="text-error-fg">*</span></label
+				>
+				<input
+					id="email"
+					type="email"
+					autocomplete="email"
+					required
+					aria-required="true"
+					bind:value={form.email}
+					onblur={saveProfileFields}
+					class="mt-1 w-full rounded-control border border-border p-2"
+				/>
+				{#if errors.email}<p class="text-sm text-error-fg">{errors.email}</p>{/if}
+			</div>
+
 			<button
 				type="button"
 				onclick={onSaveProfile}
-				class="rounded-control border border-primary-500 px-3 py-1.5 text-sm font-medium text-primary-600"
+				class="mt-4 rounded-control border border-primary-500 px-3 py-1.5 text-sm font-medium text-primary-600"
 			>
-				{profileSaved ? 'Gespeichert ✓' : 'Speichern'}
+				Speichern
 			</button>
-		</div>
+		{:else}
+			<div class="mt-3 text-sm text-ink">
+				<p>{form.firstName} {form.lastName}</p>
+				<p>{form.addressStreet} {form.addressHouseNumber}</p>
+				<p>{form.addressPostcode} {form.addressCity}</p>
+				<p>{form.email}</p>
+			</div>
 
-		<div class="mt-3 grid grid-cols-2 gap-3">
-			<div>
-				<label for="firstName" class="block text-sm font-medium text-ink"
-					>Vorname <span class="text-error-fg">*</span></label
-				>
-				<input
-					id="firstName"
-					autocomplete="given-name"
-					required
-					aria-required="true"
-					bind:value={form.firstName}
-					onblur={saveProfileFields}
-					class="mt-1 w-full rounded-control border border-border p-2"
-				/>
-				{#if errors.firstName}<p class="text-sm text-error-fg">{errors.firstName}</p>{/if}
-			</div>
-			<div>
-				<label for="lastName" class="block text-sm font-medium text-ink"
-					>Nachname <span class="text-error-fg">*</span></label
-				>
-				<input
-					id="lastName"
-					autocomplete="family-name"
-					required
-					aria-required="true"
-					bind:value={form.lastName}
-					onblur={saveProfileFields}
-					class="mt-1 w-full rounded-control border border-border p-2"
-				/>
-				{#if errors.lastName}<p class="text-sm text-error-fg">{errors.lastName}</p>{/if}
-			</div>
-		</div>
-
-		<div class="mt-3 grid grid-cols-[2fr_1fr] gap-3">
-			<div>
-				<label for="addressStreet" class="block text-sm font-medium text-ink"
-					>Straße <span class="text-error-fg">*</span></label
-				>
-				<input
-					id="addressStreet"
-					autocomplete="address-line1"
-					required
-					aria-required="true"
-					bind:value={form.addressStreet}
-					onblur={saveProfileFields}
-					class="mt-1 w-full rounded-control border border-border p-2"
-				/>
-				{#if errors.addressStreet}<p class="text-sm text-error-fg">{errors.addressStreet}</p>{/if}
-			</div>
-			<div>
-				<label for="addressHouseNumber" class="block text-sm font-medium text-ink">Hausnr.</label>
-				<input
-					id="addressHouseNumber"
-					autocomplete="address-line2"
-					bind:value={form.addressHouseNumber}
-					onblur={saveProfileFields}
-					class="mt-1 w-full rounded-control border border-border p-2"
-				/>
-			</div>
-		</div>
-
-		<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
-			<div>
-				<label for="addressPostcode" class="block text-sm font-medium text-ink"
-					>PLZ <span class="text-error-fg">*</span></label
-				>
-				<input
-					id="addressPostcode"
-					autocomplete="postal-code"
-					required
-					aria-required="true"
-					bind:value={form.addressPostcode}
-					onblur={saveProfileFields}
-					class="mt-1 w-full rounded-control border border-border p-2"
-				/>
-				{#if errors.addressPostcode}<p class="text-sm text-error-fg">
-						{errors.addressPostcode}
-					</p>{/if}
-			</div>
-			<div>
-				<label for="addressCity" class="block text-sm font-medium text-ink"
-					>Ort <span class="text-error-fg">*</span></label
-				>
-				<input
-					id="addressCity"
-					autocomplete="address-level2"
-					required
-					aria-required="true"
-					bind:value={form.addressCity}
-					onblur={saveProfileFields}
-					class="mt-1 w-full rounded-control border border-border p-2"
-				/>
-				{#if errors.addressCity}<p class="text-sm text-error-fg">{errors.addressCity}</p>{/if}
-			</div>
-		</div>
-
-		<div class="mt-3">
-			<label for="email" class="block text-sm font-medium text-ink"
-				>Deine E-Mail-Adresse <span class="text-error-fg">*</span></label
+			<button
+				type="button"
+				onclick={onEditProfile}
+				class="mt-4 rounded-control border border-primary-500 px-3 py-1.5 text-sm font-medium text-primary-600"
 			>
-			<input
-				id="email"
-				type="email"
-				autocomplete="email"
-				required
-				aria-required="true"
-				bind:value={form.email}
-				onblur={saveProfileFields}
-				class="mt-1 w-full rounded-control border border-border p-2"
-			/>
-			{#if errors.email}<p class="text-sm text-error-fg">{errors.email}</p>{/if}
-		</div>
+				Bearbeiten
+			</button>
+		{/if}
 	</div>
 
 	<div bind:this={photosCardElement}>
