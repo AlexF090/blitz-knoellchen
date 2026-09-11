@@ -10,7 +10,8 @@
 	<title>Blitz-Knöllchen</title>
 	<link rel="icon" href={favicon} />
 	<link rel="apple-touch-icon" href="/icons/icon-192.png" />
-	<meta name="theme-color" content="#255a54" />
+	<meta name="theme-color" content="#ffffff" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 	<meta
 		name="description"
 		content="Falschparker in unter 30 Sekunden an die Bußgeldstelle Köln melden."

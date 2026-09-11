@@ -41,10 +41,15 @@
 	--font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
+html {
+	overscroll-behavior-y: none;
+}
+
 body {
 	background-color: var(--color-surface-sunken);
 	color: var(--color-ink);
 	font-family: var(--font-sans);
+	overscroll-behavior-y: none;
 }
 
 button:not(:disabled) {
