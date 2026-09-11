@@ -48,12 +48,12 @@
 
 	<div class="mt-3 grid grid-cols-3 gap-2">
 		{#each photos as photo (photo.id)}
-			<div class="relative aspect-square overflow-hidden rounded-control border border-border">
+			<div class="relative aspect-square">
 				<button
 					type="button"
 					onclick={() => (lightboxPhoto = photo)}
 					aria-label="Foto {photo.fileName} vergrößern"
-					class="group block h-full w-full"
+					class="group block h-full w-full overflow-hidden rounded-control border border-border"
 				>
 					<img
 						src={objectUrl(photo.blob)}
