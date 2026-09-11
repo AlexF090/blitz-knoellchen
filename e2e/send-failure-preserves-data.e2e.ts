@@ -19,7 +19,10 @@ test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 
 	await page.locator('#firstName').fill('Max');
 	await page.locator('#lastName').fill('Mustermann');
-	await page.locator('#address').fill('Musterstraße 1, 50667 Köln');
+	await page.locator('#addressStreet').fill('Musterstraße');
+	await page.locator('#addressHouseNumber').fill('1');
+	await page.locator('#addressPostcode').fill('50667');
+	await page.locator('#addressCity').fill('Köln');
 	await page.locator('#email').fill('max@example.com');
 	await page.locator('#photo-pool-input').setInputFiles(FIXTURE);
 	await page.getByLabel('Parken auf dem Gehweg').check();
@@ -31,7 +34,10 @@ test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 
 	await expect(page.locator('#firstName')).toHaveValue('Max');
 	await expect(page.locator('#lastName')).toHaveValue('Mustermann');
-	await expect(page.locator('#address')).toHaveValue('Musterstraße 1, 50667 Köln');
+	await expect(page.locator('#addressStreet')).toHaveValue('Musterstraße');
+	await expect(page.locator('#addressHouseNumber')).toHaveValue('1');
+	await expect(page.locator('#addressPostcode')).toHaveValue('50667');
+	await expect(page.locator('#addressCity')).toHaveValue('Köln');
 	await expect(page.locator('#email')).toHaveValue('max@example.com');
 	await expect(page.locator('#locationStreet')).toHaveValue('Domkloster');
 	await expect(page.locator('#locationHouseNumber')).toHaveValue('4');
