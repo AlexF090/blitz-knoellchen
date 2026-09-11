@@ -216,7 +216,9 @@
 				const vehicle = makeEmptyVehicle();
 				vehicle.photoIds = [entry.id];
 				form.vehicles = [vehicle];
-				await applyPhotoExifToVehicle(vehicle, entry.id);
+				// Nach der Zuweisung ist form.vehicles[0] die reaktive Proxy-Version — die lokale
+				// `vehicle`-Referenz bleibt roh, Mutationen darauf würden vom UI nicht bemerkt.
+				await applyPhotoExifToVehicle(form.vehicles[0], entry.id);
 			} else if (
 				// Bei genau einem Fahrzeug ist die Zuordnung eindeutig — direkt automatisch übernehmen.
 				form.vehicles.length === 1 &&
