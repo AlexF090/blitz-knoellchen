@@ -19,7 +19,7 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 			? `${SUBJECT_BASE} – Fahrzeug ${input.vehicleIndex}/${input.vehicleTotal}`
 			: SUBJECT_BASE;
 	const licensePlateLine = input.licensePlate?.trim() ? input.licensePlate.trim() : 'nicht erfasst';
-	const notesLine = input.notes?.trim() ? input.notes.trim() : '-';
+	const notes = input.notes?.trim();
 	const incidentLabels = input.incidentTypes.map((t) => t.label).join(', ');
 	const incidentDescriptions = input.incidentTypes.map((t) => `- ${t.description}`).join('\n');
 	const locationLine = formatAddress({
@@ -49,9 +49,7 @@ ${incidentDescriptions}
 
 Art des Verstoßes: ${incidentLabels}
 Kennzeichen des Fahrzeugs: ${licensePlateLine}
-Weitere Angaben: ${notesLine}
-
-${photoLine}
+${notes ? `Weitere Angaben: ${notes}\n\n` : ''}${photoLine}
 
 Ich stehe für Rückfragen und ggf. als Zeuge zur Verfügung und bin unter dieser E-Mail-Adresse
 erreichbar.

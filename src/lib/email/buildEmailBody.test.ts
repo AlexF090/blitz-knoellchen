@@ -61,9 +61,9 @@ describe('buildEmailBody', () => {
 		expect(result.body).toContain('Kennzeichen des Fahrzeugs: nicht erfasst');
 	});
 
-	it('setzt Platzhalter für fehlenden Freitext', () => {
+	it('lässt die Zeile "Weitere Angaben" bei fehlendem Freitext ganz weg', () => {
 		const result = buildEmailBody({ ...baseInput, notes: undefined });
-		expect(result.body).toContain('Weitere Angaben: -');
+		expect(result.body).not.toContain('Weitere Angaben');
 	});
 
 	it('baut die Tatort-Adresse auch ohne Hausnummer zusammen', () => {
