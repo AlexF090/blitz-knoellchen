@@ -72,7 +72,7 @@
 		});
 	});
 
-	const onSaveProfile = async () => {
+	const saveProfileFields = async () => {
 		await profileStore.save({
 			firstName: form.firstName,
 			lastName: form.lastName,
@@ -82,6 +82,10 @@
 			addressCity: form.addressCity,
 			email: form.email
 		});
+	};
+
+	const onSaveProfile = async () => {
+		await saveProfileFields();
 		profileSaved = true;
 		setTimeout(() => (profileSaved = false), 3000);
 	};
@@ -189,6 +193,7 @@
 		submitting = true;
 		sendError = null;
 		sendResults = [];
+		await saveProfileFields();
 
 		const photoById = new Map(form.photos.map((photo) => [photo.id, photo]));
 		const results: { vehicle: VehicleEntry; ok: boolean }[] = [];
@@ -326,6 +331,7 @@
 					id="firstName"
 					autocomplete="given-name"
 					bind:value={form.firstName}
+					onblur={saveProfileFields}
 					class="mt-1 w-full rounded-control border border-border p-2"
 				/>
 				{#if errors.firstName}<p class="text-sm text-error-fg">{errors.firstName}</p>{/if}
@@ -336,6 +342,7 @@
 					id="lastName"
 					autocomplete="family-name"
 					bind:value={form.lastName}
+					onblur={saveProfileFields}
 					class="mt-1 w-full rounded-control border border-border p-2"
 				/>
 				{#if errors.lastName}<p class="text-sm text-error-fg">{errors.lastName}</p>{/if}
@@ -349,6 +356,7 @@
 					id="addressStreet"
 					autocomplete="address-line1"
 					bind:value={form.addressStreet}
+					onblur={saveProfileFields}
 					class="mt-1 w-full rounded-control border border-border p-2"
 				/>
 				{#if errors.addressStreet}<p class="text-sm text-error-fg">{errors.addressStreet}</p>{/if}
@@ -359,6 +367,7 @@
 					id="addressHouseNumber"
 					autocomplete="address-line2"
 					bind:value={form.addressHouseNumber}
+					onblur={saveProfileFields}
 					class="mt-1 w-full rounded-control border border-border p-2"
 				/>
 			</div>
@@ -371,6 +380,7 @@
 					id="addressPostcode"
 					autocomplete="postal-code"
 					bind:value={form.addressPostcode}
+					onblur={saveProfileFields}
 					class="mt-1 w-full rounded-control border border-border p-2"
 				/>
 				{#if errors.addressPostcode}<p class="text-sm text-error-fg">
@@ -383,6 +393,7 @@
 					id="addressCity"
 					autocomplete="address-level2"
 					bind:value={form.addressCity}
+					onblur={saveProfileFields}
 					class="mt-1 w-full rounded-control border border-border p-2"
 				/>
 				{#if errors.addressCity}<p class="text-sm text-error-fg">{errors.addressCity}</p>{/if}
@@ -396,6 +407,7 @@
 				type="email"
 				autocomplete="email"
 				bind:value={form.email}
+				onblur={saveProfileFields}
 				class="mt-1 w-full rounded-control border border-border p-2"
 			/>
 			{#if errors.email}<p class="text-sm text-error-fg">{errors.email}</p>{/if}
