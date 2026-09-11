@@ -17,7 +17,7 @@
 	<title>Historie – Blitz-Knöllchen</title>
 </svelte:head>
 
-<PageHeader title="Historie" linkHref={resolve('/')} linkLabel="Zurück" />
+<PageHeader title="Historie" linkHref={resolve('/')} linkLabel="Zurück" linkIcon="back" />
 <main
 	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
 >

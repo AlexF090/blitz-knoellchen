@@ -259,6 +259,12 @@
 		form.vehicles = form.vehicles.filter((vehicle) => vehicle.id !== id);
 	};
 
+	const resetVehicle = (id: string) => {
+		form.vehicles = form.vehicles.map((vehicle) =>
+			vehicle.id === id ? makeEmptyVehicle() : vehicle
+		);
+	};
+
 	const onSubmit = async (event: SubmitEvent) => {
 		event.preventDefault();
 		errors = validateReportForm(form);
@@ -569,6 +575,7 @@
 							maxPhotos={MAX_PHOTOS_PER_VEHICLE}
 							geocodeWarning={vehicleGeocodeWarnings[vehicle.id]}
 							onRemove={() => removeVehicle(vehicle.id)}
+							onReset={() => resetVehicle(vehicle.id)}
 							onPhotoToggled={(photoId, selected) => {
 								if (selected) applyPhotoExifToVehicle(vehicle, photoId);
 							}}

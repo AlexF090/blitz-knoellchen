@@ -13,7 +13,12 @@
 	{/if}
 </svelte:head>
 
-<PageHeader title="Blitz-Knöllchen" linkHref={resolve('/historie')} linkLabel="Historie" />
+<PageHeader
+	title="Blitz-Knöllchen"
+	linkHref={resolve('/historie')}
+	linkLabel="Historie"
+	linkIcon="history"
+/>
 <main
 	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
 >

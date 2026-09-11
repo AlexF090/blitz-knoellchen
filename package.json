@@ -1,10 +1,10 @@
 {
 	"name": "blitz-knoellchen",
 	"private": true,
-	"version": "1.0.7",
+	"version": "1.0.8",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "vite dev --host",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo '' && husky",
@@ -44,6 +44,7 @@
 		"vitest-browser-svelte": "^2.1.1"
 	},
 	"dependencies": {
+		"@lucide/svelte": "^1.43.0",
 		"@vite-pwa/sveltekit": "^1.1.0",
 		"exifreader": "^4.44.1",
 		"heic-to": "^1.5.2",
