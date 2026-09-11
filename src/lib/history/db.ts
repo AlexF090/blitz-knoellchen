@@ -129,12 +129,49 @@ export const saveProfile = async (profile: UserProfile): Promise<void> => {
 	await db.put(PROFILE_STORE_NAME, { ...profile, id: PROFILE_KEY });
 };
 
+const isValidVehicle = (value: unknown): value is VehicleEntry => {
+	if (typeof value !== 'object' || value === null) return false;
+	const vehicle = value as Partial<VehicleEntry>;
+	return (
+		typeof vehicle.id === 'string' &&
+		Array.isArray(vehicle.photoIds) &&
+		vehicle.photoIds.every((id) => typeof id === 'string') &&
+		typeof vehicle.licensePlate === 'string' &&
+		Array.isArray(vehicle.incidentTypeIds) &&
+		typeof vehicle.date === 'string' &&
+		typeof vehicle.time === 'string' &&
+		typeof vehicle.locationStreet === 'string' &&
+		typeof vehicle.locationPostcode === 'string' &&
+		typeof vehicle.locationCity === 'string'
+	);
+};
+
+const isValidPhoto = (value: unknown): value is PhotoEntry => {
+	if (typeof value !== 'object' || value === null) return false;
+	const photo = value as Partial<PhotoEntry>;
+	return (
+		typeof photo.id === 'string' && photo.blob instanceof Blob && typeof photo.fileName === 'string'
+	);
+};
+
+// Ein Entwurf kann aus einer älteren App-Version stammen, deren Vehicle-/Photo-Schema nicht
+// mehr zum aktuellen passt (z.B. fehlendes photoIds/blob) — ungültig strukturierte Entwürfe
+// werden verworfen statt sie ungeprüft ins Formular zu übernehmen (führt sonst zu einer
+// TypeError beim Rendering, die formReady nie true werden lässt und die App dauerhaft im
+// Lade-Skeleton hängen lässt).
+const isValidDraft = (stored: StoredDraft): boolean =>
+	Number.isFinite(stored.savedAt) &&
+	Array.isArray(stored.vehicles) &&
+	stored.vehicles.every(isValidVehicle) &&
+	Array.isArray(stored.photos) &&
+	stored.photos.every(isValidPhoto);
+
 export const getDraft = async (): Promise<DraftFormData | undefined> => {
 	const db = await getDb();
 	const stored = await db.get(DRAFT_STORE_NAME, DRAFT_KEY);
 	if (!stored) return undefined;
 
-	if (Date.now() - stored.savedAt > DRAFT_MAX_AGE_MS) {
+	if (!isValidDraft(stored) || Date.now() - stored.savedAt > DRAFT_MAX_AGE_MS) {
 		await db.delete(DRAFT_STORE_NAME, DRAFT_KEY);
 		return undefined;
 	}

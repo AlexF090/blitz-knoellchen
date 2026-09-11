@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { openDB } from 'idb';
 import {
 	addEntry,
 	getEntry,
@@ -13,6 +14,15 @@ import {
 	type UserProfile
 } from './db';
 import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
+
+// Schreibt einen rohen, ggf. schema-inkompatiblen Draft-Datensatz direkt in die bestehende
+// IndexedDB — simuliert einen Entwurf aus einer Vorgängerversion, der über getDraft()/saveDraft()
+// (mit aktuellem TypeScript-Typ) nicht mehr abbildbar wäre.
+const writeRawDraft = async (value: unknown): Promise<void> => {
+	const db = await openDB('blitz-knoellchen', 3);
+	await db.put('draft', { id: 'default', ...(value as object) });
+	db.close();
+};
 
 const makeVehicle = (overrides: Partial<VehicleEntry> = {}): VehicleEntry => ({
 	id: crypto.randomUUID(),
@@ -148,6 +158,21 @@ describe('draft', () => {
 	it('löscht einen Entwurf explizit', async () => {
 		await saveDraft([makeVehicle()], []);
 		await clearDraft();
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('verwirft einen strukturell inkompatiblen Alt-Entwurf (fehlendes photoIds) und löscht ihn', async () => {
+		const legacyVehicle = { ...makeVehicle(), photoIds: undefined };
+		await writeRawDraft({ vehicles: [legacyVehicle], photos: [], savedAt: Date.now() });
+
+		expect(await getDraft()).toBeUndefined();
+		// nach dem Verwerfen bleibt kein Rest-Draft zurück
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('verwirft einen Entwurf mit fehlendem savedAt statt ihn als frisch zu behandeln', async () => {
+		await writeRawDraft({ vehicles: [makeVehicle()], photos: [] });
+
 		expect(await getDraft()).toBeUndefined();
 	});
 });
