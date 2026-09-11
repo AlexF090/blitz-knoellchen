@@ -129,6 +129,19 @@ Labels zu einer Aufzählung ("Art des Verstoßes: X, Y") und die Beschreibungen 
 Stichpunktliste im Fließtext — so bleibt der Text auch bei mehreren gleichzeitig vorliegenden
 Verstößen (z. B. Gehweg + Kreuzungsbereich) klar strukturiert.
 
+### Versionsnummer: einzige Quelle der Wahrheit ist `package.json`
+
+Die in der App angezeigte Versionsnummer (Fußzeile des Formulars, `src/lib/components/
+ReportForm.svelte`) wird nicht hartcodiert, sondern zur Build-Zeit aus `package.json`s
+`version`-Feld injiziert — per `define: { __APP_VERSION__: ... }` in `vite.config.ts`, global
+typisiert in `src/app.d.ts`. So gibt es nur eine Stelle, an der die Version gepflegt wird; ein
+manuelles Nachziehen der UI-Anzeige entfällt.
+
+**Nach jedem Push oder Merge auf `main` muss die Version in `package.json` hochgezählt werden**
+(`npm version patch|minor|major`, je nach Umfang der Änderung — SemVer). Das ist aktuell noch
+nicht automatisiert (kein Git-Hook, kein CI-Schritt); bis dahin manuell vor bzw. direkt nach dem
+Merge erledigen.
+
 ## Ordnerstruktur
 
 | Pfad                                     | Zweck                                                                                     |
