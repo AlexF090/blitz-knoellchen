@@ -11,7 +11,7 @@
 	<title>Blitz-Knöllchen</title>
 	<link rel="icon" href={favicon} />
 	<link rel="apple-touch-icon" href="/icons/icon-192.png" />
-	<meta name="theme-color" content="oklch(97.48% 0.0028 128.49)" />
+	<meta name="theme-color" content="oklch(100% 0 0)" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 	<meta
 		name="description"
