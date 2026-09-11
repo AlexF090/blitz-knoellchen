@@ -82,7 +82,7 @@
 							fill="none"
 							stroke="currentColor"
 							stroke-width="2"
-							class="h-6 w-6 text-white"
+							class="size-6 text-white"
 							aria-hidden="true"
 						>
 							<path
@@ -105,7 +105,7 @@
 					type="button"
 					onclick={() => onRemove(photo.id)}
 					aria-label="Foto entfernen"
-					class="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-surface text-ink shadow-card"
+					class="absolute -top-1 -right-1 flex size-6 items-center justify-center rounded-full bg-surface text-ink shadow-card"
 				>
 					×
 				</button>
@@ -121,7 +121,7 @@
 				<svg
 					viewBox="0 0 24 24"
 					fill="none"
-					class="h-6 w-6 animate-spin text-ink-muted"
+					class="size-6 animate-spin text-ink-muted"
 					aria-hidden="true"
 				>
 					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25" />

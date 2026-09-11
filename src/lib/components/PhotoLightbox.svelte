@@ -213,7 +213,7 @@
 				type="button"
 				onclick={onClose}
 				aria-label="Vorschau schließen"
-				class="absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface text-ink shadow-card"
+				class="absolute top-2 right-2 z-10 flex size-8 items-center justify-center rounded-full bg-surface text-ink shadow-card"
 			>
 				×
 			</button>

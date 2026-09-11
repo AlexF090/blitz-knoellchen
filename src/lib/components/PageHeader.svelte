@@ -57,12 +57,12 @@
 			href={linkHref}
 			aria-label={linkLabel}
 			title={linkLabel}
-			class="flex h-9 w-9 items-center justify-center rounded-full text-primary-600 hover:bg-primary-500/10"
+			class="flex size-9 items-center justify-center rounded-full text-primary-600 hover:bg-primary-500/10"
 		>
 			{#if linkIcon === 'history'}
-				<History class="h-5 w-5" aria-hidden="true" />
+				<History class="size-5" aria-hidden="true" />
 			{:else}
-				<ArrowLeft class="h-5 w-5" aria-hidden="true" />
+				<ArrowLeft class="size-5" aria-hidden="true" />
 			{/if}
 		</a>
 		<!-- eslint-enable svelte/no-navigation-without-resolve -->
