@@ -1,23 +1,23 @@
 <script lang="ts">
-	import { tick } from 'svelte';
 	import { CITIES } from '$lib/config/cities';
+	import { parseExif } from '$lib/exif/parseExif';
+	import { fetchAddress } from '$lib/geocode/client';
+	import { formatAddress } from '$lib/geocode/formatAddress';
+	import { addEntry } from '$lib/history/db';
+	import { compressImage } from '$lib/image/compress';
+	import { convertHeicToJpeg, isHeicFile } from '$lib/image/convertHeic';
+	import { embedExifMetadata } from '$lib/image/embedExif';
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
 	import {
-		validateReportForm,
-		validateProfileFields,
 		isFormValid,
 		MAX_PHOTOS_PER_REPORT,
+		validateProfileFields,
+		validateReportForm,
 		type PhotoEntry,
 		type ReportFormData,
 		type VehicleEntry
 	} from '$lib/validation/formSchema';
-	import { compressImage } from '$lib/image/compress';
-	import { isHeicFile, convertHeicToJpeg } from '$lib/image/convertHeic';
-	import { embedExifMetadata } from '$lib/image/embedExif';
-	import { addEntry } from '$lib/history/db';
-	import { parseExif } from '$lib/exif/parseExif';
-	import { fetchAddress } from '$lib/geocode/client';
-	import { formatAddress } from '$lib/geocode/formatAddress';
+	import { tick } from 'svelte';
 	import PhotoPool from './PhotoPool.svelte';
 	import VehicleBlock from './VehicleBlock.svelte';
 
@@ -374,9 +374,7 @@
 				{#if errors.addressStreet}<p class="text-sm text-error-fg">{errors.addressStreet}</p>{/if}
 			</div>
 			<div>
-				<label for="addressHouseNumber" class="block text-sm font-medium text-ink"
-					>Hausnr. (optional)</label
-				>
+				<label for="addressHouseNumber" class="block text-sm font-medium text-ink">Hausnr.</label>
 				<input
 					id="addressHouseNumber"
 					autocomplete="address-line2"
@@ -507,7 +505,7 @@
 					</div>
 					<div>
 						<label for="locationHouseNumber" class="block text-sm font-medium text-ink"
-							>Hausnr. (optional)</label
+							>Hausnr.</label
 						>
 						<input
 							id="locationHouseNumber"
