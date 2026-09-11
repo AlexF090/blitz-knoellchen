@@ -4,7 +4,13 @@ export interface PhotoEntry {
 	fileName: string;
 }
 
-export const MAX_PHOTOS_PER_REPORT = 3;
+export const MAX_PHOTOS_PER_VEHICLE = 3;
+
+// Der Foto-Pool wird von allen Fahrzeugen einer Anzeige gemeinsam genutzt (Fotos können
+// zwischen Fahrzeugen geteilt werden) — die Obergrenze skaliert deshalb mit der Anzahl der
+// Fahrzeuge statt fest bei MAX_PHOTOS_PER_VEHICLE zu liegen.
+export const getMaxPoolPhotos = (vehicleCount: number): number =>
+	vehicleCount * MAX_PHOTOS_PER_VEHICLE;
 
 export interface VehicleEntry {
 	id: string;
@@ -80,8 +86,8 @@ const validateVehicle = (vehicle: VehicleEntry, photos: PhotoEntry[]): VehicleEr
 
 	if (vehicle.photoIds.length === 0) {
 		errors.photoIds = 'Bitte mindestens ein Foto für dieses Fahrzeug auswählen.';
-	} else if (vehicle.photoIds.length > MAX_PHOTOS_PER_REPORT) {
-		errors.photoIds = `Maximal ${MAX_PHOTOS_PER_REPORT} Fotos pro Fahrzeug.`;
+	} else if (vehicle.photoIds.length > MAX_PHOTOS_PER_VEHICLE) {
+		errors.photoIds = `Maximal ${MAX_PHOTOS_PER_VEHICLE} Fotos pro Fahrzeug.`;
 	} else if (vehicle.photoIds.some((id) => !photos.some((photo) => photo.id === id))) {
 		errors.photoIds = 'Ungültige Foto-Zuordnung.';
 	}
@@ -132,10 +138,11 @@ export const validateReportForm = (data: ReportFormData): FormErrors => {
 		errors.locationPostcode = 'Postleitzahl muss aus 5 Ziffern bestehen.';
 	}
 	if (!data.locationCity.trim()) errors.locationCity = 'Ort ist erforderlich.';
+	const maxPoolPhotos = getMaxPoolPhotos(data.vehicles.length);
 	if (data.photos.length === 0) {
 		errors.photos = 'Mindestens ein Foto ist erforderlich.';
-	} else if (data.photos.length > MAX_PHOTOS_PER_REPORT) {
-		errors.photos = `Maximal ${MAX_PHOTOS_PER_REPORT} Fotos pro Anzeige.`;
+	} else if (data.photos.length > maxPoolPhotos) {
+		errors.photos = `Maximal ${maxPoolPhotos} Fotos insgesamt (max. ${MAX_PHOTOS_PER_VEHICLE} pro Fahrzeug).`;
 	}
 
 	const vehicleErrors = data.vehicles.map((vehicle) => validateVehicle(vehicle, data.photos));
