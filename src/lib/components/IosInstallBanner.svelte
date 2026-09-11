@@ -2,7 +2,7 @@
 	import { browser } from '$app/environment';
 	import { isIosSafari } from '$lib/pwa/isIosSafari';
 
-	const DISMISS_KEY = 'knoellchen-blitz:ios-install-banner-dismissed';
+	const DISMISS_KEY = 'blitz-knoellchen:ios-install-banner-dismissed';
 
 	let visible = $state(false);
 

@@ -4,7 +4,7 @@ Anleitung für Claude Code (claude.ai/code) in diesem Repository.
 
 ## Projektüberblick
 
-**Knöllchen-Blitz** ist eine Progressive Web App, mit der Falschparker der Bußgeldstelle Köln
+**Blitz-Knöllchen** ist eine Progressive Web App, mit der Falschparker der Bußgeldstelle Köln
 per E-Mail gemeldet werden können ("Fremdanzeige"). Zielgruppe: Menschen, die spontan im
 Alltag ein falsch geparktes Auto sehen und es in unter 30 Sekunden vom Smartphone aus melden
 wollen, ohne eine native Mail-App zu öffnen. Ablauf: Foto machen → App liest Datum/GPS aus den

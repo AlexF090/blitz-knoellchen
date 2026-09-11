@@ -23,8 +23,8 @@ export default defineConfig({
 		SvelteKitPWA({
 			registerType: 'autoUpdate',
 			manifest: {
-				name: 'Knöllchen-Blitz',
-				short_name: 'Knöllchen',
+				name: 'Blitz-Knöllchen',
+				short_name: 'Blitz-Knöllchen',
 				description: 'Falschparker in unter 30 Sekunden an die Bußgeldstelle Köln melden.',
 				lang: 'de',
 				start_url: '/',

@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-	<title>Historie – Knöllchen-Blitz</title>
+	<title>Historie – Blitz-Knöllchen</title>
 </svelte:head>
 
 <main class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:py-8">
