@@ -26,13 +26,41 @@ oder ein Passwort je den Server verlässt bzw. gebraucht wird).
 
 ### Reverse Geocoding über einen eigenen Server-Proxy mit Fallback-Kette
 
-Primär **OpenStreetMap Nominatim** (kostenlos, kein Key), proxied über
-`src/routes/api/geocode/+server.ts` statt direkt vom Client — nötig, um die Nominatim Usage
-Policy einzuhalten (`User-Agent`-Pflicht-Header, max. 1 Request/Sekunde serverseitig
-gedrosselt). Schlägt Nominatim fehl, springt der Server automatisch auf **BigDataCloud**
-(`src/lib/geocode/reverseGeocode.ts`, providerbasiert und dadurch unabhängig testbar). Scheitern
+Primär **LocationIQ** (API-kompatibel zu Nominatim, gleiche Datenbasis/Genauigkeit,
+hausnummer-genau; kostenloser Tarif: 5.000 Requests/Tag, 2 Req/Sekunde), proxied über
+`src/routes/api/geocode/+server.ts` statt direkt vom Client — der API-Key darf nie ins
+Client-Bundle gelangen, außerdem serverseitig auf 1 Req/Sekunde gedrosselt (deutlich unter
+LocationIQs Limit). Ursprünglich wurde hier die öffentliche **Nominatim**-Demo-Instanz
+(`nominatim.openstreetmap.org`, kostenlos, kein Key) genutzt; die blockt laut eigener Usage
+Policy aber alles, was nach mehr als Gelegenheitsnutzung aussieht, aktiv mit `403 Access
+denied` — im Praxistest reproduzierbar. LocationIQ ersetzt sie deshalb als primären Provider.
+Schlägt LocationIQ fehl, springt der Server automatisch auf **BigDataCloud** (kein Key nötig,
+liefert aber nur orts-/stadtteilgenaue statt hausnummer-genaue Adressen;
+`src/lib/geocode/reverseGeocode.ts`, providerbasiert und dadurch unabhängig testbar). Scheitern
 beide, wird das Adressfeld im Formular editierbar/Pflicht; ein fehlender GPS-EXIF-Tag ist ein
 erwarteter Zustand (sofortige manuelle Eingabe), kein Fehler.
+
+`/api/geocode` liefert eine strukturierte `GeocodeAddress` (`street`/`houseNumber`/`postcode`/
+`city`, `src/lib/geocode/geocodeAddress.ts`) statt eines fertigen String-Feldes — das Formular
+hat dafür eigene Felder für Straße, Hausnummer, PLZ und Ort statt eines einzelnen
+Freitextfeldes (`Tatort-Adresse`), damit die Bußgeldstelle die Angaben eindeutig zuordnen kann.
+`src/lib/geocode/formatAddress.ts` fügt die vier Felder dort wieder zu einer Zeile zusammen, wo
+nur Anzeige-/Fließtext gebraucht wird (E-Mail-Text, lokale Historie). `houseNumber` ist bewusst
+optional (Formular wie Provider) — nicht jeder Verstoßort lässt sich einer exakten Hausnummer
+zuordnen.
+
+Offener Punkt: LocationIQs kostenloser Tarif sieht laut Nutzungsbedingungen einen sichtbaren
+Attributions-Link in der UI vor — aktuell in diesem Projekt noch nicht umgesetzt, vor
+Produktivbetrieb nachholen.
+
+`parseExif` (`src/lib/exif/parseExif.ts`) nutzt **`exifreader`**, nicht `exifr`: `exifr` hat
+einen fest einprogrammierten Größen-Sanity-Check für die `ftyp`-Box von HEIC-Dateien, den neuere
+iPhones (mehr "compatible brands" wegen HDR-Gain-Map, siehe Abschnitt zu HEIC unten)
+überschreiten — `exifr.parse` liefert dann kommentarlos ein leeres Ergebnis zurück (kein Fehler,
+kein Wurf), wodurch Datum/Uhrzeit/Adresse im Formular unbefüllt bleiben. `exifreader` ist davon
+nicht betroffen und wird aktiv gegen aktuelle Apple-Dateiformate getestet. API-mäßig arbeitet
+`parseExif` mit dem `expanded: true`-Output (`tags.gps.Latitude`/`Longitude`,
+`tags.exif.DateTimeOriginal.description`) statt Rohbytes zu parsen.
 
 ### Lokale Historie in IndexedDB, kein Server-Storage
 
@@ -60,18 +88,34 @@ Hinweis ("Teilen → Zum Home-Bildschirm") statt eines Modals.
 
 `workbox.manifestTransforms` filtert Dateien ≥ 512 KB aus dem Precache-Manifest heraus (siehe
 nächster Abschnitt zu HEIC) — SvelteKit hasht Chunk-Dateinamen ohne lesbaren Namensanteil,
-daher ist eine Größen- statt Glob-Filterung nötig.
+daher ist eine Größen- statt Glob-Filterung nötig. `workbox.maximumFileSizeToCacheInBytes` ist
+auf 6 MB angehoben, da Workbox' Standardlimit (2 MiB) bereits vor `manifestTransforms` greift
+und sonst den Build hart abbricht, sobald der `heic-to`-Chunk (mehrere MB durch die gebündelte
+`libheif`-WASM) den `globPatterns`-Scan durchläuft — die Datei bleibt trotzdem außerhalb des
+tatsächlichen Precache.
 
 ### HEIC/HEIF-Fotos werden client-seitig zu JPEG konvertiert
 
 iPhones speichern Fotos standardmäßig als HEIC; `createImageBitmap` (für Vorschau/Kompression)
 wird dafür nicht von allen Browsern unterstützt (Chrome/Firefox auf Desktop typischerweise
 nicht). `src/lib/image/convertHeic.ts` erkennt HEIC/HEIF anhand MIME-Type oder Dateiendung
-(`isHeicFile`) und konvertiert bei Bedarf per `heic2any` zu JPEG, bevor `compressImage`
+(`isHeicFile`) und konvertiert bei Bedarf per `heic-to` zu JPEG, bevor `compressImage`
 darauf zugreift. EXIF (Datum/GPS) wird bewusst **vor** der Konvertierung aus der Original-Datei
-gelesen (`parseExif`), da die Konvertierung Metadaten verwirft. `heic2any` (~1,3 MB) wird per
-dynamic `import()` nur bei tatsächlicher HEIC-Auswahl geladen und ist deshalb vom
+gelesen (`parseExif`), da die Konvertierung Metadaten verwirft. `heic-to` (Nachfolger von
+`heic2any`, das an neueren iPhone-HEIC-Dateien mit Apples HDR-Gain-Map mit
+`heif_error_Invalid_input` scheiterte, da die von `heic2any` gebündelte `libheif`-WASM-Version
+seit Jahren nicht aktualisiert wurde; `heic-to` zieht aktuelle `libheif`-Releases nach) wird
+per dynamic `import()` nur bei tatsächlicher HEIC-Auswahl geladen und ist deshalb vom
 Service-Worker-Precache ausgeschlossen (s. o.), um die App-Shell klein zu halten.
+
+Da sowohl die HEIC-Konvertierung als auch die anschließende Canvas-Kompression
+(`compressImage`) das Bild neu encodieren und dabei jedes EXIF-Segment verwerfen, wird das per
+`parseExif` gelesene Datum/GPS über `src/lib/image/embedExif.ts` (`piexifjs`) nach der
+Kompression wieder in die finale JPEG-Datei eingebettet — nicht nur für HEIC-Importe, sondern
+für jedes Foto, da `compressImage` unabhängig vom Ursprungsformat immer durchlaufen wird. So
+lässt sich Datum/Ort auch direkt aus dem versendeten Beweisfoto prüfen, nicht nur aus dem
+E-Mail-Text. Schlägt das Einbetten fehl, wird das unveränderte komprimierte Foto verschickt
+(fail-open) — die Angaben stehen ohnehin im E-Mail-Text.
 
 ### Mehrere Verstoßarten pro Anzeige
 
@@ -89,13 +133,16 @@ Verstößen (z. B. Gehweg + Kreuzungsbereich) klar strukturiert.
 | `src/routes/+page.svelte`                | Formular-Seite (bindet `ReportForm.svelte` ein)                                           |
 | `src/routes/historie/+page.svelte`       | Liste bereits versendeter Anzeigen aus IndexedDB                                          |
 | `src/routes/api/send/+server.ts`         | Serverseitiger E-Mail-Versand über Resend                                                 |
-| `src/routes/api/geocode/+server.ts`      | Reverse-Geocoding-Proxy (Nominatim + BigDataCloud-Fallback, Throttling)                   |
+| `src/routes/api/geocode/+server.ts`      | Reverse-Geocoding-Proxy (LocationIQ + BigDataCloud-Fallback, Throttling)                  |
 | `src/lib/components/`                    | Svelte-Komponenten (`ReportForm.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
 | `src/lib/config/cities.ts`               | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import   |
 | `src/lib/config/cities.server.ts`        | Serverseitige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`       |
 | `src/lib/email/buildEmailBody.ts`        | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                      |
-| `src/lib/exif/parseExif.ts`              | Wrapper um `exifr`, robust gegen fehlende/korrupte EXIF-Tags                              |
+| `src/lib/exif/parseExif.ts`              | Wrapper um `exifreader`, robust gegen fehlende/korrupte EXIF-Tags                         |
+| `src/lib/image/embedExif.ts`             | Bettet Datum/GPS (`piexifjs`) nach Konvertierung/Kompression zurück ins JPEG              |
 | `src/lib/geocode/reverseGeocode.ts`      | Providerbasierte Fallback-Logik, unabhängig von SvelteKit testbar                         |
+| `src/lib/geocode/geocodeAddress.ts`      | `GeocodeAddress`-Interface (Straße/Hausnr./PLZ/Ort), von Server und Client geteilt        |
+| `src/lib/geocode/formatAddress.ts`       | Reine Funktion: `GeocodeAddress`-Felder → ein Adress-String (E-Mail-Text, Historie)       |
 | `src/lib/geocode/client.ts`              | Ruft `/api/geocode` vom Client aus auf                                                    |
 | `src/lib/history/db.ts`                  | `idb`-Wrapper für die lokale Historie                                                     |
 | `src/lib/profile/profileStore.svelte.ts` | `localStorage`-Wrapper mit Svelte-5-Runes                                                 |
@@ -152,12 +199,12 @@ nicht:
 
 ## Umgebungsvariablen
 
-| Variable               | Zweck                                                                                   |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| `RESEND_API_KEY`       | API-Key für den E-Mail-Versand über Resend.                                             |
-| `EMAIL_FROM`           | Feste Absenderadresse (Resend-Sandbox-Adresse oder verifizierte Domain).                |
-| `RECIPIENT_EMAIL`      | Empfänger der Anzeige-Mail (Testphase: eigene Adresse; Produktion: Bußgeldstelle Köln). |
-| `NOMINATIM_USER_AGENT` | Pflicht-`User-Agent`-Header für Nominatim-Anfragen laut dessen Usage Policy.            |
+| Variable             | Zweck                                                                                   |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`     | API-Key für den E-Mail-Versand über Resend.                                             |
+| `EMAIL_FROM`         | Feste Absenderadresse (Resend-Sandbox-Adresse oder verifizierte Domain).                |
+| `RECIPIENT_EMAIL`    | Empfänger der Anzeige-Mail (Testphase: eigene Adresse; Produktion: Bußgeldstelle Köln). |
+| `LOCATIONIQ_API_KEY` | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider).    |
 
 Immer über `.env.example` dokumentieren, echte Werte nie committen. Serverseitige Secrets
 ausschließlich über `$env/static/private` einbinden (siehe `cities.server.ts`,
