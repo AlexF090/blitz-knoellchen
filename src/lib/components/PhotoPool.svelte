@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PhotoEntry } from '$lib/validation/formSchema';
+	import { MAX_PHOTOS_PER_BATCH, type PhotoEntry } from '$lib/validation/formSchema';
 	import PhotoLightbox from './PhotoLightbox.svelte';
 
 	interface Props {
@@ -28,15 +28,24 @@
 
 	let fileInput: HTMLInputElement | undefined;
 	let lightboxPhoto: PhotoEntry | null = $state(null);
+	let batchError = $state<string | null>(null);
 
 	const objectUrl = (blob: Blob) => URL.createObjectURL(blob);
 
 	const onFileSelected = async (event: Event) => {
 		const input = event.target as HTMLInputElement;
-		const file = input.files?.[0];
+		const files = Array.from(input.files ?? []);
 		input.value = '';
-		if (!file) return;
-		await onAdd(file);
+		if (files.length === 0) return;
+
+		batchError =
+			files.length > MAX_PHOTOS_PER_BATCH
+				? `Es können maximal ${MAX_PHOTOS_PER_BATCH} Fotos gleichzeitig hinzugefügt werden.`
+				: null;
+
+		for (const file of files.slice(0, MAX_PHOTOS_PER_BATCH)) {
+			await onAdd(file);
+		}
 	};
 </script>
 
@@ -143,10 +152,12 @@
 		type="file"
 		accept="image/*"
 		capture="environment"
+		multiple
 		onchange={onFileSelected}
 		class="sr-only"
 	/>
 
+	{#if batchError}<p class="mt-2 text-sm text-error-fg">{batchError}</p>{/if}
 	{#if processingError}<p class="mt-2 text-sm text-error-fg">{processingError}</p>{/if}
 	{#if error}<p role="alert" class="mt-2 text-sm text-error-fg">{error}</p>{/if}
 </div>

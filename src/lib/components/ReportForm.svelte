@@ -48,7 +48,7 @@
 		addressCity: '',
 		email: '',
 		photos: [],
-		vehicles: [makeEmptyVehicle()]
+		vehicles: []
 	});
 	let errors = $state<ReturnType<typeof validateReportForm>>({});
 	let photosCardElement = $state<HTMLDivElement | undefined>(undefined);
@@ -180,8 +180,17 @@
 			form.photos = [...form.photos, entry];
 			errors = { ...errors, photos: undefined };
 
-			// Bei genau einem Fahrzeug ist die Zuordnung eindeutig — direkt automatisch übernehmen.
-			if (form.vehicles.length === 1 && form.vehicles[0].photoIds.length < MAX_PHOTOS_PER_VEHICLE) {
+			// Erstes Foto: legt die erste Fahrzeug-Karte an, die bis dahin nicht existiert.
+			if (form.vehicles.length === 0) {
+				const vehicle = makeEmptyVehicle();
+				vehicle.photoIds = [entry.id];
+				form.vehicles = [vehicle];
+				await applyPhotoExifToVehicle(vehicle, entry.id);
+			} else if (
+				// Bei genau einem Fahrzeug ist die Zuordnung eindeutig — direkt automatisch übernehmen.
+				form.vehicles.length === 1 &&
+				form.vehicles[0].photoIds.length < MAX_PHOTOS_PER_VEHICLE
+			) {
 				form.vehicles[0].photoIds = [...form.vehicles[0].photoIds, entry.id];
 				await applyPhotoExifToVehicle(form.vehicles[0], entry.id);
 			}
@@ -304,7 +313,7 @@
 				form = {
 					...form,
 					photos: [],
-					vehicles: [makeEmptyVehicle()]
+					vehicles: []
 				};
 			}
 		} finally {
