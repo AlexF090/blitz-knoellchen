@@ -12,24 +12,49 @@ export interface HistoryEntry {
 	thumbnails: Blob[];
 }
 
+export interface UserProfile {
+	firstName: string;
+	lastName: string;
+	addressStreet: string;
+	addressHouseNumber: string;
+	addressPostcode: string;
+	addressCity: string;
+	email: string;
+}
+
+interface StoredUserProfile extends UserProfile {
+	id: string;
+}
+
 interface KnoellchenBlitzDB extends DBSchema {
 	entries: {
 		key: string;
 		value: HistoryEntry;
 		indexes: { 'by-timestamp': number };
 	};
+	profile: {
+		key: string;
+		value: StoredUserProfile;
+	};
 }
 
 const DB_NAME = 'knoellchen-blitz';
 const STORE_NAME = 'entries';
+const PROFILE_STORE_NAME = 'profile';
+const PROFILE_KEY = 'default';
 
 let dbPromise: Promise<IDBPDatabase<KnoellchenBlitzDB>> | undefined;
 
 const getDb = () => {
-	dbPromise ??= openDB<KnoellchenBlitzDB>(DB_NAME, 1, {
-		upgrade(db) {
-			const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-			store.createIndex('by-timestamp', 'timestamp');
+	dbPromise ??= openDB<KnoellchenBlitzDB>(DB_NAME, 2, {
+		upgrade(db, oldVersion) {
+			if (oldVersion < 1) {
+				const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+				store.createIndex('by-timestamp', 'timestamp');
+			}
+			if (oldVersion < 2) {
+				db.createObjectStore(PROFILE_STORE_NAME, { keyPath: 'id' });
+			}
 		}
 	});
 	return dbPromise;
@@ -49,4 +74,33 @@ export const listEntries = async (): Promise<HistoryEntry[]> => {
 export const getEntry = async (id: string): Promise<HistoryEntry | undefined> => {
 	const db = await getDb();
 	return db.get(STORE_NAME, id);
+};
+
+export const getProfile = async (): Promise<UserProfile | undefined> => {
+	const db = await getDb();
+	const stored = await db.get(PROFILE_STORE_NAME, PROFILE_KEY);
+	if (!stored) return undefined;
+	const {
+		firstName,
+		lastName,
+		addressStreet,
+		addressHouseNumber,
+		addressPostcode,
+		addressCity,
+		email
+	} = stored;
+	return {
+		firstName,
+		lastName,
+		addressStreet,
+		addressHouseNumber,
+		addressPostcode,
+		addressCity,
+		email
+	};
+};
+
+export const saveProfile = async (profile: UserProfile): Promise<void> => {
+	const db = await getDb();
+	await db.put(PROFILE_STORE_NAME, { ...profile, id: PROFILE_KEY });
 };
