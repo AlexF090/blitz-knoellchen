@@ -9,7 +9,9 @@ const baseInput: EmailTemplateInput = {
 	date: '01.03.2026',
 	time: '14:30',
 	locationAddress: 'Domkloster 4, 50667 Köln',
-	incidentTypeLabel: 'Parken auf dem Gehweg',
+	incidentTypes: [
+		{ label: 'Parken auf dem Gehweg', description: 'Das Fahrzeug parkte auf dem Gehweg.' }
+	],
 	licensePlate: 'K-AB 1234',
 	notes: 'Fahrzeug stand seit über einer Stunde dort.'
 };
@@ -24,8 +26,27 @@ describe('buildEmailBody', () => {
 		expect(result.body).toContain('14:30');
 		expect(result.body).toContain('Domkloster 4, 50667 Köln');
 		expect(result.body).toContain('Parken auf dem Gehweg');
+		expect(result.body).toContain('Das Fahrzeug parkte auf dem Gehweg.');
 		expect(result.body).toContain('K-AB 1234');
 		expect(result.body).toContain('Fahrzeug stand seit über einer Stunde dort.');
+	});
+
+	it('kombiniert mehrere Verstoßarten zu Label-Liste und Beschreibungs-Absätzen', () => {
+		const result = buildEmailBody({
+			...baseInput,
+			incidentTypes: [
+				{ label: 'Parken auf dem Gehweg', description: 'Das Fahrzeug parkte auf dem Gehweg.' },
+				{
+					label: 'Parken im Halteverbot',
+					description: 'Das Fahrzeug parkte zusätzlich im Halteverbot.'
+				}
+			]
+		});
+		expect(result.body).toContain(
+			'Art des Verstoßes: Parken auf dem Gehweg, Parken im Halteverbot'
+		);
+		expect(result.body).toContain('- Das Fahrzeug parkte auf dem Gehweg.');
+		expect(result.body).toContain('- Das Fahrzeug parkte zusätzlich im Halteverbot.');
 	});
 
 	it('markiert fehlendes Kennzeichen als "nicht erfasst"', () => {

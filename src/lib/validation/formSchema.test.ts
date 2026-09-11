@@ -9,7 +9,7 @@ const validData: ReportFormData = {
 	date: '2026-03-01',
 	time: '14:30',
 	locationAddress: 'Domkloster 4, 50667 Köln',
-	incidentTypeId: 'gehweg',
+	incidentTypeIds: ['gehweg'],
 	licensePlate: 'K-AB 1234',
 	notes: ''
 };
@@ -20,14 +20,22 @@ describe('validateReportForm', () => {
 		expect(isFormValid(errors)).toBe(true);
 	});
 
+	it('akzeptiert mehrere ausgewählte Verstoßarten', () => {
+		const errors = validateReportForm({
+			...validData,
+			incidentTypeIds: ['gehweg', 'halteverbot']
+		});
+		expect(isFormValid(errors)).toBe(true);
+	});
+
 	it('meldet fehlende Pflichtfelder', () => {
 		const errors = validateReportForm({
 			...validData,
 			locationAddress: '',
-			incidentTypeId: ''
+			incidentTypeIds: []
 		});
 		expect(errors.locationAddress).toBeDefined();
-		expect(errors.incidentTypeId).toBeDefined();
+		expect(errors.incidentTypeIds).toBeDefined();
 		expect(isFormValid(errors)).toBe(false);
 	});
 

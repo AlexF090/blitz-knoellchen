@@ -10,14 +10,18 @@ const SUBJECT = 'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken)';
 export function buildEmailBody(input: EmailTemplateInput): EmailContent {
 	const licensePlateLine = input.licensePlate?.trim() ? input.licensePlate.trim() : 'nicht erfasst';
 	const notesLine = input.notes?.trim() ? input.notes.trim() : '-';
+	const incidentLabels = input.incidentTypes.map((t) => t.label).join(', ');
+	const incidentDescriptions = input.incidentTypes.map((t) => `- ${t.description}`).join('\n');
 
 	const body = `Sehr geehrte Damen und Herren,
 
 hiermit zeige ich, ${input.firstName} ${input.lastName}, wohnhaft in ${input.address}, an,
-dass am ${input.date} um ${input.time} Uhr in der ${input.locationAddress} folgender
-Parkverstoß vorlag:
+dass am ${input.date} um ${input.time} Uhr in der ${input.locationAddress} folgender Sachverhalt
+vorlag:
 
-Art des Verstoßes: ${input.incidentTypeLabel}
+${incidentDescriptions}
+
+Art des Verstoßes: ${incidentLabels}
 Kennzeichen des Fahrzeugs: ${licensePlateLine}
 Weitere Angaben: ${notesLine}
 

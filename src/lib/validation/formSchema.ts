@@ -6,7 +6,7 @@ export interface ReportFormData {
 	date: string;
 	time: string;
 	locationAddress: string;
-	incidentTypeId: string;
+	incidentTypeIds: string[];
 	licensePlate?: string;
 	notes?: string;
 }
@@ -29,7 +29,8 @@ export function validateReportForm(data: ReportFormData): FormErrors {
 	if (!data.date.trim()) errors.date = 'Datum ist erforderlich.';
 	if (!data.time.trim()) errors.time = 'Uhrzeit ist erforderlich.';
 	if (!data.locationAddress.trim()) errors.locationAddress = 'Tatort-Adresse ist erforderlich.';
-	if (!data.incidentTypeId.trim()) errors.incidentTypeId = 'Verstoßart ist erforderlich.';
+	if (data.incidentTypeIds.length === 0)
+		errors.incidentTypeIds = 'Mindestens eine Verstoßart ist erforderlich.';
 
 	return errors;
 }

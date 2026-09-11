@@ -18,7 +18,7 @@ test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 	await page.locator('#address').fill('Musterstraße 1, 50667 Köln');
 	await page.locator('#email').fill('max@example.com');
 	await page.locator('#photo').setInputFiles(FIXTURE);
-	await page.locator('#incidentTypeId').selectOption('gehweg');
+	await page.getByLabel('Parken auf dem Gehweg').check();
 	await page.locator('#licensePlate').fill('K-AB 1234');
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
@@ -30,6 +30,6 @@ test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 	await expect(page.locator('#address')).toHaveValue('Musterstraße 1, 50667 Köln');
 	await expect(page.locator('#email')).toHaveValue('max@example.com');
 	await expect(page.locator('#locationAddress')).toHaveValue('Domkloster 4, 50667 Köln');
-	await expect(page.locator('#incidentTypeId')).toHaveValue('gehweg');
+	await expect(page.getByLabel('Parken auf dem Gehweg')).toBeChecked();
 	await expect(page.locator('#licensePlate')).toHaveValue('K-AB 1234');
 });

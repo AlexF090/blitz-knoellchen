@@ -29,7 +29,7 @@
 	<ul class="flex flex-col gap-3">
 		{#each entries as entry (entry.id)}
 			<li class="rounded border p-3">
-				<p class="font-medium">{entry.incidentTypeLabel}</p>
+				<p class="font-medium">{entry.incidentTypeLabels.join(', ')}</p>
 				<p class="text-sm text-gray-600">{entry.locationAddress}</p>
 				<p class="text-xs text-gray-400">{new Date(entry.timestamp).toLocaleString('de-DE')}</p>
 			</li>

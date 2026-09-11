@@ -6,7 +6,7 @@ export interface HistoryEntry {
 	firstName: string;
 	lastName: string;
 	locationAddress: string;
-	incidentTypeLabel: string;
+	incidentTypeLabels: string[];
 	licensePlate?: string;
 	notes?: string;
 	thumbnail: Blob;
