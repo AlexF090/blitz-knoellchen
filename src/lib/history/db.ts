@@ -1,4 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
 
 export interface HistoryEntry {
 	id: string;
@@ -26,6 +27,16 @@ interface StoredUserProfile extends UserProfile {
 	id: string;
 }
 
+export interface DraftFormData {
+	vehicles: VehicleEntry[];
+	photos: PhotoEntry[];
+}
+
+interface StoredDraft extends DraftFormData {
+	id: string;
+	savedAt: number;
+}
+
 interface BlitzKnoellchenDB extends DBSchema {
 	entries: {
 		key: string;
@@ -36,17 +47,27 @@ interface BlitzKnoellchenDB extends DBSchema {
 		key: string;
 		value: StoredUserProfile;
 	};
+	draft: {
+		key: string;
+		value: StoredDraft;
+	};
 }
 
 const DB_NAME = 'blitz-knoellchen';
 const STORE_NAME = 'entries';
 const PROFILE_STORE_NAME = 'profile';
 const PROFILE_KEY = 'default';
+const DRAFT_STORE_NAME = 'draft';
+const DRAFT_KEY = 'default';
+
+// Ein nie abgesendeter Entwurf soll nicht unbegrenzt als Datenschutz-Altlast in der IndexedDB
+// liegen bleiben — nach dieser Zeit wird er beim nächsten Laden verworfen.
+export const DRAFT_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 
 let dbPromise: Promise<IDBPDatabase<BlitzKnoellchenDB>> | undefined;
 
 const getDb = () => {
-	dbPromise ??= openDB<BlitzKnoellchenDB>(DB_NAME, 2, {
+	dbPromise ??= openDB<BlitzKnoellchenDB>(DB_NAME, 3, {
 		upgrade(db, oldVersion) {
 			if (oldVersion < 1) {
 				const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
@@ -54,6 +75,9 @@ const getDb = () => {
 			}
 			if (oldVersion < 2) {
 				db.createObjectStore(PROFILE_STORE_NAME, { keyPath: 'id' });
+			}
+			if (oldVersion < 3) {
+				db.createObjectStore(DRAFT_STORE_NAME, { keyPath: 'id' });
 			}
 		}
 	});
@@ -103,4 +127,27 @@ export const getProfile = async (): Promise<UserProfile | undefined> => {
 export const saveProfile = async (profile: UserProfile): Promise<void> => {
 	const db = await getDb();
 	await db.put(PROFILE_STORE_NAME, { ...profile, id: PROFILE_KEY });
+};
+
+export const getDraft = async (): Promise<DraftFormData | undefined> => {
+	const db = await getDb();
+	const stored = await db.get(DRAFT_STORE_NAME, DRAFT_KEY);
+	if (!stored) return undefined;
+
+	if (Date.now() - stored.savedAt > DRAFT_MAX_AGE_MS) {
+		await db.delete(DRAFT_STORE_NAME, DRAFT_KEY);
+		return undefined;
+	}
+
+	return { vehicles: stored.vehicles, photos: stored.photos };
+};
+
+export const saveDraft = async (vehicles: VehicleEntry[], photos: PhotoEntry[]): Promise<void> => {
+	const db = await getDb();
+	await db.put(DRAFT_STORE_NAME, { id: DRAFT_KEY, vehicles, photos, savedAt: Date.now() });
+};
+
+export const clearDraft = async (): Promise<void> => {
+	const db = await getDb();
+	await db.delete(DRAFT_STORE_NAME, DRAFT_KEY);
 };

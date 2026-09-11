@@ -1,13 +1,43 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	addEntry,
 	getEntry,
 	listEntries,
 	getProfile,
 	saveProfile,
+	getDraft,
+	saveDraft,
+	clearDraft,
+	DRAFT_MAX_AGE_MS,
 	type HistoryEntry,
 	type UserProfile
 } from './db';
+import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
+
+const makeVehicle = (overrides: Partial<VehicleEntry> = {}): VehicleEntry => ({
+	id: crypto.randomUUID(),
+	photoIds: [],
+	licensePlate: 'K-AB 1234',
+	incidentTypeIds: ['gehweg'],
+	notes: '',
+	date: '2026-09-11',
+	time: '12:00',
+	locationStreet: 'Domkloster',
+	locationHouseNumber: '4',
+	locationPostcode: '50667',
+	locationCity: 'Köln',
+	...overrides
+});
+
+const makePhoto = (overrides: Partial<PhotoEntry> = {}): PhotoEntry => ({
+	id: crypto.randomUUID(),
+	blob: new Blob(['x'], { type: 'image/jpeg' }),
+	fileName: 'foto.jpg',
+	gps: null,
+	date: null,
+	time: null,
+	...overrides
+});
 
 const makeEntry = (overrides: Partial<HistoryEntry> = {}): HistoryEntry => {
 	return {
@@ -71,5 +101,53 @@ describe('user profile', () => {
 		});
 		const loaded = await getProfile();
 		expect(loaded?.firstName).toBe('Erika');
+	});
+});
+
+describe('draft', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('speichert und liest einen Entwurf', async () => {
+		const vehicle = makeVehicle();
+		const photo = makePhoto();
+		await saveDraft([vehicle], [photo]);
+
+		const draft = await getDraft();
+		expect(draft?.vehicles).toEqual([vehicle]);
+		expect(draft?.photos.map((p) => p.id)).toEqual([photo.id]);
+	});
+
+	it('überschreibt einen bestehenden Entwurf beim erneuten Speichern', async () => {
+		await saveDraft([makeVehicle({ licensePlate: 'K-AA 1' })], []);
+		await saveDraft([makeVehicle({ licensePlate: 'K-BB 2' })], []);
+
+		const draft = await getDraft();
+		expect(draft?.vehicles).toHaveLength(1);
+		expect(draft?.vehicles[0].licensePlate).toBe('K-BB 2');
+	});
+
+	it('liefert undefined, wenn kein Entwurf existiert', async () => {
+		await clearDraft();
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('verwirft einen abgelaufenen Entwurf und löscht ihn', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(0);
+		await saveDraft([makeVehicle()], []);
+
+		vi.setSystemTime(DRAFT_MAX_AGE_MS + 1);
+		expect(await getDraft()).toBeUndefined();
+
+		vi.useRealTimers();
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('löscht einen Entwurf explizit', async () => {
+		await saveDraft([makeVehicle()], []);
+		await clearDraft();
+		expect(await getDraft()).toBeUndefined();
 	});
 });
