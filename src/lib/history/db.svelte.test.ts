@@ -9,7 +9,7 @@ const makeEntry = (overrides: Partial<HistoryEntry> = {}): HistoryEntry => {
 		lastName: 'Mustermann',
 		locationAddress: 'Domkloster 4, 50667 Köln',
 		incidentTypeLabels: ['Parken auf dem Gehweg'],
-		thumbnail: new Blob(['x'], { type: 'image/jpeg' }),
+		thumbnails: [new Blob(['x'], { type: 'image/jpeg' })],
 		...overrides
 	};
 };

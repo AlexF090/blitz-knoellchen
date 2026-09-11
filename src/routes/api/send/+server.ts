@@ -3,13 +3,35 @@ import { Resend } from 'resend';
 import { RESEND_API_KEY, EMAIL_FROM } from '$env/static/private';
 import { CITIES } from '$lib/config/cities';
 import { getRecipientEmail } from '$lib/config/cities.server';
-import { validateReportForm, isFormValid, type ReportFormData } from '$lib/validation/formSchema';
+import {
+	validateReportForm,
+	isFormValid,
+	type PhotoEntry,
+	type ReportFormData,
+	type VehicleEntry
+} from '$lib/validation/formSchema';
 import type { RequestHandler } from './$types';
 
 const resend = new Resend(RESEND_API_KEY);
 
 export const POST: RequestHandler = async ({ request }) => {
 	const formData = await request.formData();
+
+	const photoBlobs = formData.getAll('photos').filter((p): p is File => p instanceof File);
+	const photos: PhotoEntry[] = photoBlobs.map((blob, index) => ({
+		id: String(index),
+		blob,
+		fileName: `beweisfoto-${index + 1}.jpg`
+	}));
+	const vehicle: VehicleEntry = {
+		id: '0',
+		photoIds: photos.map((photo) => photo.id),
+		licensePlate: String(formData.get('licensePlate') ?? ''),
+		incidentTypeIds: formData.getAll('incidentTypeIds').map(String),
+		notes: String(formData.get('notes') ?? '') || undefined
+	};
+	const vehicleIndex = Number(formData.get('vehicleIndex') ?? '1');
+	const vehicleTotal = Number(formData.get('vehicleTotal') ?? '1');
 
 	const data: ReportFormData = {
 		firstName: String(formData.get('firstName') ?? ''),
@@ -22,9 +44,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		locationHouseNumber: String(formData.get('locationHouseNumber') ?? '') || undefined,
 		locationPostcode: String(formData.get('locationPostcode') ?? ''),
 		locationCity: String(formData.get('locationCity') ?? ''),
-		incidentTypeIds: formData.getAll('incidentTypeIds').map(String),
-		licensePlate: String(formData.get('licensePlate') ?? '') || undefined,
-		notes: String(formData.get('notes') ?? '') || undefined
+		photos,
+		vehicles: [vehicle]
 	};
 
 	const errors = validateReportForm(data);
@@ -32,14 +53,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'Formulardaten sind ungültig.', errors }, { status: 400 });
 	}
 
-	const photo = formData.get('photo');
-	if (!(photo instanceof Blob)) {
-		return json({ error: 'Beweisfoto fehlt.' }, { status: 400 });
-	}
-
 	const city = CITIES.koeln;
-	const incidentTypes = city.incidentTypes.filter((t) => data.incidentTypeIds.includes(t.id));
-	if (incidentTypes.length !== data.incidentTypeIds.length) {
+	const incidentTypes = city.incidentTypes.filter((t) => vehicle.incidentTypeIds.includes(t.id));
+	if (incidentTypes.length !== vehicle.incidentTypeIds.length) {
 		return json({ error: 'Unbekannte Verstoßart.' }, { status: 400 });
 	}
 
@@ -54,11 +70,19 @@ export const POST: RequestHandler = async ({ request }) => {
 		locationPostcode: data.locationPostcode,
 		locationCity: data.locationCity,
 		incidentTypes: incidentTypes.map((t) => ({ label: t.label, description: t.description })),
-		licensePlate: data.licensePlate,
-		notes: data.notes
+		licensePlate: vehicle.licensePlate,
+		notes: vehicle.notes,
+		photoCount: photos.length,
+		vehicleIndex,
+		vehicleTotal
 	});
 
-	const photoBuffer = Buffer.from(await photo.arrayBuffer());
+	const attachments = await Promise.all(
+		photos.map(async (photo) => ({
+			filename: photo.fileName,
+			content: Buffer.from(await photo.blob.arrayBuffer())
+		}))
+	);
 
 	try {
 		const { error } = await resend.emails.send({
@@ -68,7 +92,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			bcc: data.email,
 			subject,
 			text: body,
-			attachments: [{ filename: 'beweisfoto.jpg', content: photoBuffer }]
+			attachments
 		});
 
 		if (error) return json({ error: 'Versand fehlgeschlagen.' }, { status: 502 });

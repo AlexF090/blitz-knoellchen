@@ -9,7 +9,7 @@ export interface HistoryEntry {
 	incidentTypeLabels: string[];
 	licensePlate?: string;
 	notes?: string;
-	thumbnail: Blob;
+	thumbnails: Blob[];
 }
 
 interface KnoellchenBlitzDB extends DBSchema {

@@ -21,6 +21,9 @@ export interface EmailTemplateInput {
 	incidentTypes: Pick<IncidentType, 'label' | 'description'>[];
 	licensePlate?: string;
 	notes?: string;
+	photoCount: number;
+	vehicleIndex?: number;
+	vehicleTotal?: number;
 }
 
 export interface City {
