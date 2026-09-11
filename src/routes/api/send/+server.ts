@@ -18,7 +18,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		email: String(formData.get('email') ?? ''),
 		date: String(formData.get('date') ?? ''),
 		time: String(formData.get('time') ?? ''),
-		locationAddress: String(formData.get('locationAddress') ?? ''),
+		locationStreet: String(formData.get('locationStreet') ?? ''),
+		locationHouseNumber: String(formData.get('locationHouseNumber') ?? '') || undefined,
+		locationPostcode: String(formData.get('locationPostcode') ?? ''),
+		locationCity: String(formData.get('locationCity') ?? ''),
 		incidentTypeIds: formData.getAll('incidentTypeIds').map(String),
 		licensePlate: String(formData.get('licensePlate') ?? '') || undefined,
 		notes: String(formData.get('notes') ?? '') || undefined
@@ -46,7 +49,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		address: data.address,
 		date: data.date,
 		time: data.time,
-		locationAddress: data.locationAddress,
+		locationStreet: data.locationStreet,
+		locationHouseNumber: data.locationHouseNumber,
+		locationPostcode: data.locationPostcode,
+		locationCity: data.locationCity,
 		incidentTypes: incidentTypes.map((t) => ({ label: t.label, description: t.description })),
 		licensePlate: data.licensePlate,
 		notes: data.notes

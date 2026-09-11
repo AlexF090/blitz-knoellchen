@@ -8,7 +8,10 @@ const validData: ReportFormData = {
 	email: 'max@example.com',
 	date: '2026-03-01',
 	time: '14:30',
-	locationAddress: 'Domkloster 4, 50667 Köln',
+	locationStreet: 'Domkloster',
+	locationHouseNumber: '4',
+	locationPostcode: '50667',
+	locationCity: 'Köln',
 	incidentTypeIds: ['gehweg'],
 	licensePlate: 'K-AB 1234',
 	notes: ''
@@ -31,10 +34,14 @@ describe('validateReportForm', () => {
 	it('meldet fehlende Pflichtfelder', () => {
 		const errors = validateReportForm({
 			...validData,
-			locationAddress: '',
+			locationStreet: '',
+			locationPostcode: '',
+			locationCity: '',
 			incidentTypeIds: []
 		});
-		expect(errors.locationAddress).toBeDefined();
+		expect(errors.locationStreet).toBeDefined();
+		expect(errors.locationPostcode).toBeDefined();
+		expect(errors.locationCity).toBeDefined();
 		expect(errors.incidentTypeIds).toBeDefined();
 		expect(isFormValid(errors)).toBe(false);
 	});

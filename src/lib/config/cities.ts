@@ -14,7 +14,10 @@ export interface EmailTemplateInput {
 	address: string;
 	date: string;
 	time: string;
-	locationAddress: string;
+	locationStreet: string;
+	locationHouseNumber?: string;
+	locationPostcode: string;
+	locationCity: string;
 	incidentTypes: Pick<IncidentType, 'label' | 'description'>[];
 	licensePlate?: string;
 	notes?: string;

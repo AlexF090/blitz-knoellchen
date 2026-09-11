@@ -5,7 +5,10 @@ export interface ReportFormData {
 	email: string;
 	date: string;
 	time: string;
-	locationAddress: string;
+	locationStreet: string;
+	locationHouseNumber?: string;
+	locationPostcode: string;
+	locationCity: string;
 	incidentTypeIds: string[];
 	licensePlate?: string;
 	notes?: string;
@@ -28,7 +31,9 @@ export function validateReportForm(data: ReportFormData): FormErrors {
 	}
 	if (!data.date.trim()) errors.date = 'Datum ist erforderlich.';
 	if (!data.time.trim()) errors.time = 'Uhrzeit ist erforderlich.';
-	if (!data.locationAddress.trim()) errors.locationAddress = 'Tatort-Adresse ist erforderlich.';
+	if (!data.locationStreet.trim()) errors.locationStreet = 'Straße ist erforderlich.';
+	if (!data.locationPostcode.trim()) errors.locationPostcode = 'Postleitzahl ist erforderlich.';
+	if (!data.locationCity.trim()) errors.locationCity = 'Ort ist erforderlich.';
 	if (data.incidentTypeIds.length === 0)
 		errors.incidentTypeIds = 'Mindestens eine Verstoßart ist erforderlich.';
 

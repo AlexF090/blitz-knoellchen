@@ -1,13 +1,14 @@
 import { json } from '@sveltejs/kit';
-import { NOMINATIM_USER_AGENT } from '$env/static/private';
+import { LOCATIONIQ_API_KEY } from '$env/static/private';
 import {
 	createBigDataCloudProvider,
-	createNominatimProvider,
+	createLocationIqProvider,
 	reverseGeocode
 } from '$lib/geocode/reverseGeocode';
 import type { RequestHandler } from './$types';
 
-// Nominatim Usage Policy: max. 1 Request/Sekunde für diesen Server-Prozess.
+// Konservative Drosselung für diesen Server-Prozess — liegt sicher unter LocationIQs
+// Free-Tier-Limit von 2 Requests/Sekunde.
 const MIN_INTERVAL_MS = 1000;
 let lastRequestAt = 0;
 
@@ -26,7 +27,7 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 	lastRequestAt = Date.now();
 
 	const providers = [
-		createNominatimProvider(NOMINATIM_USER_AGENT, fetch),
+		createLocationIqProvider(LOCATIONIQ_API_KEY, fetch),
 		createBigDataCloudProvider(fetch)
 	];
 	const result = await reverseGeocode(lat, lon, providers);

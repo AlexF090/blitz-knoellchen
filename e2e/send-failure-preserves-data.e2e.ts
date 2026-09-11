@@ -7,7 +7,11 @@ const FIXTURE = path.join(__dirname, 'fixtures/photo-with-gps.jpg');
 
 test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 	await page.route('**/api/geocode**', (route) =>
-		route.fulfill({ json: { address: 'Domkloster 4, 50667 Köln' } })
+		route.fulfill({
+			json: {
+				address: { street: 'Domkloster', houseNumber: '4', postcode: '50667', city: 'Köln' }
+			}
+		})
 	);
 	await page.route('**/api/send', (route) => route.fulfill({ status: 500, json: {} }));
 
@@ -29,7 +33,10 @@ test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 	await expect(page.locator('#lastName')).toHaveValue('Mustermann');
 	await expect(page.locator('#address')).toHaveValue('Musterstraße 1, 50667 Köln');
 	await expect(page.locator('#email')).toHaveValue('max@example.com');
-	await expect(page.locator('#locationAddress')).toHaveValue('Domkloster 4, 50667 Köln');
+	await expect(page.locator('#locationStreet')).toHaveValue('Domkloster');
+	await expect(page.locator('#locationHouseNumber')).toHaveValue('4');
+	await expect(page.locator('#locationPostcode')).toHaveValue('50667');
+	await expect(page.locator('#locationCity')).toHaveValue('Köln');
 	await expect(page.getByLabel('Parken auf dem Gehweg')).toBeChecked();
 	await expect(page.locator('#licensePlate')).toHaveValue('K-AB 1234');
 });

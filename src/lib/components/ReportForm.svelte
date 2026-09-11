@@ -4,9 +4,11 @@
 	import { validateReportForm, isFormValid, type ReportFormData } from '$lib/validation/formSchema';
 	import { compressImage } from '$lib/image/compress';
 	import { isHeicFile, convertHeicToJpeg } from '$lib/image/convertHeic';
+	import { embedExifMetadata } from '$lib/image/embedExif';
 	import { addEntry } from '$lib/history/db';
-	import { parseExif } from '$lib/exif/parseExif';
+	import { parseExif, type ParsedExif } from '$lib/exif/parseExif';
 	import { fetchAddress } from '$lib/geocode/client';
+	import { formatAddress } from '$lib/geocode/formatAddress';
 
 	const city = CITIES.koeln;
 	const profileStore = createProfileStore();
@@ -19,13 +21,17 @@
 		email: profileStore.value.email,
 		date: '',
 		time: '',
-		locationAddress: '',
+		locationStreet: '',
+		locationHouseNumber: '',
+		locationPostcode: '',
+		locationCity: '',
 		incidentTypeIds: [],
 		licensePlate: '',
 		notes: ''
 	});
 	let errors = $state<ReturnType<typeof validateReportForm>>({});
 	let photoFile = $state<Blob | null>(null);
+	let capturedExif = $state<ParsedExif | null>(null);
 	let photoFileName = $state<string | null>(null);
 	let converting = $state(false);
 	let photoError = $state<string | null>(null);
@@ -53,17 +59,21 @@
 		addressManualRequired = false;
 
 		const exif = await parseExif(file);
+		capturedExif = exif;
 
 		if (exif.date) form.date = exif.date;
 		if (exif.time) form.time = exif.time;
 
 		if (exif.gps) {
 			const address = await fetchAddress(exif.gps.lat, exif.gps.lon);
-			if (address) {
-				form.locationAddress = address;
-			} else {
+			if (address?.street) form.locationStreet = address.street;
+			if (address?.houseNumber) form.locationHouseNumber = address.houseNumber;
+			if (address?.postcode) form.locationPostcode = address.postcode;
+			if (address?.city) form.locationCity = address.city;
+
+			if (!address?.street || !address?.city) {
 				geocodeError =
-					'Adresse konnte nicht automatisch ermittelt werden — bitte manuell eintragen.';
+					'Adresse konnte nicht vollständig automatisch ermittelt werden — bitte prüfen/ergänzen.';
 				addressManualRequired = true;
 				// GPS-Koordinaten als Fallback-Info mitschicken, auch wenn die Adresse manuell erfasst wird.
 				const coordsNote = `GPS-Koordinaten des Fotos: ${exif.gps.lat}, ${exif.gps.lon}`;
@@ -98,6 +108,9 @@
 
 		try {
 			const compressedPhoto = await compressImage(photoFile, { maxDimension: 1600, quality: 0.8 });
+			const photoWithExif = capturedExif
+				? await embedExifMetadata(compressedPhoto, capturedExif)
+				: compressedPhoto;
 			const incidentTypes = city.incidentTypes.filter((t) => form.incidentTypeIds.includes(t.id));
 
 			const body = new FormData();
@@ -107,11 +120,14 @@
 			body.set('email', form.email);
 			body.set('date', form.date);
 			body.set('time', form.time);
-			body.set('locationAddress', form.locationAddress);
+			body.set('locationStreet', form.locationStreet);
+			body.set('locationHouseNumber', form.locationHouseNumber ?? '');
+			body.set('locationPostcode', form.locationPostcode);
+			body.set('locationCity', form.locationCity);
 			for (const id of form.incidentTypeIds) body.append('incidentTypeIds', id);
 			body.set('licensePlate', form.licensePlate ?? '');
 			body.set('notes', form.notes ?? '');
-			body.set('photo', compressedPhoto, 'beweisfoto.jpg');
+			body.set('photo', photoWithExif, 'beweisfoto.jpg');
 
 			const response = await fetch('/api/send', { method: 'POST', body });
 			if (!response.ok) throw new Error('Versand fehlgeschlagen');
@@ -128,22 +144,31 @@
 				timestamp: Date.now(),
 				firstName: form.firstName,
 				lastName: form.lastName,
-				locationAddress: form.locationAddress,
+				locationAddress: formatAddress({
+					street: form.locationStreet,
+					houseNumber: form.locationHouseNumber,
+					postcode: form.locationPostcode,
+					city: form.locationCity
+				}),
 				incidentTypeLabels: incidentTypes.map((t) => t.label),
 				licensePlate: form.licensePlate,
 				notes: form.notes,
-				thumbnail: compressedPhoto
+				thumbnail: photoWithExif
 			});
 
 			sendSuccess = true;
 			photoFile = null;
 			photoFileName = null;
+			capturedExif = null;
 			if (photoInput) photoInput.value = '';
 			form = {
 				...form,
 				date: '',
 				time: '',
-				locationAddress: '',
+				locationStreet: '',
+				locationHouseNumber: '',
+				locationPostcode: '',
+				locationCity: '',
 				incidentTypeIds: [],
 				licensePlate: '',
 				notes: ''
@@ -226,16 +251,50 @@
 		</div>
 	</div>
 
-	<div>
-		<label for="locationAddress" class="block text-sm font-medium">Tatort-Adresse</label>
-		<input
-			id="locationAddress"
-			bind:value={form.locationAddress}
-			required={addressManualRequired}
-			class="mt-1 w-full rounded border p-2"
-		/>
-		{#if geocodeError}<p class="text-sm text-amber-700">{geocodeError}</p>{/if}
-		{#if errors.locationAddress}<p class="text-sm text-red-700">{errors.locationAddress}</p>{/if}
+	<div class="grid grid-cols-[2fr_1fr] gap-3">
+		<div>
+			<label for="locationStreet" class="block text-sm font-medium">Straße (Tatort)</label>
+			<input
+				id="locationStreet"
+				bind:value={form.locationStreet}
+				required={addressManualRequired}
+				class="mt-1 w-full rounded border p-2"
+			/>
+			{#if errors.locationStreet}<p class="text-sm text-red-700">{errors.locationStreet}</p>{/if}
+		</div>
+		<div>
+			<label for="locationHouseNumber" class="block text-sm font-medium">Hausnr.</label>
+			<input
+				id="locationHouseNumber"
+				bind:value={form.locationHouseNumber}
+				class="mt-1 w-full rounded border p-2"
+			/>
+		</div>
+	</div>
+	{#if geocodeError}<p class="text-sm text-amber-700">{geocodeError}</p>{/if}
+	<div class="grid grid-cols-[1fr_2fr] gap-3">
+		<div>
+			<label for="locationPostcode" class="block text-sm font-medium">PLZ</label>
+			<input
+				id="locationPostcode"
+				bind:value={form.locationPostcode}
+				required={addressManualRequired}
+				class="mt-1 w-full rounded border p-2"
+			/>
+			{#if errors.locationPostcode}<p class="text-sm text-red-700">
+					{errors.locationPostcode}
+				</p>{/if}
+		</div>
+		<div>
+			<label for="locationCity" class="block text-sm font-medium">Ort (Tatort)</label>
+			<input
+				id="locationCity"
+				bind:value={form.locationCity}
+				required={addressManualRequired}
+				class="mt-1 w-full rounded border p-2"
+			/>
+			{#if errors.locationCity}<p class="text-sm text-red-700">{errors.locationCity}</p>{/if}
+		</div>
 	</div>
 
 	<fieldset>
