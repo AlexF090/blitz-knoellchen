@@ -265,6 +265,30 @@
 		);
 	};
 
+	// Vom Header aus per 5x-Tap auf den Titel erreichbar (siehe PageHeader.svelte) — setzt das
+	// komplette Formular inkl. "Deine Angaben" zurück, lässt das gespeicherte Profil aber
+	// unangetastet (bleibt für die nächste Anzeige als Autofill erhalten).
+	export const resetAll = async () => {
+		form = {
+			firstName: '',
+			lastName: '',
+			addressStreet: '',
+			addressHouseNumber: '',
+			addressPostcode: '',
+			addressCity: '',
+			email: '',
+			photos: [],
+			vehicles: []
+		};
+		errors = {};
+		vehicleGeocodeWarnings = {};
+		sendError = null;
+		sendResults = [];
+		photoProcessingError = null;
+		isEditingProfile = true;
+		await clearDraft();
+	};
+
 	const onSubmit = async (event: SubmitEvent) => {
 		event.preventDefault();
 		errors = validateReportForm(form);

@@ -3,6 +3,8 @@
 	import { resolve } from '$app/paths';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ReportForm from '$lib/components/ReportForm.svelte';
+
+	let reportForm: ReturnType<typeof ReportForm> | undefined;
 </script>
 
 <svelte:head>
@@ -18,9 +20,10 @@
 	linkHref={resolve('/historie')}
 	linkLabel="Historie"
 	linkIcon="history"
+	onResetConfirm={() => reportForm?.resetAll()}
 />
 <main
 	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
 >
-	<ReportForm />
+	<ReportForm bind:this={reportForm} />
 </main>
