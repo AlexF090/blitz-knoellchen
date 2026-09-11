@@ -9,15 +9,15 @@ export interface ParsedExif {
 
 const EMPTY: ParsedExif = { date: null, time: null, gps: null, dateTimeOriginal: null };
 
-function parseExifDateTime(value: string): Date | null {
+const parseExifDateTime = (value: string): Date | null => {
 	const match = /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/.exec(value);
 	if (!match) return null;
 	const [, year, month, day, hour, minute, second] = match.map(Number);
 	const date = new Date(year, month - 1, day, hour, minute, second);
 	return isNaN(date.getTime()) ? null : date;
-}
+};
 
-export async function parseExif(file: Blob): Promise<ParsedExif> {
+export const parseExif = async (file: Blob): Promise<ParsedExif> => {
 	try {
 		const buffer = await file.arrayBuffer();
 		const tags = await ExifReader.load(buffer, { expanded: true });
@@ -44,4 +44,4 @@ export async function parseExif(file: Blob): Promise<ParsedExif> {
 	} catch {
 		return EMPTY;
 	}
-}
+};

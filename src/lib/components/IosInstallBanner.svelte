@@ -12,10 +12,10 @@
 		visible = !alreadyDismissed && !isStandalone && isIosSafari(navigator.userAgent);
 	}
 
-	function dismiss() {
+	const dismiss = () => {
 		visible = false;
 		if (browser) localStorage.setItem(DISMISS_KEY, 'true');
-	}
+	};
 </script>
 
 {#if visible}

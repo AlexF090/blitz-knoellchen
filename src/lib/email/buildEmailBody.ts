@@ -8,7 +8,7 @@ export interface EmailContent {
 
 const SUBJECT = 'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken)';
 
-export function buildEmailBody(input: EmailTemplateInput): EmailContent {
+export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 	const licensePlateLine = input.licensePlate?.trim() ? input.licensePlate.trim() : 'nicht erfasst';
 	const notesLine = input.notes?.trim() ? input.notes.trim() : '-';
 	const incidentLabels = input.incidentTypes.map((t) => t.label).join(', ');
@@ -41,4 +41,4 @@ Mit freundlichen Grüßen
 ${input.firstName} ${input.lastName}`;
 
 	return { subject: SUBJECT, body };
-}
+};

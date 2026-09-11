@@ -1,6 +1,6 @@
 import type { GeocodeAddress } from './geocodeAddress';
 
-export async function fetchAddress(lat: number, lon: number): Promise<GeocodeAddress | null> {
+export const fetchAddress = async (lat: number, lon: number): Promise<GeocodeAddress | null> => {
 	try {
 		const response = await fetch(`/api/geocode?lat=${lat}&lon=${lon}`);
 		if (!response.ok) return null;
@@ -9,4 +9,4 @@ export async function fetchAddress(lat: number, lon: number): Promise<GeocodeAdd
 	} catch {
 		return null;
 	}
-}
+};

@@ -3,10 +3,10 @@ export interface CompressOptions {
 	quality: number;
 }
 
-export async function compressImage(
+export const compressImage = async (
 	file: Blob,
 	{ maxDimension, quality }: CompressOptions
-): Promise<Blob> {
+): Promise<Blob> => {
 	const bitmap = await createImageBitmap(file);
 	const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
 	const width = Math.round(bitmap.width * scale);
@@ -26,4 +26,4 @@ export async function compressImage(
 			quality
 		);
 	});
-}
+};

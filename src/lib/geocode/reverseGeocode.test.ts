@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { GeocodeAddress } from './geocodeAddress';
 import {
-	reverseGeocode,
-	createLocationIqProvider,
 	createBigDataCloudProvider,
+	createLocationIqProvider,
+	reverseGeocode,
 	type GeocodeProvider
 } from './reverseGeocode';
-import type { GeocodeAddress } from './geocodeAddress';
 
-function provider(name: string, impl: () => Promise<GeocodeAddress | null>): GeocodeProvider {
+const provider = (name: string, impl: () => Promise<GeocodeAddress | null>): GeocodeProvider => {
 	return { name, lookup: vi.fn(impl) };
-}
+};
 
 const DOMKLOSTER: GeocodeAddress = {
 	street: 'Domkloster',

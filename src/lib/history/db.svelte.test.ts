@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addEntry, getEntry, listEntries, type HistoryEntry } from './db';
 
-function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
+const makeEntry = (overrides: Partial<HistoryEntry> = {}): HistoryEntry => {
 	return {
 		id: crypto.randomUUID(),
 		timestamp: Date.now(),
@@ -12,7 +12,7 @@ function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
 		thumbnail: new Blob(['x'], { type: 'image/jpeg' }),
 		...overrides
 	};
-}
+};
 
 describe('history db', () => {
 	it('speichert und liest einen Eintrag', async () => {

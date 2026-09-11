@@ -25,7 +25,7 @@ const STORE_NAME = 'entries';
 
 let dbPromise: Promise<IDBPDatabase<KnoellchenBlitzDB>> | undefined;
 
-function getDb() {
+const getDb = () => {
 	dbPromise ??= openDB<KnoellchenBlitzDB>(DB_NAME, 1, {
 		upgrade(db) {
 			const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
@@ -33,20 +33,20 @@ function getDb() {
 		}
 	});
 	return dbPromise;
-}
+};
 
-export async function addEntry(entry: HistoryEntry): Promise<void> {
+export const addEntry = async (entry: HistoryEntry): Promise<void> => {
 	const db = await getDb();
 	await db.put(STORE_NAME, entry);
-}
+};
 
-export async function listEntries(): Promise<HistoryEntry[]> {
+export const listEntries = async (): Promise<HistoryEntry[]> => {
 	const db = await getDb();
 	const entries = await db.getAllFromIndex(STORE_NAME, 'by-timestamp');
 	return entries.reverse();
-}
+};
 
-export async function getEntry(id: string): Promise<HistoryEntry | undefined> {
+export const getEntry = async (id: string): Promise<HistoryEntry | undefined> => {
 	const db = await getDb();
 	return db.get(STORE_NAME, id);
-}
+};

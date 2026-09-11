@@ -5,7 +5,12 @@ export interface FormattableAddress {
 	city: string;
 }
 
-export function formatAddress({ street, houseNumber, postcode, city }: FormattableAddress): string {
+export const formatAddress = ({
+	street,
+	houseNumber,
+	postcode,
+	city
+}: FormattableAddress): string => {
 	const houseNumberPart = houseNumber?.trim() ? ` ${houseNumber.trim()}` : '';
 	return `${street}${houseNumberPart}, ${postcode} ${city}`;
-}
+};

@@ -12,19 +12,22 @@ export interface GeocodeProvider {
 
 const REQUEST_TIMEOUT_MS = 5000;
 
-function describeHttpError(providerName: string, status: number): string {
+const describeHttpError = (providerName: string, status: number): string => {
 	if (status === 429) return `${providerName} hat Rate-Limiting gemeldet (HTTP 429)`;
 	if (status === 403) return `${providerName} hat die Anfrage blockiert (HTTP 403)`;
 	return `${providerName} antwortete mit HTTP ${status}`;
-}
+};
 
 // Nichtssagende Ergebnisse (kein Straßenname und keine Ortsangabe) sind nutzlos für die
 // Anzeige und werden wie ein "kein Ergebnis" behandelt, damit der nächste Provider versucht wird.
-function toAddressOrNull(address: GeocodeAddress): GeocodeAddress | null {
+const toAddressOrNull = (address: GeocodeAddress): GeocodeAddress | null => {
 	return address.street || address.city ? address : null;
-}
+};
 
-export function createLocationIqProvider(apiKey: string, fetchFn: typeof fetch): GeocodeProvider {
+export const createLocationIqProvider = (
+	apiKey: string,
+	fetchFn: typeof fetch
+): GeocodeProvider => {
 	return {
 		name: 'locationiq',
 		async lookup(lat, lon) {
@@ -43,9 +46,9 @@ export function createLocationIqProvider(apiKey: string, fetchFn: typeof fetch):
 			});
 		}
 	};
-}
+};
 
-export function createBigDataCloudProvider(fetchFn: typeof fetch): GeocodeProvider {
+export const createBigDataCloudProvider = (fetchFn: typeof fetch): GeocodeProvider => {
 	return {
 		name: 'bigdatacloud',
 		async lookup(lat, lon) {
@@ -62,13 +65,13 @@ export function createBigDataCloudProvider(fetchFn: typeof fetch): GeocodeProvid
 			});
 		}
 	};
-}
+};
 
-export async function reverseGeocode(
+export const reverseGeocode = async (
 	lat: number,
 	lon: number,
 	providers: GeocodeProvider[]
-): Promise<ReverseGeocodeResult> {
+): Promise<ReverseGeocodeResult> => {
 	for (const provider of providers) {
 		try {
 			const address = await provider.lookup(lat, lon);
@@ -83,4 +86,4 @@ export async function reverseGeocode(
 		address: null,
 		error: 'Adresse konnte nicht automatisch ermittelt werden — bitte manuell eintragen.'
 	};
-}
+};

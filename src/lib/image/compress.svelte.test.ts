@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { compressImage } from './compress';
 
-function makeTestBlob(width: number, height: number): Promise<Blob> {
+const makeTestBlob = (width: number, height: number): Promise<Blob> => {
 	const canvas = document.createElement('canvas');
 	canvas.width = width;
 	canvas.height = height;
@@ -9,7 +9,7 @@ function makeTestBlob(width: number, height: number): Promise<Blob> {
 	ctx.fillStyle = 'red';
 	ctx.fillRect(0, 0, width, height);
 	return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob!), 'image/png'));
-}
+};
 
 describe('compressImage', () => {
 	it('verkleinert ein Bild auf die maximale Dimension', async () => {

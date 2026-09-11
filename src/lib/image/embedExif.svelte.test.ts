@@ -1,8 +1,8 @@
+import { parseExif, type ParsedExif } from '$lib/exif/parseExif';
 import { describe, expect, it } from 'vitest';
 import { embedExifMetadata } from './embedExif';
-import { parseExif, type ParsedExif } from '$lib/exif/parseExif';
 
-function makeTestJpeg(): Promise<Blob> {
+const makeTestJpeg = (): Promise<Blob> => {
 	const canvas = document.createElement('canvas');
 	canvas.width = 20;
 	canvas.height = 20;
@@ -10,7 +10,7 @@ function makeTestJpeg(): Promise<Blob> {
 	ctx.fillStyle = 'blue';
 	ctx.fillRect(0, 0, 20, 20);
 	return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.9));
-}
+};
 
 const EMPTY_EXIF: ParsedExif = { date: null, time: null, gps: null, dateTimeOriginal: null };
 
