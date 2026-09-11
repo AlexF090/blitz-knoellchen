@@ -3,7 +3,7 @@
 	import { parseExif } from '$lib/exif/parseExif';
 	import { fetchAddress } from '$lib/geocode/client';
 	import { formatAddress } from '$lib/geocode/formatAddress';
-	import { addEntry } from '$lib/history/db';
+	import { addEntry, clearDraft, getDraft, saveDraft } from '$lib/history/db';
 	import { compressImage } from '$lib/image/compress';
 	import { convertHeicToJpeg, isHeicFile } from '$lib/image/convertHeic';
 	import { embedExifMetadata } from '$lib/image/embedExif';
@@ -59,9 +59,14 @@
 	let sendResults = $state<{ licensePlate: string; ok: boolean }[]>([]);
 	let submitting = $state(false);
 	let isEditingProfile = $state(true);
+	let formReady = $state(false);
 
+	// Profil und Entwurf werden gemeinsam geladen, bevor überhaupt etwas vom Formular gerendert
+	// wird (s. formReady-Gate im Markup) — verhindert, dass "Deine Angaben" erst leer im
+	// Bearbeiten-Modus aufblitzt und dann auf den Lese-Modus umschaltet.
 	$effect(() => {
-		profileStore.load().then(() => {
+		(async () => {
+			const [, draft] = await Promise.all([profileStore.load(), getDraft()]);
 			const profile = profileStore.value;
 			if (!form.firstName) form.firstName = profile.firstName;
 			if (!form.lastName) form.lastName = profile.lastName;
@@ -73,7 +78,33 @@
 
 			const profileErrors = validateProfileFields(form);
 			if (Object.keys(profileErrors).length === 0) isEditingProfile = false;
-		});
+
+			if (draft) {
+				form.vehicles = draft.vehicles;
+				form.photos = draft.photos;
+			}
+
+			formReady = true;
+		})();
+	});
+
+	// Debounced Autosave des Entwurfs (Fahrzeuge + Fotos) in die IndexedDB, solange noch nicht
+	// abgesendet wurde — überlebt so ein Schließen von Tab/PWA mitten im Ausfüllen.
+	$effect(() => {
+		if (!formReady) return;
+		JSON.stringify(form.vehicles); // erzwingt Tracking aller verschachtelten Fahrzeug-Felder
+		void form.photos.length;
+
+		const timer = setTimeout(() => {
+			if (form.vehicles.length === 0 && form.photos.length === 0) {
+				clearDraft();
+			} else {
+				// $state-Proxys sind nicht structured-clone-fähig (IndexedDB wirft sonst
+				// "could not be cloned") — daher als reine Snapshots speichern.
+				saveDraft($state.snapshot(form.vehicles), $state.snapshot(form.photos));
+			}
+		}, 800);
+		return () => clearTimeout(timer);
 	});
 
 	const saveProfileFields = async () => {
@@ -315,6 +346,9 @@
 					photos: [],
 					vehicles: []
 				};
+				await clearDraft();
+			} else {
+				await saveDraft($state.snapshot(form.vehicles), $state.snapshot(form.photos));
 			}
 		} finally {
 			submitting = false;
@@ -344,194 +378,206 @@
 		{/if}
 	{/if}
 
-	<div class="rounded-card bg-surface p-4 shadow-card sm:p-6">
-		<h2 class="text-sm font-semibold tracking-wide text-ink-muted uppercase">Deine Angaben</h2>
+	{#if !formReady}
+		<div class="rounded-card bg-surface p-4 shadow-card sm:p-6" aria-hidden="true">
+			<div class="h-4 w-32 animate-pulse rounded bg-border"></div>
+			<div class="mt-4 h-4 w-full animate-pulse rounded bg-border"></div>
+			<div class="mt-2 h-4 w-2/3 animate-pulse rounded bg-border"></div>
+		</div>
+	{:else}
+		<div class="rounded-card bg-surface p-4 shadow-card sm:p-6">
+			<h2 class="text-sm font-semibold tracking-wide text-ink-muted uppercase">Deine Angaben</h2>
 
-		{#if isEditingProfile}
-			<div class="mt-3 grid grid-cols-2 gap-3">
-				<div>
-					<label for="firstName" class="block text-sm font-medium text-ink"
-						>Vorname <span class="text-error-fg">*</span></label
-					>
-					<input
-						id="firstName"
-						autocomplete="given-name"
-						required
-						aria-required="true"
-						bind:value={form.firstName}
-						onblur={saveProfileFields}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-					{#if errors.firstName}<p class="text-sm text-error-fg">{errors.firstName}</p>{/if}
+			{#if isEditingProfile}
+				<div class="mt-3 grid grid-cols-2 gap-3">
+					<div>
+						<label for="firstName" class="block text-sm font-medium text-ink"
+							>Vorname <span class="text-error-fg">*</span></label
+						>
+						<input
+							id="firstName"
+							autocomplete="given-name"
+							required
+							aria-required="true"
+							bind:value={form.firstName}
+							onblur={saveProfileFields}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+						{#if errors.firstName}<p class="text-sm text-error-fg">{errors.firstName}</p>{/if}
+					</div>
+					<div>
+						<label for="lastName" class="block text-sm font-medium text-ink"
+							>Nachname <span class="text-error-fg">*</span></label
+						>
+						<input
+							id="lastName"
+							autocomplete="family-name"
+							required
+							aria-required="true"
+							bind:value={form.lastName}
+							onblur={saveProfileFields}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+						{#if errors.lastName}<p class="text-sm text-error-fg">{errors.lastName}</p>{/if}
+					</div>
 				</div>
-				<div>
-					<label for="lastName" class="block text-sm font-medium text-ink"
-						>Nachname <span class="text-error-fg">*</span></label
-					>
-					<input
-						id="lastName"
-						autocomplete="family-name"
-						required
-						aria-required="true"
-						bind:value={form.lastName}
-						onblur={saveProfileFields}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-					{#if errors.lastName}<p class="text-sm text-error-fg">{errors.lastName}</p>{/if}
-				</div>
-			</div>
 
-			<div class="mt-3 grid grid-cols-[2fr_1fr] gap-3">
-				<div>
-					<label for="addressStreet" class="block text-sm font-medium text-ink"
-						>Straße <span class="text-error-fg">*</span></label
-					>
-					<input
-						id="addressStreet"
-						autocomplete="address-line1"
-						required
-						aria-required="true"
-						bind:value={form.addressStreet}
-						onblur={saveProfileFields}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-					{#if errors.addressStreet}<p class="text-sm text-error-fg">{errors.addressStreet}</p>{/if}
+				<div class="mt-3 grid grid-cols-[2fr_1fr] gap-3">
+					<div>
+						<label for="addressStreet" class="block text-sm font-medium text-ink"
+							>Straße <span class="text-error-fg">*</span></label
+						>
+						<input
+							id="addressStreet"
+							autocomplete="address-line1"
+							required
+							aria-required="true"
+							bind:value={form.addressStreet}
+							onblur={saveProfileFields}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+						{#if errors.addressStreet}<p class="text-sm text-error-fg">
+								{errors.addressStreet}
+							</p>{/if}
+					</div>
+					<div>
+						<label for="addressHouseNumber" class="block text-sm font-medium text-ink"
+							>Hausnr.</label
+						>
+						<input
+							id="addressHouseNumber"
+							autocomplete="address-line2"
+							bind:value={form.addressHouseNumber}
+							onblur={saveProfileFields}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+					</div>
 				</div>
-				<div>
-					<label for="addressHouseNumber" class="block text-sm font-medium text-ink">Hausnr.</label>
-					<input
-						id="addressHouseNumber"
-						autocomplete="address-line2"
-						bind:value={form.addressHouseNumber}
-						onblur={saveProfileFields}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-				</div>
-			</div>
 
-			<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
-				<div>
-					<label for="addressPostcode" class="block text-sm font-medium text-ink"
-						>PLZ <span class="text-error-fg">*</span></label
-					>
-					<input
-						id="addressPostcode"
-						autocomplete="postal-code"
-						required
-						aria-required="true"
-						bind:value={form.addressPostcode}
-						onblur={saveProfileFields}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-					{#if errors.addressPostcode}<p class="text-sm text-error-fg">
-							{errors.addressPostcode}
-						</p>{/if}
+				<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
+					<div>
+						<label for="addressPostcode" class="block text-sm font-medium text-ink"
+							>PLZ <span class="text-error-fg">*</span></label
+						>
+						<input
+							id="addressPostcode"
+							autocomplete="postal-code"
+							required
+							aria-required="true"
+							bind:value={form.addressPostcode}
+							onblur={saveProfileFields}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+						{#if errors.addressPostcode}<p class="text-sm text-error-fg">
+								{errors.addressPostcode}
+							</p>{/if}
+					</div>
+					<div>
+						<label for="addressCity" class="block text-sm font-medium text-ink"
+							>Ort <span class="text-error-fg">*</span></label
+						>
+						<input
+							id="addressCity"
+							autocomplete="address-level2"
+							required
+							aria-required="true"
+							bind:value={form.addressCity}
+							onblur={saveProfileFields}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+						{#if errors.addressCity}<p class="text-sm text-error-fg">{errors.addressCity}</p>{/if}
+					</div>
 				</div>
-				<div>
-					<label for="addressCity" class="block text-sm font-medium text-ink"
-						>Ort <span class="text-error-fg">*</span></label
-					>
-					<input
-						id="addressCity"
-						autocomplete="address-level2"
-						required
-						aria-required="true"
-						bind:value={form.addressCity}
-						onblur={saveProfileFields}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-					{#if errors.addressCity}<p class="text-sm text-error-fg">{errors.addressCity}</p>{/if}
-				</div>
-			</div>
 
-			<div class="mt-3">
-				<label for="email" class="block text-sm font-medium text-ink"
-					>Deine E-Mail-Adresse <span class="text-error-fg">*</span></label
+				<div class="mt-3">
+					<label for="email" class="block text-sm font-medium text-ink"
+						>Deine E-Mail-Adresse <span class="text-error-fg">*</span></label
+					>
+					<input
+						id="email"
+						type="email"
+						autocomplete="email"
+						required
+						aria-required="true"
+						bind:value={form.email}
+						onblur={saveProfileFields}
+						class="mt-1 w-full rounded-control border border-border p-2"
+					/>
+					{#if errors.email}<p class="text-sm text-error-fg">{errors.email}</p>{/if}
+				</div>
+
+				<button
+					type="button"
+					onclick={onSaveProfile}
+					class="mt-4 rounded-control border border-primary-500 px-3 py-1.5 text-sm font-medium text-primary-600"
 				>
-				<input
-					id="email"
-					type="email"
-					autocomplete="email"
-					required
-					aria-required="true"
-					bind:value={form.email}
-					onblur={saveProfileFields}
-					class="mt-1 w-full rounded-control border border-border p-2"
-				/>
-				{#if errors.email}<p class="text-sm text-error-fg">{errors.email}</p>{/if}
-			</div>
-
-			<button
-				type="button"
-				onclick={onSaveProfile}
-				class="mt-4 rounded-control border border-primary-500 px-3 py-1.5 text-sm font-medium text-primary-600"
-			>
-				Speichern
-			</button>
-		{:else}
-			<div class="mt-3 text-sm text-ink">
-				<p>{form.firstName} {form.lastName}</p>
-				<p>{form.addressStreet} {form.addressHouseNumber}</p>
-				<p>{form.addressPostcode} {form.addressCity}</p>
-				<p>{form.email}</p>
-			</div>
-
-			<button
-				type="button"
-				onclick={onEditProfile}
-				class="mt-4 rounded-control border border-primary-500 px-3 py-1.5 text-sm font-medium text-primary-600"
-			>
-				Bearbeiten
-			</button>
-		{/if}
-	</div>
-
-	<div bind:this={photosCardElement}>
-		<PhotoPool
-			photos={form.photos}
-			{usageCounts}
-			error={errors.photos}
-			processingError={photoProcessingError}
-			processing={photoProcessing}
-			maxPhotos={getMaxPoolPhotos(form.vehicles.length)}
-			maxPhotosPerVehicle={MAX_PHOTOS_PER_VEHICLE}
-			onAdd={onAddPhoto}
-			onRemove={onRemovePhoto}
-		/>
-	</div>
-
-	<div class="flex flex-col gap-4">
-		<div
-			class={`grid grid-cols-1 gap-4 ${form.vehicles.length > 1 ? 'md:grid-cols-2' : ''} lg:grid-cols-1`}
-		>
-			{#each form.vehicles as vehicle, index (vehicle.id)}
-				<div id="vehicle-block-{vehicle.id}">
-					<VehicleBlock
-						{vehicle}
-						{index}
-						total={form.vehicles.length}
-						errors={errors.vehicles?.[index]}
-						pool={form.photos}
-						incidentTypes={city.incidentTypes}
-						maxPhotos={MAX_PHOTOS_PER_VEHICLE}
-						geocodeWarning={vehicleGeocodeWarnings[vehicle.id]}
-						onRemove={() => removeVehicle(vehicle.id)}
-						onPhotoToggled={(photoId, selected) => {
-							if (selected) applyPhotoExifToVehicle(vehicle, photoId);
-						}}
-					/>
+					Speichern
+				</button>
+			{:else}
+				<div class="mt-3 text-sm text-ink">
+					<p>{form.firstName} {form.lastName}</p>
+					<p>{form.addressStreet} {form.addressHouseNumber}</p>
+					<p>{form.addressPostcode} {form.addressCity}</p>
+					<p>{form.email}</p>
 				</div>
-			{/each}
+
+				<button
+					type="button"
+					onclick={onEditProfile}
+					class="mt-4 rounded-control border border-primary-500 px-3 py-1.5 text-sm font-medium text-primary-600"
+				>
+					Bearbeiten
+				</button>
+			{/if}
 		</div>
 
-		<button
-			type="button"
-			onclick={addVehicle}
-			class="rounded-control border border-primary-500 px-4 py-3 font-medium text-primary-600"
-		>
-			+ Weiteres Fahrzeug hinzufügen
-		</button>
-	</div>
+		<div bind:this={photosCardElement}>
+			<PhotoPool
+				photos={form.photos}
+				{usageCounts}
+				error={errors.photos}
+				processingError={photoProcessingError}
+				processing={photoProcessing}
+				maxPhotos={getMaxPoolPhotos(form.vehicles.length)}
+				maxPhotosPerVehicle={MAX_PHOTOS_PER_VEHICLE}
+				onAdd={onAddPhoto}
+				onRemove={onRemovePhoto}
+			/>
+		</div>
+
+		<div class="flex flex-col gap-4">
+			<div
+				class={`grid grid-cols-1 gap-4 ${form.vehicles.length > 1 ? 'md:grid-cols-2' : ''} lg:grid-cols-1`}
+			>
+				{#each form.vehicles as vehicle, index (vehicle.id)}
+					<div id="vehicle-block-{vehicle.id}">
+						<VehicleBlock
+							{vehicle}
+							{index}
+							total={form.vehicles.length}
+							errors={errors.vehicles?.[index]}
+							pool={form.photos}
+							incidentTypes={city.incidentTypes}
+							maxPhotos={MAX_PHOTOS_PER_VEHICLE}
+							geocodeWarning={vehicleGeocodeWarnings[vehicle.id]}
+							onRemove={() => removeVehicle(vehicle.id)}
+							onPhotoToggled={(photoId, selected) => {
+								if (selected) applyPhotoExifToVehicle(vehicle, photoId);
+							}}
+						/>
+					</div>
+				{/each}
+			</div>
+
+			<button
+				type="button"
+				onclick={addVehicle}
+				class="rounded-control border border-primary-500 px-4 py-3 font-medium text-primary-600"
+			>
+				+ Weiteres Fahrzeug hinzufügen
+			</button>
+		</div>
+	{/if}
 
 	<div class="pb-24 lg:hidden"></div>
 	<div
@@ -539,7 +585,7 @@
 	>
 		<button
 			type="submit"
-			disabled={submitting || photoProcessing}
+			disabled={!formReady || submitting || photoProcessing}
 			class="mx-auto block w-full max-w-md rounded-control bg-primary-600 px-4 py-3 font-medium text-white hover:bg-primary-700 disabled:opacity-50 lg:max-w-5xl"
 		>
 			{submitting ? 'Wird gesendet…' : 'Absenden'}
