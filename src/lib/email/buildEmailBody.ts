@@ -8,6 +8,11 @@ export interface EmailContent {
 
 const SUBJECT_BASE = 'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken)';
 
+const formatGermanDate = (isoDate: string): string => {
+	const [year, month, day] = isoDate.split('-');
+	return year && month && day ? `${day}.${month}.${year}` : isoDate;
+};
+
 export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 	const subject =
 		input.vehicleTotal && input.vehicleTotal > 1
@@ -37,7 +42,7 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 	const body = `Sehr geehrte Damen und Herren,
 
 hiermit zeige ich, ${input.firstName} ${input.lastName}, wohnhaft in ${addressLine}, an,
-dass am ${input.date} um ${input.time} Uhr in der ${locationLine} folgender Sachverhalt
+dass am ${formatGermanDate(input.date)} um ${input.time} Uhr in der ${locationLine} folgender Sachverhalt
 vorlag:
 
 ${incidentDescriptions}
