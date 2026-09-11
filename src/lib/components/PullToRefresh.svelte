@@ -10,6 +10,7 @@
 	const PULL_THRESHOLD = 72;
 	const MAX_PULL = 120;
 	const DAMPING = 0.5;
+	const MAX_BLUR_PX = 6;
 
 	let container: HTMLDivElement | undefined = $state();
 	let pulling = $state(false);
@@ -73,23 +74,24 @@
 
 <div bind:this={container} role="presentation">
 	<div
-		class="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center"
+		class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
 		style:opacity={refreshing ? 1 : progress}
-		style:transform="translateY({refreshing ? PULL_THRESHOLD : pullDistance}px) scale({refreshing
-			? 1
-			: progress})"
-		style:transition={pulling ? 'none' : 'opacity 200ms ease-out, transform 200ms ease-out'}
+		style:transition={pulling ? 'none' : 'opacity 200ms ease-out'}
 	>
-		<div class="rounded-full bg-surface p-2 shadow-card">
+		<div
+			class="rounded-full bg-surface p-4 shadow-card"
+			style:transform="scale({refreshing ? 1 : progress})"
+			style:transition={pulling ? 'none' : 'transform 200ms ease-out'}
+		>
 			<Loader2
-				class="size-5 text-primary-600 {refreshing ? 'animate-spin' : ''}"
+				class="size-8 text-primary-600 {refreshing ? 'animate-spin' : ''}"
 				style={refreshing ? undefined : `transform: rotate(${progress * 360}deg)`}
 			/>
 		</div>
 	</div>
 	<div
-		style:transform="translateY({refreshing ? PULL_THRESHOLD : pullDistance}px)"
-		style:transition={pulling ? 'none' : 'transform 200ms ease-out'}
+		style:filter="blur({(refreshing ? 1 : progress) * MAX_BLUR_PX}px)"
+		style:transition={pulling ? 'none' : 'filter 200ms ease-out'}
 	>
 		{@render children()}
 	</div>
