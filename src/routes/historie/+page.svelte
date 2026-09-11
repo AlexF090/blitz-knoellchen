@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { listEntries, type HistoryEntry } from '$lib/history/db';
 
 	let entries = $state<HistoryEntry[]>([]);
@@ -16,12 +17,10 @@
 	<title>Historie – Blitz-Knöllchen</title>
 </svelte:head>
 
-<main class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:py-8">
-	<div class="flex items-center justify-between">
-		<h1 class="text-xl font-semibold text-ink md:text-2xl">Historie</h1>
-		<a href={resolve('/')} class="text-sm text-primary-600 underline">Zurück</a>
-	</div>
-
+<PageHeader title="Historie" linkHref={resolve('/')} linkLabel="Zurück" />
+<main
+	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
+>
 	{#if loaded && entries.length === 0}
 		<p class="text-ink-muted">Noch keine Anzeigen versendet.</p>
 	{/if}
