@@ -7,8 +7,8 @@ const RECIPIENT_EMAILS: Record<string, string> = {
 	koeln: RECIPIENT_EMAIL
 };
 
-export function getRecipientEmail(cityId: string): string {
+export const getRecipientEmail = (cityId: string): string => {
 	const email = RECIPIENT_EMAILS[cityId];
 	if (!email) throw new Error(`Keine Empfänger-E-Mail für Stadt "${cityId}" konfiguriert.`);
 	return email;
-}
+};

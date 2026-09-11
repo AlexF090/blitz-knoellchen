@@ -11,7 +11,7 @@ const STORAGE_KEY = 'knoellchen-blitz:profile';
 
 const EMPTY_PROFILE: UserProfile = { firstName: '', lastName: '', address: '', email: '' };
 
-function loadProfile(): UserProfile {
+const loadProfile = (): UserProfile => {
 	if (!browser) return { ...EMPTY_PROFILE };
 	const raw = localStorage.getItem(STORAGE_KEY);
 	if (!raw) return { ...EMPTY_PROFILE };
@@ -20,9 +20,9 @@ function loadProfile(): UserProfile {
 	} catch {
 		return { ...EMPTY_PROFILE };
 	}
-}
+};
 
-export function createProfileStore() {
+export const createProfileStore = () => {
 	let profile = $state(loadProfile());
 
 	return {
@@ -34,4 +34,4 @@ export function createProfileStore() {
 			if (browser) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
 		}
 	};
-}
+};

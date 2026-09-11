@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { isHeicFile } from './convertHeic';
 
-function makeFile(name: string, type: string): File {
+const makeFile = (name: string, type: string): File => {
 	return new File(['x'], name, { type });
-}
+};
 
 describe('isHeicFile', () => {
 	it('erkennt image/heic MIME-Type', () => {

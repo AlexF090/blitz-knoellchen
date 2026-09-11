@@ -41,13 +41,13 @@
 	let sendSuccess = $state(false);
 	let submitting = $state(false);
 
-	function toggleIncidentType(id: string, checked: boolean) {
+	const toggleIncidentType = (id: string, checked: boolean) => {
 		form.incidentTypeIds = checked
 			? [...form.incidentTypeIds, id]
 			: form.incidentTypeIds.filter((existing) => existing !== id);
-	}
+	};
 
-	async function onPhotoSelected(event: Event) {
+	const onPhotoSelected = async (event: Event) => {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
@@ -96,9 +96,9 @@
 		} else {
 			photoFile = file;
 		}
-	}
+	};
 
-	async function onSubmit(event: SubmitEvent) {
+	const onSubmit = async (event: SubmitEvent) => {
 		event.preventDefault();
 		errors = validateReportForm(form);
 		if (!isFormValid(errors) || !photoFile) return;
@@ -179,7 +179,7 @@
 		} finally {
 			submitting = false;
 		}
-	}
+	};
 </script>
 
 <form onsubmit={onSubmit} class="flex flex-col gap-4">

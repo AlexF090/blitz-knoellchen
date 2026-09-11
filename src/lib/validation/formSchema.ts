@@ -18,7 +18,7 @@ export type FormErrors = Partial<Record<keyof ReportFormData, string>>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function validateReportForm(data: ReportFormData): FormErrors {
+export const validateReportForm = (data: ReportFormData): FormErrors => {
 	const errors: FormErrors = {};
 
 	if (!data.firstName.trim()) errors.firstName = 'Vorname ist erforderlich.';
@@ -38,8 +38,8 @@ export function validateReportForm(data: ReportFormData): FormErrors {
 		errors.incidentTypeIds = 'Mindestens eine Verstoßart ist erforderlich.';
 
 	return errors;
-}
+};
 
-export function isFormValid(errors: FormErrors): boolean {
+export const isFormValid = (errors: FormErrors): boolean => {
 	return Object.keys(errors).length === 0;
-}
+};
