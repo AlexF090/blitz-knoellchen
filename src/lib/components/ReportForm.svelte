@@ -8,6 +8,7 @@
 	import { convertHeicToJpeg, isHeicFile } from '$lib/image/convertHeic';
 	import { embedExifMetadata } from '$lib/image/embedExif';
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
+	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import {
 		getMaxPoolPhotos,
 		isFormValid,
@@ -16,7 +17,8 @@
 		validateReportForm,
 		type PhotoEntry,
 		type ReportFormData,
-		type VehicleEntry
+		type VehicleEntry,
+		type VehicleErrors
 	} from '$lib/validation/formSchema';
 	import { tick } from 'svelte';
 	import PhotoPool from './PhotoPool.svelte';
@@ -289,11 +291,65 @@
 		await clearDraft();
 	};
 
+	// Reihenfolge bestimmt, welches Feld bei mehreren gleichzeitigen Fehlern fokussiert wird —
+	// folgt der visuellen Reihenfolge des Formulars von oben nach unten.
+	const PROFILE_FIELD_ORDER: (keyof typeof errors)[] = [
+		'firstName',
+		'lastName',
+		'addressStreet',
+		'addressPostcode',
+		'addressCity',
+		'email'
+	];
+	const VEHICLE_FIELD_ORDER: (keyof VehicleErrors)[] = [
+		'photoIds',
+		'date',
+		'time',
+		'locationStreet',
+		'locationPostcode',
+		'locationCity',
+		'licensePlate',
+		'incidentTypeIds'
+	];
+
+	// Fokussiert das erste fehlerhafte Feld nach einem gescheiterten Absenden — Bildschirmleser
+	// erfahren so direkt, welches Feld korrigiert werden muss, statt nur einen visuellen Scroll
+	// (der sehende Maus-Nutzer hilft, aber Tastatur-/Screenreader-Nutzer nicht weiterbringt).
+	const focusFirstError = async (formErrors: ReturnType<typeof validateReportForm>) => {
+		await tick();
+		if (formErrors.photos) {
+			photosCardElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			return;
+		}
+		const profileField = PROFILE_FIELD_ORDER.find((field) => formErrors[field]);
+		if (profileField) {
+			document.getElementById(profileField)?.focus();
+			return;
+		}
+		for (const [index, vehicleErrors] of (formErrors.vehicles ?? []).entries()) {
+			const field = VEHICLE_FIELD_ORDER.find((f) => vehicleErrors[f]);
+			if (!field) continue;
+			const vehicleId = form.vehicles[index]?.id;
+			if (!vehicleId) return;
+			// photoIds/incidentTypeIds haben kein einzelnes fokussierbares Eingabefeld (Foto-Grid
+			// bzw. Checkbox-Gruppe) — dafür genügt das Scrollen zur Fahrzeugkarte als Fallback.
+			const target = document.getElementById(`${field}-${vehicleId}`);
+			if (target) {
+				target.focus();
+			} else {
+				document
+					.getElementById(`vehicle-block-${vehicleId}`)
+					?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			}
+			return;
+		}
+	};
+
 	const onSubmit = async (event: SubmitEvent) => {
 		event.preventDefault();
 		errors = validateReportForm(form);
 		if (!isFormValid(errors)) {
-			if (errors.photos) photosCardElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			await focusFirstError(errors);
 			return;
 		}
 
@@ -417,14 +473,24 @@
 	{/if}
 
 	{#if !formReady}
-		<div class="rounded-card bg-surface p-4 shadow-card sm:p-6" aria-hidden="true">
-			<div class="h-4 w-32 animate-pulse rounded bg-border"></div>
-			<div class="mt-4 h-4 w-full animate-pulse rounded bg-border"></div>
-			<div class="mt-2 h-4 w-2/3 animate-pulse rounded bg-border"></div>
+		<div class="rounded-card bg-surface p-4 shadow-card sm:p-6">
+			<p role="status" class="sr-only">Formular wird geladen…</p>
+			<div aria-hidden="true">
+				<div class="h-4 w-32 animate-pulse rounded bg-border motion-reduce:animate-none"></div>
+				<div
+					class="mt-4 h-4 w-full animate-pulse rounded bg-border motion-reduce:animate-none"
+				></div>
+				<div
+					class="mt-2 h-4 w-2/3 animate-pulse rounded bg-border motion-reduce:animate-none"
+				></div>
+			</div>
 		</div>
 	{:else}
 		<div class="rounded-card bg-surface p-4 shadow-card sm:p-6">
 			<h2 class="text-sm font-semibold tracking-wide text-ink-muted uppercase">Deine Angaben</h2>
+			<p class="mt-1 text-xs text-ink-muted">
+				Mit <span class="text-error-fg">*</span> markierte Felder sind Pflichtfelder.
+			</p>
 
 			{#if isEditingProfile}
 				<div class="mt-3 grid grid-cols-2 gap-3">
@@ -437,11 +503,18 @@
 							autocomplete="given-name"
 							required
 							aria-required="true"
+							{...ariaFieldProps('firstName', errors.firstName)}
 							bind:value={form.firstName}
 							onblur={saveProfileFields}
 							class="mt-1 w-full rounded-control border border-border p-2"
 						/>
-						{#if errors.firstName}<p class="text-sm text-error-fg">{errors.firstName}</p>{/if}
+						{#if errors.firstName}<p
+								id="firstName-error"
+								role="alert"
+								class="text-sm text-error-fg"
+							>
+								{errors.firstName}
+							</p>{/if}
 					</div>
 					<div class="min-w-0">
 						<label for="lastName" class="block text-sm font-medium text-ink"
@@ -452,11 +525,14 @@
 							autocomplete="family-name"
 							required
 							aria-required="true"
+							{...ariaFieldProps('lastName', errors.lastName)}
 							bind:value={form.lastName}
 							onblur={saveProfileFields}
 							class="mt-1 w-full rounded-control border border-border p-2"
 						/>
-						{#if errors.lastName}<p class="text-sm text-error-fg">{errors.lastName}</p>{/if}
+						{#if errors.lastName}<p id="lastName-error" role="alert" class="text-sm text-error-fg">
+								{errors.lastName}
+							</p>{/if}
 					</div>
 				</div>
 
@@ -470,11 +546,16 @@
 							autocomplete="address-line1"
 							required
 							aria-required="true"
+							{...ariaFieldProps('addressStreet', errors.addressStreet)}
 							bind:value={form.addressStreet}
 							onblur={saveProfileFields}
 							class="mt-1 w-full rounded-control border border-border p-2"
 						/>
-						{#if errors.addressStreet}<p class="text-sm text-error-fg">
+						{#if errors.addressStreet}<p
+								id="addressStreet-error"
+								role="alert"
+								class="text-sm text-error-fg"
+							>
 								{errors.addressStreet}
 							</p>{/if}
 					</div>
@@ -502,11 +583,16 @@
 							autocomplete="postal-code"
 							required
 							aria-required="true"
+							{...ariaFieldProps('addressPostcode', errors.addressPostcode)}
 							bind:value={form.addressPostcode}
 							onblur={saveProfileFields}
 							class="mt-1 w-full rounded-control border border-border p-2"
 						/>
-						{#if errors.addressPostcode}<p class="text-sm text-error-fg">
+						{#if errors.addressPostcode}<p
+								id="addressPostcode-error"
+								role="alert"
+								class="text-sm text-error-fg"
+							>
 								{errors.addressPostcode}
 							</p>{/if}
 					</div>
@@ -519,11 +605,18 @@
 							autocomplete="address-level2"
 							required
 							aria-required="true"
+							{...ariaFieldProps('addressCity', errors.addressCity)}
 							bind:value={form.addressCity}
 							onblur={saveProfileFields}
 							class="mt-1 w-full rounded-control border border-border p-2"
 						/>
-						{#if errors.addressCity}<p class="text-sm text-error-fg">{errors.addressCity}</p>{/if}
+						{#if errors.addressCity}<p
+								id="addressCity-error"
+								role="alert"
+								class="text-sm text-error-fg"
+							>
+								{errors.addressCity}
+							</p>{/if}
 					</div>
 				</div>
 
@@ -537,11 +630,15 @@
 						autocomplete="email"
 						required
 						aria-required="true"
+						spellcheck="false"
+						{...ariaFieldProps('email', errors.email)}
 						bind:value={form.email}
 						onblur={saveProfileFields}
 						class="mt-1 w-full rounded-control border border-border p-2"
 					/>
-					{#if errors.email}<p class="text-sm text-error-fg">{errors.email}</p>{/if}
+					{#if errors.email}<p id="email-error" role="alert" class="text-sm text-error-fg">
+							{errors.email}
+						</p>{/if}
 				</div>
 
 				<button

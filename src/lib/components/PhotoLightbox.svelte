@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import type { PhotoEntry } from '$lib/validation/formSchema';
 
 	interface Props {
@@ -21,7 +22,8 @@
 	const MIN_SCALE = 1;
 	const MAX_SCALE = 5;
 	const DOUBLE_TAP_SCALE = 3;
-	const SNAP_DURATION_MS = 200;
+	const SNAP_DURATION_MS =
+		browser && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200;
 
 	let baseSize = { width: 0, height: 0 };
 	let snapTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -199,6 +201,16 @@
 	const handleBackdropClick = (event: MouseEvent) => {
 		if (event.target === dialog) onClose();
 	};
+
+	const ZOOM_STEP = 1.5;
+
+	// Tastatur-Alternative zum Pinch-/Wheel-Zoom: zoomt auf die Bildmitte statt auf eine
+	// Zeigerposition, da hier kein Maus-/Touch-Event mit Koordinaten vorliegt.
+	const zoomByStep = (factor: number) => {
+		if (!container) return;
+		const rect = container.getBoundingClientRect();
+		zoomAt(clampScale(scale * factor), rect.left + rect.width / 2, rect.top + rect.height / 2);
+	};
 </script>
 
 <dialog
@@ -217,6 +229,26 @@
 			>
 				×
 			</button>
+			<div class="absolute bottom-2 left-2 z-10 flex gap-2">
+				<button
+					type="button"
+					onclick={() => zoomByStep(1 / ZOOM_STEP)}
+					disabled={scale <= MIN_SCALE}
+					aria-label="Verkleinern"
+					class="flex size-8 items-center justify-center rounded-full bg-surface text-ink shadow-card disabled:opacity-50"
+				>
+					−
+				</button>
+				<button
+					type="button"
+					onclick={() => zoomByStep(ZOOM_STEP)}
+					disabled={scale >= MAX_SCALE}
+					aria-label="Vergrößern"
+					class="flex size-8 items-center justify-center rounded-full bg-surface text-ink shadow-card disabled:opacity-50"
+				>
+					+
+				</button>
+			</div>
 			<div
 				bind:this={container}
 				class="h-full w-full touch-none overflow-hidden"
@@ -232,7 +264,7 @@
 				<img
 					bind:this={imgEl}
 					src={objectUrl}
-					alt="Beweisfoto {photo.fileName}"
+					alt="Beweisfoto"
 					class="h-full w-full object-contain will-change-transform"
 					style="transform: translate({translateX}px, {translateY}px) scale({scale}); transition: {snapping
 						? `transform ${SNAP_DURATION_MS}ms ease-out`
