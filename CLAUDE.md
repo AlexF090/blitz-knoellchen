@@ -56,6 +56,24 @@ Offener Punkt: LocationIQs kostenloser Tarif sieht laut Nutzungsbedingungen eine
 Attributions-Link in der UI vor — aktuell in diesem Projekt noch nicht umgesetzt, vor
 Produktivbetrieb nachholen.
 
+Zusätzlich zum Reverse-Geocoding gibt es einen **Autocomplete**-Proxy
+(`src/routes/api/geocode/autocomplete/+server.ts`, `src/lib/geocode/autocomplete.ts`) für die
+Adressvorschlagsliste während des Tippens ("Deine Angaben" und Tatort) — nutzt denselben
+`LOCATIONIQ_API_KEY`, aber ohne Fallback-Kette (BigDataCloud hat kein Autocomplete-Äquivalent;
+bei Fehler einfach leere Liste, kein Nutzer-blockierendes Ereignis). Anders als der bestehende
+Reverse-Geocode-Proxy (der pro Formular nur einmal blockierend wartet) drosselt der
+Autocomplete-Proxy **non-blocking**: Bei potenziell einem Call pro Tastendruck würde
+blockierendes Warten Anfragen stauen und alte Antworten zeitversetzt gegen neuere Queries laufen
+lassen. Beide Endpunkte teilen sich stattdessen ein gemeinsames Soft-Limit-Modul
+(`src/lib/geocode/rateLimiter.ts`), da LocationIQs 2-Req/Sekunde-Limit prozessweit für beide
+gilt; Client-seitiges Debounce (~300ms) ist der wichtigste Hebel gegen Request-Flut.
+
+Die Autocomplete-Suche ist zusätzlich per LocationIQ-`viewbox` + `bounded=1` hart auf eine
+Köln-Bounding-Box begrenzt (`KOELN_VIEWBOX` in `src/lib/geocode/autocomplete.ts`) — die App
+deckt aktuell nur Köln ab (s. u., "Weitere Stadt hinzufügen"), striktes statt weiches Bounding
+vermeidet irrelevante Vorschläge aus anderen Städten. Wird eine zweite Stadt ergänzt, muss die
+Bounding-Box parametrisiert werden (z. B. pro `city.id`), statt weiter hart codiert zu sein.
+
 `parseExif` (`src/lib/exif/parseExif.ts`) nutzt **`exifreader`**, nicht `exifr`: `exifr` hat
 einen fest einprogrammierten Größen-Sanity-Check für die `ftyp`-Box von HEIC-Dateien, den neuere
 iPhones (mehr "compatible brands" wegen HDR-Gain-Map, siehe Abschnitt zu HEIC unten)
@@ -129,6 +147,51 @@ Labels zu einer Aufzählung ("Art des Verstoßes: X, Y") und die Beschreibungen 
 Stichpunktliste im Fließtext — so bleibt der Text auch bei mehreren gleichzeitig vorliegenden
 Verstößen (z. B. Gehweg + Kreuzungsbereich) klar strukturiert.
 
+### Hausnummer bei der eigenen Adresse: Pflicht, mit Straße zusammengelegt
+
+Die eigene Adresse des Anzeigenden ("Deine Angaben") muss laut Bußgeldstelle immer
+vollständig/zustellbar sein — anders als beim Tatort (dort bleibt die Hausnummer bewusst
+optional und ein separates Feld, s. o.: nicht jeder Verstoßort lässt sich einer exakten
+Hausnummer zuordnen). Statt eines eigenen Pflichtfelds wird die Hausnummer Teil des
+Straße-Freitextfelds (`addressStreet`, z. B. "Musterstraße 12") und per Regex
+(`HOUSE_NUMBER_SUFFIX_PATTERN` in `src/lib/validation/formSchema.ts`: endet auf eine Zahl,
+optional gefolgt von einem Buchstaben) statt eines vollständigen Adress-Parsers validiert — für
+die reine "ist eine Hausnummer angegeben"-Prüfung reicht das, ein echter Parser wäre
+Overengineering für diesen einen Anwendungsfall.
+
+### Vorgaben aus dem Original-Meldeformular der Stadt Köln (FAQ-Kandidaten)
+
+Beim Abgleich mit dem Original-Formular der Bußgeldstelle Köln sind mehrere Vorgaben
+aufgefallen, die nicht offensichtlich aus dem Code hervorgehen. Als Rohtext für eine spätere
+eigene FAQ-Seite festgehalten — **Stand 11.09.2026, kann sich ändern, vor Produktivbetrieb
+erneut mit der Stadt Köln abgleichen**:
+
+- **Telefonnummer (optional):** Das Original-Formular bittet um eine Telefonnummer "für den
+  Fall, dass wir kurzfristig Rückfragen haben ..., unter der Sie tagsüber zu erreichen sind."
+  Mobil oder Festnetz, keine Formatvorgabe — daher `phone?: string` ohne Regex-Validierung (s.
+  Coding-Konventionen, keine Validierung ohne echten Bedarf). Wird in `buildEmailBody.ts` an den
+  Schlusssatz angehängt, wenn vorhanden.
+- **4-Minuten-Regel bei Parkverstößen:** "Der Tattag und die Tatzeit sind genau zu benennen. Für
+  die Ahndung von Parkverstößen ist zwingend eine Mindestparkzeit von vier Minuten
+  erforderlich. Halteverstöße können selbstverständlich nach wie vor mit Zeiten unter vier
+  Minuten angegeben werden." Umgesetzt als explizite Nutzer-Auswahl "Halteverstoß" (Default,
+  Einzelzeitpunkt) vs. "Parkverstoß" (Zeitraum von–bis, hart auf ≥ 4 Minuten validiert) in
+  `VehicleBlock.svelte`/`validateVehicle` (`src/lib/validation/formSchema.ts`) — eine explizite
+  Auswahl statt eine automatische Ableitung aus der Verstoßart, da die App sonst eine
+  zusätzliche Halte-/Park-Klassifizierung pro `incidentTypeId` bräuchte.
+- **Kennzeichen-Format:** "Aus verarbeitungstechnischen Gründen benötigen wir das Autokennzeichen
+  in folgendem Format: H-VA1234. Dabei muss sich zwischen dem Kürzel für den
+  Kennzeichenbezirk und der Buchstabenkombination ein Bindestrich befinden, zwischen Buchstaben-
+  und Ziffernkombination darf kein weiteres Zeichen, auch kein Leerzeichen stehen." Die Eingabe
+  bleibt tippfreundlich/flexibel; `normalizeLicensePlate()` (`src/lib/validation/formSchema.ts`)
+  formt sie erst beim Versand/in der Historie ins kanonische Format um — kein
+  Formatzwang beim Tippen selbst.
+- **Marke und Farbe:** "Bitte geben Sie die Farbe an. Hilfsweise gehen auch Beschreibungen wie
+  hell, dunkel et cetera." Beide Angaben sind Pflichtfelder (`VehicleEntry.make`/`.color`);
+  Marke hat "Unbekannt" als vorausgewählten Default (`<datalist>`-Vorschlagsliste in
+  `src/lib/config/vehicleMakes.ts`, Freitext bleibt trotzdem möglich), Farbe ist reiner
+  Freitext ohne Formatvorgabe.
+
 ### Versionsnummer: einzige Quelle der Wahrheit ist `package.json`
 
 Die in der App angezeigte Versionsnummer (site-weiter Footer, `src/lib/components/
@@ -146,29 +209,35 @@ Für Minor-/Major-Sprünge (Breaking Changes, größere Features) den Patch-Bump
 
 ## Ordnerstruktur
 
-| Pfad                                     | Zweck                                                                                                      |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `src/routes/+page.svelte`                | Formular-Seite (bindet `ReportForm.svelte` ein)                                                            |
-| `src/routes/historie/+page.svelte`       | Liste bereits versendeter Anzeigen aus IndexedDB                                                           |
-| `src/routes/api/send/+server.ts`         | Serverseitiger E-Mail-Versand über Brevo                                                                   |
-| `src/routes/api/geocode/+server.ts`      | Reverse-Geocoding-Proxy (LocationIQ + BigDataCloud-Fallback, Throttling)                                   |
-| `src/lib/components/`                    | Svelte-Komponenten (`ReportForm.svelte`, `Footer.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
-| `src/lib/config/cities.ts`               | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import                    |
-| `src/lib/config/cities.server.ts`        | Serverseitige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`                        |
-| `src/lib/email/buildEmailBody.ts`        | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                                       |
-| `src/lib/exif/parseExif.ts`              | Wrapper um `exifreader`, robust gegen fehlende/korrupte EXIF-Tags                                          |
-| `src/lib/image/embedExif.ts`             | Bettet Datum/GPS (`piexifjs`) nach Konvertierung/Kompression zurück ins JPEG                               |
-| `src/lib/geocode/reverseGeocode.ts`      | Providerbasierte Fallback-Logik, unabhängig von SvelteKit testbar                                          |
-| `src/lib/geocode/geocodeAddress.ts`      | `GeocodeAddress`-Interface (Straße/Hausnr./PLZ/Ort), von Server und Client geteilt                         |
-| `src/lib/geocode/formatAddress.ts`       | Reine Funktion: `GeocodeAddress`-Felder → ein Adress-String (E-Mail-Text, Historie)                        |
-| `src/lib/geocode/client.ts`              | Ruft `/api/geocode` vom Client aus auf                                                                     |
-| `src/lib/history/db.ts`                  | `idb`-Wrapper für die lokale Historie                                                                      |
-| `src/lib/profile/profileStore.svelte.ts` | `localStorage`-Wrapper mit Svelte-5-Runes                                                                  |
-| `src/lib/image/compress.ts`              | Canvas-basierte Bildkompression                                                                            |
-| `src/lib/pwa/isIosSafari.ts`             | Reine, testbare UA-Erkennung für den iOS-Install-Hinweis                                                   |
-| `src/lib/validation/formSchema.ts`       | Handgeschriebene Formular-Validierung                                                                      |
-| `e2e/`                                   | Playwright-Tests + `fixtures/photo-with-gps.jpg` (EXIF-Testbild)                                           |
-| `scripts/`                               | Einmalige Setup-Skripte (Icon-Generierung, EXIF-Fixture-Generierung) — nicht Teil der App                  |
+| Pfad                                             | Zweck                                                                                                                                    |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/routes/+page.svelte`                        | Formular-Seite (bindet `ReportForm.svelte` ein)                                                                                          |
+| `src/routes/historie/+page.svelte`               | Liste bereits versendeter Anzeigen aus IndexedDB                                                                                         |
+| `src/routes/api/send/+server.ts`                 | Serverseitiger E-Mail-Versand über Brevo                                                                                                 |
+| `src/routes/api/geocode/+server.ts`              | Reverse-Geocoding-Proxy (LocationIQ + BigDataCloud-Fallback, Throttling)                                                                 |
+| `src/routes/api/geocode/autocomplete/+server.ts` | Adress-Autocomplete-Proxy (LocationIQ, non-blocking Throttling)                                                                          |
+| `src/lib/components/`                            | Svelte-Komponenten (`ReportForm.svelte`, `AddressAutocomplete.svelte`, `Footer.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
+| `src/lib/config/cities.ts`                       | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import                                                  |
+| `src/lib/config/cities.server.ts`                | Serverseitige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`                                                      |
+| `src/lib/config/vehicleMakes.ts`                 | Kuratierte Marken-Liste für die Marke-`<datalist>` (Fahrzeugbeschreibung), Freitext bleibt möglich                                       |
+| `src/lib/email/buildEmailBody.ts`                | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                                                                     |
+| `src/lib/exif/parseExif.ts`                      | Wrapper um `exifreader`, robust gegen fehlende/korrupte EXIF-Tags                                                                        |
+| `src/lib/image/embedExif.ts`                     | Bettet Datum/GPS (`piexifjs`) nach Konvertierung/Kompression zurück ins JPEG                                                             |
+| `src/lib/geocode/reverseGeocode.ts`              | Providerbasierte Fallback-Logik, unabhängig von SvelteKit testbar                                                                        |
+| `src/lib/geocode/geocodeAddress.ts`              | `GeocodeAddress`-Interface (Straße/Hausnr./PLZ/Ort), von Server und Client geteilt                                                       |
+| `src/lib/geocode/formatAddress.ts`               | Reine Funktion: `GeocodeAddress`-Felder → ein Adress-String (E-Mail-Text, Historie)                                                      |
+| `src/lib/geocode/client.ts`                      | Ruft `/api/geocode` vom Client aus auf                                                                                                   |
+| `src/lib/geocode/autocomplete.ts`                | LocationIQ-Autocomplete-Provider (ohne Fallback-Kette)                                                                                   |
+| `src/lib/geocode/autocompleteClient.ts`          | Ruft `/api/geocode/autocomplete` vom Client aus auf, fail-quiet                                                                          |
+| `src/lib/geocode/httpErrors.ts`                  | Gemeinsame HTTP-Fehlertext-Logik für Reverse-Geocode und Autocomplete                                                                    |
+| `src/lib/geocode/rateLimiter.ts`                 | Gemeinsames Throttle-Modul (blocking + non-blocking) für beide Geocode-Proxys                                                            |
+| `src/lib/history/db.ts`                          | `idb`-Wrapper für die lokale Historie                                                                                                    |
+| `src/lib/profile/profileStore.svelte.ts`         | `localStorage`-Wrapper mit Svelte-5-Runes                                                                                                |
+| `src/lib/image/compress.ts`                      | Canvas-basierte Bildkompression                                                                                                          |
+| `src/lib/pwa/isIosSafari.ts`                     | Reine, testbare UA-Erkennung für den iOS-Install-Hinweis                                                                                 |
+| `src/lib/validation/formSchema.ts`               | Handgeschriebene Formular-Validierung                                                                                                    |
+| `e2e/`                                           | Playwright-Tests + `fixtures/photo-with-gps.jpg` (EXIF-Testbild)                                                                         |
+| `scripts/`                                       | Einmalige Setup-Skripte (Icon-Generierung, EXIF-Fixture-Generierung) — nicht Teil der App                                                |
 
 ## Kommandos
 
@@ -221,12 +290,12 @@ nicht:
 
 ## Umgebungsvariablen
 
-| Variable             | Zweck                                                                                   |
-| -------------------- | --------------------------------------------------------------------------------------- |
-| `BREVO_API_KEY`      | API-Key für den E-Mail-Versand über Brevo.                                              |
-| `EMAIL_FROM`         | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain).              |
-| `RECIPIENT_EMAIL`    | Empfänger der Anzeige-Mail (Testphase: eigene Adresse; Produktion: Bußgeldstelle Köln). |
-| `LOCATIONIQ_API_KEY` | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider).    |
+| Variable             | Zweck                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `BREVO_API_KEY`      | API-Key für den E-Mail-Versand über Brevo.                                                                         |
+| `EMAIL_FROM`         | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain).                                         |
+| `RECIPIENT_EMAIL`    | Empfänger der Anzeige-Mail (Testphase: eigene Adresse; Produktion: Bußgeldstelle Köln).                            |
+| `LOCATIONIQ_API_KEY` | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider), auch für Adress-Autocomplete. |
 
 Immer über `.env.example` dokumentieren, echte Werte nie committen. Serverseitige Secrets
 ausschließlich über `$env/static/private` einbinden (siehe `cities.server.ts`,

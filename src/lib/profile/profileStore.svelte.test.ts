@@ -8,10 +8,10 @@ describe('profileStore', () => {
 			firstName: '',
 			lastName: '',
 			addressStreet: '',
-			addressHouseNumber: '',
 			addressPostcode: '',
 			addressCity: '',
-			email: ''
+			email: '',
+			phone: ''
 		});
 	});
 
@@ -20,8 +20,7 @@ describe('profileStore', () => {
 		await store.save({
 			firstName: 'Max',
 			lastName: 'Mustermann',
-			addressStreet: 'Musterstraße',
-			addressHouseNumber: '1',
+			addressStreet: 'Musterstraße 1',
 			addressPostcode: '50667',
 			addressCity: 'Köln',
 			email: 'max@example.com'

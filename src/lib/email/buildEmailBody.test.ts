@@ -5,8 +5,7 @@ import type { EmailTemplateInput } from '$lib/config/cities';
 const baseInput: EmailTemplateInput = {
 	firstName: 'Max',
 	lastName: 'Mustermann',
-	addressStreet: 'Musterstraße',
-	addressHouseNumber: '1',
+	addressStreet: 'Musterstraße 1',
 	addressPostcode: '50667',
 	addressCity: 'Köln',
 	date: '2026-03-01',
@@ -19,6 +18,8 @@ const baseInput: EmailTemplateInput = {
 		{ label: 'Parken auf dem Gehweg', description: 'Das Fahrzeug parkte auf dem Gehweg.' }
 	],
 	licensePlate: 'K-AB 1234',
+	make: 'VW',
+	color: 'Rot',
 	notes: 'Fahrzeug stand seit über einer Stunde dort.',
 	photoCount: 1
 };
@@ -35,6 +36,8 @@ describe('buildEmailBody', () => {
 		expect(result.body).toContain('Parken auf dem Gehweg');
 		expect(result.body).toContain('Das Fahrzeug parkte auf dem Gehweg.');
 		expect(result.body).toContain('K-AB 1234');
+		expect(result.body).toContain('Fahrzeug: VW (Farbe: Rot)');
+		expect(result.body).toContain('um 14:30 Uhr');
 		expect(result.body).toContain('Fahrzeug stand seit über einer Stunde dort.');
 	});
 
@@ -91,6 +94,35 @@ describe('buildEmailBody', () => {
 		expect(result.subject).toBe(
 			'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken) – Fahrzeug 2/3'
 		);
+	});
+
+	it('erwähnt die Telefonnummer im Schlusssatz, wenn angegeben', () => {
+		const result = buildEmailBody({ ...baseInput, phone: '0221 12345678' });
+		expect(result.body).toContain(
+			'bin unter dieser E-Mail-Adresse sowie telefonisch unter 0221 12345678\nerreichbar.'
+		);
+	});
+
+	it('lässt den Telefon-Hinweis bei fehlender Nummer weg', () => {
+		const result = buildEmailBody({ ...baseInput, phone: undefined });
+		expect(result.body).toContain('bin unter dieser E-Mail-Adresse\nerreichbar.');
+		expect(result.body).not.toContain('telefonisch');
+	});
+
+	it('formuliert einen Zeitraum, wenn endTime gesetzt ist', () => {
+		const result = buildEmailBody({ ...baseInput, time: '14:00', endTime: '14:10' });
+		expect(result.body).toContain('in der Zeit von 14:00 Uhr bis 14:10 Uhr');
+	});
+
+	it('formuliert einen Einzelzeitpunkt ohne endTime', () => {
+		const result = buildEmailBody({ ...baseInput, endTime: undefined });
+		expect(result.body).toContain('um 14:30 Uhr');
+		expect(result.body).not.toContain('in der Zeit von');
+	});
+
+	it('fällt bei fehlender Marke/Farbe auf Platzhaltertext zurück', () => {
+		const result = buildEmailBody({ ...baseInput, make: undefined, color: undefined });
+		expect(result.body).toContain('Fahrzeug: unbekannt (Farbe: nicht angegeben)');
 	});
 
 	it('behält Sonderzeichen (ö/ä/ü/ß) korrekt bei', () => {

@@ -32,6 +32,11 @@
 			<li class="rounded-card bg-surface p-3 shadow-card">
 				<p class="font-medium text-ink">{entry.incidentTypeLabels.join(', ')}</p>
 				<p class="text-sm text-ink-muted">{entry.locationAddress}</p>
+				{#if entry.licensePlate}
+					<p class="text-xs text-ink-muted">
+						{entry.licensePlate} · {entry.make} · {entry.color}
+					</p>
+				{/if}
 				<p class="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleString('de-DE')}</p>
 			</li>
 		{/each}

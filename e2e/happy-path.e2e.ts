@@ -19,8 +19,7 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 
 	await page.locator('#firstName').fill('Max');
 	await page.locator('#lastName').fill('Mustermann');
-	await page.locator('#addressStreet').fill('Musterstraße');
-	await page.locator('#addressHouseNumber').fill('1');
+	await page.locator('#addressStreet').fill('Musterstraße 1');
 	await page.locator('#addressPostcode').fill('50667');
 	await page.locator('#addressCity').fill('Köln');
 	await page.locator('#email').fill('max@example.com');
@@ -35,7 +34,8 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 
 	await page.getByLabel('Parken auf dem Gehweg').check();
 	await page.getByLabel('Parken im Halteverbot').check();
-	await page.getByLabel('Kennzeichen').fill('K-AB 1234');
+	await page.getByLabel('Kennzeichen').fill('K AB 1234');
+	await page.getByLabel('Farbe').fill('Rot');
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
 
@@ -44,4 +44,6 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 	await page.getByRole('link', { name: 'Historie' }).click();
 	await expect(page.getByText('Parken auf dem Gehweg, Parken im Halteverbot')).toBeVisible();
 	await expect(page.getByText('Domkloster 4, 50667 Köln')).toBeVisible();
+	// Kennzeichen-Normalisierung: "K AB 1234" (getippt) -> "K-AB1234" (kanonisches Köln-Format).
+	await expect(page.getByText('K-AB1234 · Unbekannt · Rot')).toBeVisible();
 });

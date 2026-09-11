@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+	HOUSE_NUMBER_SUFFIX_PATTERN,
 	isFormValid,
+	normalizeLicensePlate,
 	validateProfileFields,
 	validateReportForm,
+	validateVehicle,
 	type PhotoEntry,
 	type ProfileFields,
 	type ReportFormData,
@@ -22,10 +25,13 @@ const makeVehicle = (overrides: Partial<VehicleEntry> = {}, photoIds: string[]):
 	id: crypto.randomUUID(),
 	photoIds,
 	licensePlate: 'K-AB 1234',
+	make: 'Unbekannt',
+	color: 'Rot',
 	incidentTypeIds: ['gehweg'],
 	notes: '',
 	date: '2026-03-01',
 	time: '14:30',
+	timeMode: 'halteverstoss',
 	locationStreet: 'Domkloster',
 	locationHouseNumber: '4',
 	locationPostcode: '50667',
@@ -38,8 +44,7 @@ const makeValidData = (): ReportFormData => {
 	return {
 		firstName: 'Max',
 		lastName: 'Mustermann',
-		addressStreet: 'Musterstraße',
-		addressHouseNumber: '1',
+		addressStreet: 'Musterstraße 1',
 		addressPostcode: '50667',
 		addressCity: 'Köln',
 		email: 'max@example.com',
@@ -234,13 +239,89 @@ describe('validateReportForm', () => {
 		const errors = validateReportForm(data);
 		expect(errors.vehicles?.[0].time).toBeDefined();
 	});
+
+	it('meldet fehlende Marke', () => {
+		const data = makeValidData();
+		data.vehicles[0].make = '';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].make).toBeDefined();
+	});
+
+	it('akzeptiert "Unbekannt" als Marke', () => {
+		const data = makeValidData();
+		data.vehicles[0].make = 'Unbekannt';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].make).toBeUndefined();
+	});
+
+	it('meldet fehlende Farbe', () => {
+		const data = makeValidData();
+		data.vehicles[0].color = '';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].color).toBeDefined();
+	});
+});
+
+describe('validateVehicle: timeMode', () => {
+	it('Halteverstoß ist auch ohne endTime gültig', () => {
+		const vehicle = makeVehicle({ timeMode: 'halteverstoss' }, []);
+		const errors = validateVehicle(vehicle, []);
+		expect(errors.endTime).toBeUndefined();
+	});
+
+	it('Parkverstoß ohne endTime meldet einen Fehler', () => {
+		const vehicle = makeVehicle({ timeMode: 'parkverstoss' }, []);
+		const errors = validateVehicle(vehicle, []);
+		expect(errors.endTime).toBeDefined();
+	});
+
+	it('Parkverstoß mit Zeitraum >= 4 Minuten ist gültig', () => {
+		const vehicle = makeVehicle({ timeMode: 'parkverstoss', time: '14:00', endTime: '14:04' }, []);
+		const errors = validateVehicle(vehicle, []);
+		expect(errors.endTime).toBeUndefined();
+	});
+
+	it('Parkverstoß mit Zeitraum < 4 Minuten meldet einen Fehler', () => {
+		const vehicle = makeVehicle({ timeMode: 'parkverstoss', time: '14:00', endTime: '14:03' }, []);
+		const errors = validateVehicle(vehicle, []);
+		expect(errors.endTime).toBeDefined();
+	});
+
+	it('Bis-Uhrzeit vor oder gleich Von-Uhrzeit meldet einen Fehler', () => {
+		const vehicle = makeVehicle({ timeMode: 'parkverstoss', time: '14:00', endTime: '14:00' }, []);
+		const errors = validateVehicle(vehicle, []);
+		expect(errors.endTime).toBeDefined();
+	});
+
+	it('ungültiges Bis-Format meldet einen Fehler', () => {
+		const vehicle = makeVehicle({ timeMode: 'parkverstoss', time: '14:00', endTime: '99:99' }, []);
+		const errors = validateVehicle(vehicle, []);
+		expect(errors.endTime).toBeDefined();
+	});
+});
+
+describe('normalizeLicensePlate', () => {
+	it.each([
+		['K-AB 1234', 'K-AB1234'],
+		['K AB 1234', 'K-AB1234'],
+		['KAB1234', 'K-AB1234'],
+		['k-ab 1234', 'K-AB1234'],
+		['H-VA1234', 'H-VA1234'],
+		['HH-AB 12H', 'HH-AB12H']
+	])('normalisiert "%s" zu "%s"', (input, expected) => {
+		expect(normalizeLicensePlate(input)).toBe(expected);
+	});
+
+	it('gibt nicht-parsbare Eingaben getrimmt unverändert zurück', () => {
+		expect(normalizeLicensePlate('  nur text  ')).toBe('nur text');
+	});
 });
 
 describe('validateProfileFields', () => {
 	const makeValidProfile = (): ProfileFields => ({
 		firstName: 'Max',
 		lastName: 'Mustermann',
-		addressStreet: 'Musterstraße',
+		addressStreet: 'Musterstraße 12',
 		addressPostcode: '50667',
 		addressCity: 'Köln',
 		email: 'max@example.com'
@@ -261,4 +342,24 @@ describe('validateProfileFields', () => {
 		const errors = validateProfileFields({ ...makeValidProfile(), addressPostcode: '123' });
 		expect(errors.addressPostcode).toBeDefined();
 	});
+
+	it('meldet eine Straße ohne Hausnummer als ungültig', () => {
+		const errors = validateProfileFields({ ...makeValidProfile(), addressStreet: 'Musterstraße' });
+		expect(errors.addressStreet).toBeDefined();
+	});
+
+	it.each(['Musterstraße 12', 'Musterstraße 12a'])(
+		'akzeptiert gültige Straße-mit-Hausnummer "%s"',
+		(addressStreet) => {
+			const errors = validateProfileFields({ ...makeValidProfile(), addressStreet });
+			expect(errors.addressStreet).toBeUndefined();
+		}
+	);
+
+	it.each(['Musterstraße', ''])(
+		'lehnt ungültige Straße-ohne-Hausnummer "%s" ab',
+		(addressStreet) => {
+			expect(HOUSE_NUMBER_SUFFIX_PATTERN.test(addressStreet)).toBe(false);
+		}
+	);
 });
