@@ -1,3 +1,4 @@
+import { describeHttpError } from './httpErrors';
 import type { GeocodeAddress } from './geocodeAddress';
 
 export interface ReverseGeocodeResult {
@@ -11,12 +12,6 @@ export interface GeocodeProvider {
 }
 
 const REQUEST_TIMEOUT_MS = 5000;
-
-const describeHttpError = (providerName: string, status: number): string => {
-	if (status === 429) return `${providerName} hat Rate-Limiting gemeldet (HTTP 429)`;
-	if (status === 403) return `${providerName} hat die Anfrage blockiert (HTTP 403)`;
-	return `${providerName} antwortete mit HTTP ${status}`;
-};
 
 // Nichtssagende Ergebnisse (kein Straßenname und keine Ortsangabe) sind nutzlos für die
 // Anzeige und werden wie ein "kein Ergebnis" behandelt, damit der nächste Provider versucht wird.
