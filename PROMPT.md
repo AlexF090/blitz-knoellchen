@@ -1,4 +1,4 @@
-# Master-Prompt für Claude Code: "Knöllchen-Blitz" PWA (Köln)
+# Master-Prompt für Claude Code: "Blitz-Knöllchen" PWA (Köln)
 
 > **Hinweis zur Nutzung:** Diese Datei ist der vollständige Auftrag für Claude Code. Lege sie im
 > Projekt-Root als `PROMPT.md` ab und gib Claude Code den Auftrag: _"Lies PROMPT.md und erstelle
@@ -6,12 +6,12 @@
 
 ## 0. Projektname
 
-Das Projekt heißt **Knöllchen-Blitz**. Dieser Name ist verbindlich zu verwenden für:
+Das Projekt heißt **Blitz-Knöllchen**. Dieser Name ist verbindlich zu verwenden für:
 
-- `package.json` → `"name": "knoellchen-blitz"` (ASCII-Slug, ö → oe)
-- Repository-/Ordnername: `knoellchen-blitz`
-- PWA-Manifest: `"name": "Knöllchen-Blitz"`, `"short_name": "Knöllchen-Blitz"` (kürzen falls
-  Zeichenlimit für Homescreen-Icons es erfordert, z. B. "Knöllchen")
+- `package.json` → `"name": "blitz-knoellchen"` (ASCII-Slug, ö → oe)
+- Repository-/Ordnername: `blitz-knoellchen`
+- PWA-Manifest: `"name": "Blitz-Knöllchen"`, `"short_name": "Blitz-Knöllchen"` (kürzen falls
+  Zeichenlimit für Homescreen-Icons es erfordert, z. B. "Blitz-Knöllchen")
 - Titel in `README.md` und `CLAUDE.md`
 
 ---
@@ -197,7 +197,7 @@ das später keine Rewrite erfordert, aber ohne heute unnötige Komplexität einz
 RESEND_API_KEY=            # Resend API Key
 EMAIL_FROM=                # z. B. onboarding@resend.dev (Testphase) oder verifizierte Domain
 RECIPIENT_EMAIL=           # für Testzwecke: meine eigene E-Mail; später: bussgeldstelle@stadt-koeln.de
-NOMINATIM_USER_AGENT=      # Pflicht-Header laut Nominatim Usage Policy, z. B. "knoellchen-blitz/1.0 (kontakt@example.com)"
+NOMINATIM_USER_AGENT=      # Pflicht-Header laut Nominatim Usage Policy, z. B. "blitz-knoellchen/1.0 (kontakt@example.com)"
 ```
 
 Alle Variablen mit `.env.example` dokumentieren, niemals echte Werte committen. Serverseitige

@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>Knöllchen-Blitz – Falschparker melden</title>
+	<title>Blitz-Knöllchen – Falschparker melden</title>
 	{#if pwaInfo?.webManifest?.linkTag}
 		<!-- eslint-disable-next-line svelte/no-at-html-tags -- statisch vom Build-Plugin erzeugt, keine Nutzereingabe -->
 		{@html pwaInfo.webManifest.linkTag}
@@ -16,7 +16,7 @@
 	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
 >
 	<div class="flex items-center justify-between">
-		<h1 class="text-xl font-semibold text-ink md:text-2xl">Knöllchen-Blitz</h1>
+		<h1 class="text-xl font-semibold text-ink md:text-2xl">Blitz-Knöllchen</h1>
 		<a href={resolve('/historie')} class="text-sm text-primary-600 underline">Historie</a>
 	</div>
 	<ReportForm />

@@ -1,4 +1,4 @@
-# Knöllchen-Blitz
+# Blitz-Knöllchen
 
 Progressive Web App zur Meldung von Falschparkern an die Bußgeldstelle Köln per E-Mail.
 Ziel: eine Anzeige in unter 30 Sekunden vom Smartphone aus verschicken — Foto machen, EXIF
@@ -40,7 +40,7 @@ Kein API-Key nötig, aber die
 einen aussagekräftigen `User-Agent`-Header:
 
 ```
-NOMINATIM_USER_AGENT=knoellchen-blitz/1.0 (deine-email@example.com)
+NOMINATIM_USER_AGENT=blitz-knoellchen/1.0 (deine-email@example.com)
 ```
 
 Schlägt Nominatim fehl (Rate-Limit erreicht, Dienst down), fällt der Server automatisch auf

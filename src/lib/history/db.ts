@@ -26,7 +26,7 @@ interface StoredUserProfile extends UserProfile {
 	id: string;
 }
 
-interface KnoellchenBlitzDB extends DBSchema {
+interface BlitzKnoellchenDB extends DBSchema {
 	entries: {
 		key: string;
 		value: HistoryEntry;
@@ -38,15 +38,15 @@ interface KnoellchenBlitzDB extends DBSchema {
 	};
 }
 
-const DB_NAME = 'knoellchen-blitz';
+const DB_NAME = 'blitz-knoellchen';
 const STORE_NAME = 'entries';
 const PROFILE_STORE_NAME = 'profile';
 const PROFILE_KEY = 'default';
 
-let dbPromise: Promise<IDBPDatabase<KnoellchenBlitzDB>> | undefined;
+let dbPromise: Promise<IDBPDatabase<BlitzKnoellchenDB>> | undefined;
 
 const getDb = () => {
-	dbPromise ??= openDB<KnoellchenBlitzDB>(DB_NAME, 2, {
+	dbPromise ??= openDB<BlitzKnoellchenDB>(DB_NAME, 2, {
 		upgrade(db, oldVersion) {
 			if (oldVersion < 1) {
 				const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });

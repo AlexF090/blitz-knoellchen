@@ -1,8 +1,8 @@
-# Implementierungsplan: Knöllchen-Blitz PWA
+# Implementierungsplan: Blitz-Knöllchen PWA
 
 ## Context
 
-`PROMPT.md` ist der vollständige, verbindliche Auftrag für die PWA "Knöllchen-Blitz"
+`PROMPT.md` ist der vollständige, verbindliche Auftrag für die PWA "Blitz-Knöllchen"
 (Meldung von Falschparkern an die Bußgeldstelle Köln per E-Mail, MVP-Ziel: Meldung in
 unter 30 Sekunden vom Smartphone aus). Stack: **SvelteKit + TypeScript + Tailwind CSS**
 (siehe PROMPT.md Abschnitt 4).
@@ -12,7 +12,7 @@ unter 30 Sekunden vom Smartphone aus). Stack: **SvelteKit + TypeScript + Tailwin
 ### Phase 0 — Projekt-Setup & Tooling
 
 - `npx sv create` im Repo-Root (TypeScript, Tailwind CSS, Vitest, `@testing-library/svelte`-Add-on, Playwright, ESLint, Prettier auswählen).
-- `package.json` → `"name": "knoellchen-blitz"` sicherstellen.
+- `package.json` → `"name": "blitz-knoellchen"` sicherstellen.
 - `npm install resend idb exifr @vite-pwa/sveltekit`.
 - Adapter: `adapter-auto` (erkennt Vercel automatisch; reicht für MVP-Scope).
 - `.env.example` mit `RESEND_API_KEY`, `EMAIL_FROM`, `RECIPIENT_EMAIL`, `NOMINATIM_USER_AGENT`; `.env` in `.gitignore`.
@@ -22,7 +22,7 @@ unter 30 Sekunden vom Smartphone aus). Stack: **SvelteKit + TypeScript + Tailwin
 
 ### Phase 1 — PWA-Grundgerüst & App-Shell
 
-- `@vite-pwa/sveltekit` konfigurieren: Manifest ("Knöllchen-Blitz"/"Knöllchen" als short_name, Icons 192/512/maskable, `display: standalone`), `registerType: 'autoUpdate'`, App-Shell-Precache; `/api/*` explizit von Runtime-Caching ausschließen (`NetworkOnly`).
+- `@vite-pwa/sveltekit` konfigurieren: Manifest ("Blitz-Knöllchen"/"Blitz-Knöllchen" als short_name, Icons 192/512/maskable, `display: standalone`), `registerType: 'autoUpdate'`, App-Shell-Precache; `/api/*` explizit von Runtime-Caching ausschließen (`NetworkOnly`).
 - `src/routes/+layout.svelte`: Tailwind global, PWA-Meta-Tags, `lang="de"`.
 - `src/lib/pwa/isIosSafari.ts` + `src/lib/components/IosInstallBanner.svelte` (dezent, dismissable via `localStorage`).
   - Unit-Test: `isIosSafari.test.ts` mit mehreren UA-Fixtures.
