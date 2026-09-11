@@ -23,13 +23,14 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 	await expect(page.locator('#locationAddress')).toHaveValue('Domkloster 4, 50667 Köln');
 	await expect(page.locator('#date')).toHaveValue('2026-03-01');
 
-	await page.locator('#incidentTypeId').selectOption('gehweg');
+	await page.getByLabel('Parken auf dem Gehweg').check();
+	await page.getByLabel('Parken im Halteverbot').check();
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
 
 	await expect(page.getByRole('status')).toHaveText('Anzeige erfolgreich versendet.');
 
 	await page.getByRole('link', { name: 'Historie' }).click();
-	await expect(page.getByText('Parken auf dem Gehweg')).toBeVisible();
+	await expect(page.getByText('Parken auf dem Gehweg, Parken im Halteverbot')).toBeVisible();
 	await expect(page.getByText('Domkloster 4, 50667 Köln')).toBeVisible();
 });

@@ -45,6 +45,14 @@ export default defineConfig({
 			workbox: {
 				// Nur die App-Shell vorcachen, kein komplexes Runtime-Caching.
 				globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+				// heic2any (~1,3 MB, nur für HEIC-Fotos per dynamic import geladen) hat keinen
+				// stabilen Dateinamen (SvelteKit hasht Chunk-Dateinamen ohne Namensanteil),
+				// daher per Größe statt per Glob-Pattern vom Precache ausschließen — die
+				// App-Shell soll klein bleiben, die Datei wird bei Bedarf ganz normal per
+				// Netzwerk nachgeladen.
+				manifestTransforms: [
+					(entries) => ({ manifest: entries.filter((entry) => (entry.size ?? 0) < 512 * 1024) })
+				],
 				navigateFallbackDenylist: [/^\/api\//],
 				runtimeCaching: [
 					{

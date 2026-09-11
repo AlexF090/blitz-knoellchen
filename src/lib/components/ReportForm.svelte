@@ -3,6 +3,7 @@
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
 	import { validateReportForm, isFormValid, type ReportFormData } from '$lib/validation/formSchema';
 	import { compressImage } from '$lib/image/compress';
+	import { isHeicFile, convertHeicToJpeg } from '$lib/image/convertHeic';
 	import { addEntry } from '$lib/history/db';
 	import { parseExif } from '$lib/exif/parseExif';
 	import { fetchAddress } from '$lib/geocode/client';
@@ -19,24 +20,35 @@
 		date: '',
 		time: '',
 		locationAddress: '',
-		incidentTypeId: '',
+		incidentTypeIds: [],
 		licensePlate: '',
 		notes: ''
 	});
 	let errors = $state<ReturnType<typeof validateReportForm>>({});
-	let photoFile = $state<File | null>(null);
+	let photoFile = $state<Blob | null>(null);
+	let photoFileName = $state<string | null>(null);
+	let converting = $state(false);
+	let photoError = $state<string | null>(null);
 	let addressManualRequired = $state(false);
 	let geocodeError = $state<string | null>(null);
 	let sendError = $state<string | null>(null);
 	let sendSuccess = $state(false);
 	let submitting = $state(false);
 
+	function toggleIncidentType(id: string, checked: boolean) {
+		form.incidentTypeIds = checked
+			? [...form.incidentTypeIds, id]
+			: form.incidentTypeIds.filter((existing) => existing !== id);
+	}
+
 	async function onPhotoSelected(event: Event) {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
 
-		photoFile = file;
+		photoError = null;
+		photoFile = null;
+		photoFileName = file.name;
 		geocodeError = null;
 		addressManualRequired = false;
 
@@ -60,6 +72,20 @@
 		} else {
 			addressManualRequired = true;
 		}
+
+		if (isHeicFile(file)) {
+			converting = true;
+			try {
+				photoFile = await convertHeicToJpeg(file);
+			} catch {
+				photoError =
+					'Dieses HEIC-Foto konnte nicht verarbeitet werden. Bitte ein JPEG/PNG-Foto wählen oder in den Kameraeinstellungen "Am kompatibelsten" aktivieren.';
+			} finally {
+				converting = false;
+			}
+		} else {
+			photoFile = file;
+		}
 	}
 
 	async function onSubmit(event: SubmitEvent) {
@@ -72,7 +98,7 @@
 
 		try {
 			const compressedPhoto = await compressImage(photoFile, { maxDimension: 1600, quality: 0.8 });
-			const incidentType = city.incidentTypes.find((t) => t.id === form.incidentTypeId);
+			const incidentTypes = city.incidentTypes.filter((t) => form.incidentTypeIds.includes(t.id));
 
 			const body = new FormData();
 			body.set('firstName', form.firstName);
@@ -82,7 +108,7 @@
 			body.set('date', form.date);
 			body.set('time', form.time);
 			body.set('locationAddress', form.locationAddress);
-			body.set('incidentTypeId', form.incidentTypeId);
+			for (const id of form.incidentTypeIds) body.append('incidentTypeIds', id);
 			body.set('licensePlate', form.licensePlate ?? '');
 			body.set('notes', form.notes ?? '');
 			body.set('photo', compressedPhoto, 'beweisfoto.jpg');
@@ -103,7 +129,7 @@
 				firstName: form.firstName,
 				lastName: form.lastName,
 				locationAddress: form.locationAddress,
-				incidentTypeLabel: incidentType?.label ?? form.incidentTypeId,
+				incidentTypeLabels: incidentTypes.map((t) => t.label),
 				licensePlate: form.licensePlate,
 				notes: form.notes,
 				thumbnail: compressedPhoto
@@ -111,8 +137,17 @@
 
 			sendSuccess = true;
 			photoFile = null;
+			photoFileName = null;
 			if (photoInput) photoInput.value = '';
-			form = { ...form, date: '', time: '', locationAddress: '', licensePlate: '', notes: '' };
+			form = {
+				...form,
+				date: '',
+				time: '',
+				locationAddress: '',
+				incidentTypeIds: [],
+				licensePlate: '',
+				notes: ''
+			};
 		} catch {
 			sendError =
 				'Der Versand ist fehlgeschlagen. Deine Angaben bleiben erhalten — bitte erneut versuchen.';
@@ -133,7 +168,12 @@
 	{/if}
 
 	<div>
-		<label for="photo" class="block text-sm font-medium">Beweisfoto</label>
+		<label
+			for="photo"
+			class="mt-1 flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-blue-700 px-4 py-3 text-center font-medium text-white hover:bg-blue-800"
+		>
+			{photoFileName ? 'Anderes Beweisfoto wählen' : 'Beweisfoto aufnehmen oder auswählen'}
+		</label>
 		<input
 			bind:this={photoInput}
 			id="photo"
@@ -141,8 +181,11 @@
 			accept="image/*"
 			capture="environment"
 			onchange={onPhotoSelected}
-			class="mt-1 block w-full"
+			class="sr-only"
 		/>
+		{#if photoFileName}<p class="mt-1 text-sm text-gray-600">Ausgewählt: {photoFileName}</p>{/if}
+		{#if converting}<p class="mt-1 text-sm text-gray-600">Foto wird konvertiert…</p>{/if}
+		{#if photoError}<p class="mt-1 text-sm text-red-700">{photoError}</p>{/if}
 	</div>
 
 	<div class="grid grid-cols-2 gap-3">
@@ -195,20 +238,23 @@
 		{#if errors.locationAddress}<p class="text-sm text-red-700">{errors.locationAddress}</p>{/if}
 	</div>
 
-	<div>
-		<label for="incidentTypeId" class="block text-sm font-medium">Art des Verstoßes</label>
-		<select
-			id="incidentTypeId"
-			bind:value={form.incidentTypeId}
-			class="mt-1 w-full rounded border p-2"
-		>
-			<option value="">Bitte wählen</option>
+	<fieldset>
+		<legend class="block text-sm font-medium">Art des Verstoßes (Mehrfachauswahl möglich)</legend>
+		<div class="mt-1 flex flex-col gap-2">
 			{#each city.incidentTypes as type (type.id)}
-				<option value={type.id}>{type.label}</option>
+				<label class="flex items-center gap-2 text-sm">
+					<input
+						type="checkbox"
+						checked={form.incidentTypeIds.includes(type.id)}
+						onchange={(e) => toggleIncidentType(type.id, e.currentTarget.checked)}
+						class="h-4 w-4 rounded border-gray-300"
+					/>
+					{type.label}
+				</label>
 			{/each}
-		</select>
-		{#if errors.incidentTypeId}<p class="text-sm text-red-700">{errors.incidentTypeId}</p>{/if}
-	</div>
+		</div>
+		{#if errors.incidentTypeIds}<p class="text-sm text-red-700">{errors.incidentTypeIds}</p>{/if}
+	</fieldset>
 
 	<div>
 		<label for="licensePlate" class="block text-sm font-medium">Kennzeichen (optional)</label>
@@ -226,7 +272,7 @@
 
 	<button
 		type="submit"
-		disabled={submitting}
+		disabled={submitting || converting}
 		class="rounded bg-blue-700 px-4 py-3 font-medium text-white disabled:opacity-50"
 	>
 		{submitting ? 'Wird gesendet…' : 'Absenden'}

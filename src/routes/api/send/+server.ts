@@ -19,7 +19,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		date: String(formData.get('date') ?? ''),
 		time: String(formData.get('time') ?? ''),
 		locationAddress: String(formData.get('locationAddress') ?? ''),
-		incidentTypeId: String(formData.get('incidentTypeId') ?? ''),
+		incidentTypeIds: formData.getAll('incidentTypeIds').map(String),
 		licensePlate: String(formData.get('licensePlate') ?? '') || undefined,
 		notes: String(formData.get('notes') ?? '') || undefined
 	};
@@ -35,8 +35,8 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const city = CITIES.koeln;
-	const incidentType = city.incidentTypes.find((t) => t.id === data.incidentTypeId);
-	if (!incidentType) {
+	const incidentTypes = city.incidentTypes.filter((t) => data.incidentTypeIds.includes(t.id));
+	if (incidentTypes.length !== data.incidentTypeIds.length) {
 		return json({ error: 'Unbekannte Verstoßart.' }, { status: 400 });
 	}
 
@@ -47,7 +47,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		date: data.date,
 		time: data.time,
 		locationAddress: data.locationAddress,
-		incidentTypeLabel: incidentType.label,
+		incidentTypes: incidentTypes.map((t) => ({ label: t.label, description: t.description })),
 		licensePlate: data.licensePlate,
 		notes: data.notes
 	});

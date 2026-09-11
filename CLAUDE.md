@@ -58,6 +58,30 @@ gecacht werden). iOS/Safari kennt kein `beforeinstallprompt` — bei Erkennung
 (`src/lib/pwa/isIosSafari.ts`) zeigt `IosInstallBanner.svelte` einen dezenten, dismissable
 Hinweis ("Teilen → Zum Home-Bildschirm") statt eines Modals.
 
+`workbox.manifestTransforms` filtert Dateien ≥ 512 KB aus dem Precache-Manifest heraus (siehe
+nächster Abschnitt zu HEIC) — SvelteKit hasht Chunk-Dateinamen ohne lesbaren Namensanteil,
+daher ist eine Größen- statt Glob-Filterung nötig.
+
+### HEIC/HEIF-Fotos werden client-seitig zu JPEG konvertiert
+
+iPhones speichern Fotos standardmäßig als HEIC; `createImageBitmap` (für Vorschau/Kompression)
+wird dafür nicht von allen Browsern unterstützt (Chrome/Firefox auf Desktop typischerweise
+nicht). `src/lib/image/convertHeic.ts` erkennt HEIC/HEIF anhand MIME-Type oder Dateiendung
+(`isHeicFile`) und konvertiert bei Bedarf per `heic2any` zu JPEG, bevor `compressImage`
+darauf zugreift. EXIF (Datum/GPS) wird bewusst **vor** der Konvertierung aus der Original-Datei
+gelesen (`parseExif`), da die Konvertierung Metadaten verwirft. `heic2any` (~1,3 MB) wird per
+dynamic `import()` nur bei tatsächlicher HEIC-Auswahl geladen und ist deshalb vom
+Service-Worker-Precache ausgeschlossen (s. o.), um die App-Shell klein zu halten.
+
+### Mehrere Verstoßarten pro Anzeige
+
+`incidentTypeIds` ist ein Array (Checkbox-Mehrfachauswahl statt Dropdown). Jede Verstoßart in
+`src/lib/config/cities.ts` hat neben `label` (UI, kurze Liste) eine `description` (vollständiger
+Satz für die E-Mail). `buildEmailBody` kombiniert bei mehreren gewählten Verstoßarten die
+Labels zu einer Aufzählung ("Art des Verstoßes: X, Y") und die Beschreibungen zu einer
+Stichpunktliste im Fließtext — so bleibt der Text auch bei mehreren gleichzeitig vorliegenden
+Verstößen (z. B. Gehweg + Kreuzungsbereich) klar strukturiert.
+
 ## Ordnerstruktur
 
 | Pfad                                     | Zweck                                                                                     |

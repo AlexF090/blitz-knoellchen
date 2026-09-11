@@ -3,6 +3,9 @@ import { buildEmailBody } from '$lib/email/buildEmailBody';
 export interface IncidentType {
 	id: string;
 	label: string;
+	// Eigenständiger Satz für die E-Mail, damit mehrere gewählte Verstoßarten zu einem
+	// zusammenhängenden Text kombiniert werden können (siehe buildEmailBody).
+	description: string;
 }
 
 export interface EmailTemplateInput {
@@ -12,7 +15,7 @@ export interface EmailTemplateInput {
 	date: string;
 	time: string;
 	locationAddress: string;
-	incidentTypeLabel: string;
+	incidentTypes: Pick<IncidentType, 'label' | 'description'>[];
 	licensePlate?: string;
 	notes?: string;
 }
@@ -25,13 +28,43 @@ export interface City {
 }
 
 const KOELN_INCIDENT_TYPES: IncidentType[] = [
-	{ id: 'gehweg', label: 'Parken auf dem Gehweg' },
-	{ id: 'zweite-reihe', label: 'Parken in zweiter Reihe' },
-	{ id: 'schwerbehindert', label: 'Parken auf Schwerbehinderten-Parkplatz' },
-	{ id: 'halteverbot', label: 'Parken im Halteverbot' },
-	{ id: 'feuerwehrzufahrt', label: 'Parken auf der Feuerwehrzufahrt' },
-	{ id: 'radweg', label: 'Parken auf dem Radweg' },
-	{ id: 'kreuzung', label: 'Parken im Kreuzungsbereich' }
+	{
+		id: 'gehweg',
+		label: 'Parken auf dem Gehweg',
+		description: 'Das Fahrzeug parkte auf dem Gehweg und behinderte Fußgänger.'
+	},
+	{
+		id: 'zweite-reihe',
+		label: 'Parken in zweiter Reihe',
+		description: 'Das Fahrzeug parkte in zweiter Reihe und behinderte den fließenden Verkehr.'
+	},
+	{
+		id: 'schwerbehindert',
+		label: 'Parken auf Schwerbehinderten-Parkplatz',
+		description:
+			'Das Fahrzeug parkte auf einem gekennzeichneten Schwerbehinderten-Parkplatz, ohne dass ein gültiger Schwerbehindertenausweis sichtbar war.'
+	},
+	{
+		id: 'halteverbot',
+		label: 'Parken im Halteverbot',
+		description: 'Das Fahrzeug parkte in einem durch Verkehrszeichen ausgewiesenen Halteverbot.'
+	},
+	{
+		id: 'feuerwehrzufahrt',
+		label: 'Parken auf der Feuerwehrzufahrt',
+		description: 'Das Fahrzeug parkte auf der Feuerwehrzufahrt und blockierte diese.'
+	},
+	{
+		id: 'radweg',
+		label: 'Parken auf dem Radweg',
+		description: 'Das Fahrzeug parkte auf dem Radweg und behinderte den Radverkehr.'
+	},
+	{
+		id: 'kreuzung',
+		label: 'Parken im Kreuzungsbereich',
+		description:
+			'Das Fahrzeug parkte im Kreuzungsbereich und beeinträchtigte die Sicht bzw. den Verkehrsfluss.'
+	}
 ];
 
 // Bewusst ohne recipientEmail: diese Datei wird auch clientseitig importiert

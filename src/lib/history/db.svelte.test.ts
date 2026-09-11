@@ -8,7 +8,7 @@ function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
 		firstName: 'Max',
 		lastName: 'Mustermann',
 		locationAddress: 'Domkloster 4, 50667 Köln',
-		incidentTypeLabel: 'Parken auf dem Gehweg',
+		incidentTypeLabels: ['Parken auf dem Gehweg'],
 		thumbnail: new Blob(['x'], { type: 'image/jpeg' }),
 		...overrides
 	};
