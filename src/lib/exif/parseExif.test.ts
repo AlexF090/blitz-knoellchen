@@ -1,28 +1,35 @@
-import { describe, expect, it, vi } from 'vitest';
-import exifr from 'exifr';
+import { describe, expect, it, vi, type Mock } from 'vitest';
+import ExifReader, { type ExpandedTags } from 'exifreader';
 import { parseExif } from './parseExif';
 
-vi.mock('exifr', () => ({
-	default: { parse: vi.fn() }
+vi.mock('exifreader', () => ({
+	default: { load: vi.fn() }
 }));
 
-const mockedParse = vi.mocked(exifr.parse);
+// `load` ist stark überladen (sync/async, unterschiedliche Input-Typen); vi.mocked() greift
+// dabei die falsche Überladung. Direkter Cast auf Mock statt inferierter Signatur.
+const mockedLoad = ExifReader.load as unknown as Mock<
+	(...args: unknown[]) => Promise<ExpandedTags>
+>;
 
 describe('parseExif', () => {
 	it('liefert Datum, Uhrzeit und GPS wenn vorhanden', async () => {
-		mockedParse.mockResolvedValue({
-			DateTimeOriginal: new Date('2026-03-01T14:30:00Z'),
-			latitude: 50.9375,
-			longitude: 6.9603
+		mockedLoad.mockResolvedValue({
+			exif: { DateTimeOriginal: { id: 0, description: '2026:03:01 14:30:00', value: [] } },
+			gps: { Latitude: 50.9375, Longitude: 6.9603 }
 		});
 
 		const result = await parseExif(new Blob());
 		expect(result.date).toBe('2026-03-01');
+		expect(result.time).toBe('14:30');
 		expect(result.gps).toEqual({ lat: 50.9375, lon: 6.9603 });
+		expect(result.dateTimeOriginal).toEqual(new Date(2026, 2, 1, 14, 30, 0));
 	});
 
 	it('liefert kein GPS, wenn EXIF-Tag fehlt', async () => {
-		mockedParse.mockResolvedValue({ DateTimeOriginal: new Date('2026-03-01T14:30:00Z') });
+		mockedLoad.mockResolvedValue({
+			exif: { DateTimeOriginal: { id: 0, description: '2026:03:01 14:30:00', value: [] } }
+		});
 
 		const result = await parseExif(new Blob());
 		expect(result.gps).toBeNull();
@@ -30,7 +37,7 @@ describe('parseExif', () => {
 	});
 
 	it('liefert kein Datum, wenn EXIF-Tag fehlt', async () => {
-		mockedParse.mockResolvedValue({ latitude: 50.9375, longitude: 6.9603 });
+		mockedLoad.mockResolvedValue({ gps: { Latitude: 50.9375, Longitude: 6.9603 } });
 
 		const result = await parseExif(new Blob());
 		expect(result.date).toBeNull();
@@ -38,9 +45,9 @@ describe('parseExif', () => {
 	});
 
 	it('wirft nicht bei korrupten Daten, liefert leeres Ergebnis', async () => {
-		mockedParse.mockRejectedValue(new Error('corrupt'));
+		mockedLoad.mockRejectedValue(new Error('corrupt'));
 
 		const result = await parseExif(new Blob());
-		expect(result).toEqual({ date: null, time: null, gps: null });
+		expect(result).toEqual({ date: null, time: null, gps: null, dateTimeOriginal: null });
 	});
 });
