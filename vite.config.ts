@@ -4,8 +4,12 @@ import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-auto';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
+import { version as appVersion } from './package.json' with { type: 'json' };
 
 export default defineConfig({
+	define: {
+		__APP_VERSION__: JSON.stringify(appVersion)
+	},
 	plugins: [
 		tailwindcss(),
 		sveltekit({

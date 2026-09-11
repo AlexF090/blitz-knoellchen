@@ -599,6 +599,6 @@
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- Platzhalter, Route folgt später -->
 			<a href="/datenschutz" class="underline">Datenschutz</a>
 		</p>
-		<p class="mt-1 text-center text-xs text-ink-muted">v1.0.1</p>
+		<p class="mt-1 text-center text-xs text-ink-muted">v{__APP_VERSION__}</p>
 	</div>
 </form>
