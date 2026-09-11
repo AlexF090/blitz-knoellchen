@@ -100,7 +100,7 @@
 		>
 		<div class="mt-1 flex flex-col gap-2">
 			{#each incidentTypes as type (type.id)}
-				<label class="flex items-center gap-2 text-sm text-ink">
+				<label class="flex cursor-pointer items-center gap-2 text-sm text-ink">
 					<input
 						type="checkbox"
 						checked={vehicle.incidentTypeIds.includes(type.id)}
