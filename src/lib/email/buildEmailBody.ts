@@ -23,6 +23,12 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 		postcode: input.locationPostcode,
 		city: input.locationCity
 	});
+	const addressLine = formatAddress({
+		street: input.addressStreet,
+		houseNumber: input.addressHouseNumber,
+		postcode: input.addressPostcode,
+		city: input.addressCity
+	});
 	const photoLine =
 		input.photoCount > 1
 			? `${input.photoCount} Beweisfotos sind dieser E-Mail beigefügt.`
@@ -30,7 +36,7 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 
 	const body = `Sehr geehrte Damen und Herren,
 
-hiermit zeige ich, ${input.firstName} ${input.lastName}, wohnhaft in ${input.address}, an,
+hiermit zeige ich, ${input.firstName} ${input.lastName}, wohnhaft in ${addressLine}, an,
 dass am ${input.date} um ${input.time} Uhr in der ${locationLine} folgender Sachverhalt
 vorlag:
 

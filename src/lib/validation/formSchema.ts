@@ -21,7 +21,10 @@ export type VehicleErrors = Partial<Record<'licensePlate' | 'incidentTypeIds', s
 export interface ReportFormData {
 	firstName: string;
 	lastName: string;
-	address: string;
+	addressStreet: string;
+	addressHouseNumber?: string;
+	addressPostcode: string;
+	addressCity: string;
 	email: string;
 	date: string;
 	time: string;
@@ -65,7 +68,9 @@ export const validateReportForm = (data: ReportFormData): FormErrors => {
 
 	if (!data.firstName.trim()) errors.firstName = 'Vorname ist erforderlich.';
 	if (!data.lastName.trim()) errors.lastName = 'Nachname ist erforderlich.';
-	if (!data.address.trim()) errors.address = 'Adresse ist erforderlich.';
+	if (!data.addressStreet.trim()) errors.addressStreet = 'Straße ist erforderlich.';
+	if (!data.addressPostcode.trim()) errors.addressPostcode = 'Postleitzahl ist erforderlich.';
+	if (!data.addressCity.trim()) errors.addressCity = 'Ort ist erforderlich.';
 	if (!data.email.trim()) {
 		errors.email = 'E-Mail-Adresse ist erforderlich.';
 	} else if (!EMAIL_PATTERN.test(data.email.trim())) {
