@@ -14,11 +14,15 @@ export interface PhotoEntry {
 
 export const MAX_PHOTOS_PER_VEHICLE = 3;
 
+// Begrenzt, wie viele Fotos in einer einzelnen Dateiauswahl gleichzeitig hinzugefügt werden
+// dürfen — unabhängig von MAX_PHOTOS_PER_VEHICLE, das die Zuordnung pro Fahrzeug begrenzt.
+export const MAX_PHOTOS_PER_BATCH = 3;
+
 // Der Foto-Pool wird von allen Fahrzeugen einer Anzeige gemeinsam genutzt (Fotos können
 // zwischen Fahrzeugen geteilt werden) — die Obergrenze skaliert deshalb mit der Anzahl der
 // Fahrzeuge statt fest bei MAX_PHOTOS_PER_VEHICLE zu liegen.
 export const getMaxPoolPhotos = (vehicleCount: number): number =>
-	vehicleCount * MAX_PHOTOS_PER_VEHICLE;
+	Math.max(vehicleCount, 1) * MAX_PHOTOS_PER_VEHICLE;
 
 export interface VehicleEntry {
 	id: string;
