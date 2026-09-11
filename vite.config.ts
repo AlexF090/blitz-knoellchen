@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
-import adapter from '@sveltejs/adapter-auto';
+import adapter from '@sveltejs/adapter-vercel';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import { version as appVersion } from './package.json' with { type: 'json' };
@@ -19,10 +19,12 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
-			// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-			// See https://svelte.dev/docs/kit/adapters for more information about adapters.
-			adapter: adapter()
+			// Deployment-Ziel ist ausschließlich Vercel, daher fest @sveltejs/adapter-vercel statt
+			// adapter-auto — sonst installiert Vercel adapter-vercel bei jedem Build neu nach.
+			// runtime explizit gesetzt, da adapter-vercel die Node-Runtime sonst anhand der lokalen
+			// Node-Version rät und bei neueren, von Vercel noch nicht unterstützten Versionen
+			// (z.B. lokal per nvm installiert) den Build sonst hart abbricht.
+			adapter: adapter({ runtime: 'nodejs22.x' })
 		}),
 		SvelteKitPWA({
 			registerType: 'autoUpdate',
