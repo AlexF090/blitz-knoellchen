@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PhotoEntry } from '$lib/validation/formSchema';
+	import PhotoLightbox from './PhotoLightbox.svelte';
 
 	interface Props {
 		photos: PhotoEntry[];
@@ -24,6 +25,7 @@
 	}: Props = $props();
 
 	let fileInput: HTMLInputElement | undefined;
+	let lightboxPhoto: PhotoEntry | null = $state(null);
 
 	const objectUrl = (blob: Blob) => URL.createObjectURL(blob);
 
@@ -47,11 +49,37 @@
 	<div class="mt-3 grid grid-cols-3 gap-2">
 		{#each photos as photo (photo.id)}
 			<div class="relative aspect-square overflow-hidden rounded-control border border-border">
-				<img
-					src={objectUrl(photo.blob)}
-					alt="Beweisfoto {photo.fileName}"
-					class="h-full w-full object-cover"
-				/>
+				<button
+					type="button"
+					onclick={() => (lightboxPhoto = photo)}
+					aria-label="Foto {photo.fileName} vergrößern"
+					class="group block h-full w-full"
+				>
+					<img
+						src={objectUrl(photo.blob)}
+						alt="Beweisfoto {photo.fileName}"
+						class="h-full w-full object-cover"
+					/>
+					<span
+						class="absolute inset-0 flex items-center justify-center bg-ink/0 opacity-0 transition-opacity group-hover:bg-ink/20 group-hover:opacity-100 pointer-coarse:bg-ink/20 pointer-coarse:opacity-100"
+					>
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							class="h-6 w-6 text-white"
+							aria-hidden="true"
+						>
+							<path
+								d="M1.5 12s4-7 10.5-7 10.5 7 10.5 7-4 7-10.5 7-10.5-7-10.5-7Z"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+							<circle cx="12" cy="12" r="3" stroke-linecap="round" stroke-linejoin="round" />
+						</svg>
+					</span>
+				</button>
 				{#if usageCounts[photo.id] > 1}
 					<span
 						class="absolute top-1 left-1 rounded-full bg-primary-600 px-1.5 py-0.5 text-xs text-white"
@@ -95,3 +123,5 @@
 	{#if processingError}<p class="mt-2 text-sm text-error-fg">{processingError}</p>{/if}
 	{#if error}<p role="alert" class="mt-2 text-sm text-error-fg">{error}</p>{/if}
 </div>
+
+<PhotoLightbox photo={lightboxPhoto} onClose={() => (lightboxPhoto = null)} />
