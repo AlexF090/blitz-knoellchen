@@ -14,8 +14,8 @@ test('Geocoding-Fehler: manuelles Adressfeld wird Pflicht', async ({ page }) => 
 	await expect(
 		page.getByText('Adresse konnte nicht vollständig automatisch ermittelt werden')
 	).toBeVisible();
-	await expect(page.locator('#locationStreet')).toHaveAttribute('required', '');
-	await expect(page.locator('#locationStreet')).toHaveValue('');
-	await expect(page.locator('#locationPostcode')).toHaveAttribute('required', '');
-	await expect(page.locator('#locationCity')).toHaveAttribute('required', '');
+	await expect(page.locator('[id^="locationStreet-"]')).toHaveAttribute('required', '');
+	await expect(page.locator('[id^="locationStreet-"]')).toHaveValue('');
+	await expect(page.locator('[id^="locationPostcode-"]')).toHaveAttribute('required', '');
+	await expect(page.locator('[id^="locationCity-"]')).toHaveAttribute('required', '');
 });

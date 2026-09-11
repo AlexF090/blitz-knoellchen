@@ -30,7 +30,13 @@
 		photoIds: [],
 		licensePlate: '',
 		incidentTypeIds: [],
-		notes: ''
+		notes: '',
+		date: '',
+		time: '',
+		locationStreet: '',
+		locationHouseNumber: '',
+		locationPostcode: '',
+		locationCity: ''
 	});
 
 	let form = $state<ReportFormData>({
@@ -41,12 +47,6 @@
 		addressPostcode: '',
 		addressCity: '',
 		email: '',
-		date: '',
-		time: '',
-		locationStreet: '',
-		locationHouseNumber: '',
-		locationPostcode: '',
-		locationCity: '',
 		photos: [],
 		vehicles: [makeEmptyVehicle()]
 	});
@@ -54,7 +54,7 @@
 	let photosCardElement = $state<HTMLDivElement | undefined>(undefined);
 	let photoProcessing = $state(false);
 	let photoProcessingError = $state<string | null>(null);
-	let geocodeError = $state<string | null>(null);
+	let vehicleGeocodeWarnings = $state<Record<string, string>>({});
 	let sendError = $state<string | null>(null);
 	let sendResults = $state<{ licensePlate: string; ok: boolean }[]>([]);
 	let submitting = $state(false);
@@ -103,35 +103,49 @@
 		return counts;
 	});
 
+	// Cache: löst das GPS eines Fotos per Reverse-Geocoding auf und merkt sich das Ergebnis
+	// auf dem Pool-Eintrag, damit eine Mehrfachzuordnung zu Fahrzeugen keinen erneuten
+	// Netzwerkaufruf auslöst.
+	const resolvePhotoAddress = async (photo: PhotoEntry) => {
+		if (photo.resolvedAddress !== undefined) return photo.resolvedAddress;
+		if (!photo.gps) return null;
+		const address = await fetchAddress(photo.gps.lat, photo.gps.lon);
+		photo.resolvedAddress = address;
+		return address;
+	};
+
+	// Befüllt Datum/Uhrzeit/Tatort eines Fahrzeugs aus dem EXIF eines ihm zugeordneten
+	// Fotos — überschreibt nie bereits vorhandene (auch manuell eingegebene) Werte.
+	const applyPhotoExifToVehicle = async (vehicle: VehicleEntry, photoId: string) => {
+		const photo = form.photos.find((p) => p.id === photoId);
+		if (!photo) return;
+
+		if (photo.date) vehicle.date ||= photo.date;
+		if (photo.time) vehicle.time ||= photo.time;
+
+		if (vehicle.locationStreet.trim() && vehicle.locationCity.trim()) return;
+		if (!photo.gps) return;
+
+		const address = await resolvePhotoAddress(photo);
+		if (address?.street) vehicle.locationStreet ||= address.street;
+		if (address?.houseNumber) vehicle.locationHouseNumber ||= address.houseNumber;
+		if (address?.postcode) vehicle.locationPostcode ||= address.postcode;
+		if (address?.city) vehicle.locationCity ||= address.city;
+
+		if (!address?.street || !address?.city) {
+			vehicleGeocodeWarnings = {
+				...vehicleGeocodeWarnings,
+				[vehicle.id]:
+					'Adresse konnte nicht vollständig automatisch ermittelt werden — bitte prüfen/ergänzen.'
+			};
+			const coordsNote = `GPS-Koordinaten des Fotos: ${photo.gps.lat}, ${photo.gps.lon}`;
+			vehicle.notes = vehicle.notes ? `${vehicle.notes}\n${coordsNote}` : coordsNote;
+		}
+	};
+
 	const onAddPhoto = async (file: File) => {
 		photoProcessingError = null;
-		const isFirstPhoto = form.photos.length === 0;
 		const exif = await parseExif(file);
-
-		if (isFirstPhoto) {
-			geocodeError = null;
-
-			if (exif.date) form.date = exif.date;
-			if (exif.time) form.time = exif.time;
-
-			if (exif.gps) {
-				const address = await fetchAddress(exif.gps.lat, exif.gps.lon);
-				if (address?.street) form.locationStreet = address.street;
-				if (address?.houseNumber) form.locationHouseNumber = address.houseNumber;
-				if (address?.postcode) form.locationPostcode = address.postcode;
-				if (address?.city) form.locationCity = address.city;
-
-				if (!address?.street || !address?.city) {
-					geocodeError =
-						'Adresse konnte nicht vollständig automatisch ermittelt werden — bitte prüfen/ergänzen.';
-					// GPS-Koordinaten als Fallback-Info mitschicken, auch wenn die Adresse manuell erfasst wird.
-					const coordsNote = `GPS-Koordinaten des Fotos: ${exif.gps.lat}, ${exif.gps.lon}`;
-					for (const vehicle of form.vehicles) {
-						vehicle.notes = vehicle.notes ? `${vehicle.notes}\n${coordsNote}` : coordsNote;
-					}
-				}
-			}
-		}
 
 		photoProcessing = true;
 		try {
@@ -149,13 +163,21 @@
 			const compressed = await compressImage(rawBlob, { maxDimension: 1600, quality: 0.8 });
 			const withExif = await embedExifMetadata(compressed, exif);
 
-			const entry: PhotoEntry = { id: crypto.randomUUID(), blob: withExif, fileName: file.name };
+			const entry: PhotoEntry = {
+				id: crypto.randomUUID(),
+				blob: withExif,
+				fileName: file.name,
+				gps: exif.gps,
+				date: exif.date,
+				time: exif.time
+			};
 			form.photos = [...form.photos, entry];
 			errors = { ...errors, photos: undefined };
 
 			// Bei genau einem Fahrzeug ist die Zuordnung eindeutig — direkt automatisch übernehmen.
 			if (form.vehicles.length === 1 && form.vehicles[0].photoIds.length < MAX_PHOTOS_PER_VEHICLE) {
 				form.vehicles[0].photoIds = [...form.vehicles[0].photoIds, entry.id];
+				await applyPhotoExifToVehicle(form.vehicles[0], entry.id);
 			}
 		} finally {
 			photoProcessing = false;
@@ -216,12 +238,12 @@
 				body.set('addressPostcode', form.addressPostcode);
 				body.set('addressCity', form.addressCity);
 				body.set('email', form.email);
-				body.set('date', form.date);
-				body.set('time', form.time);
-				body.set('locationStreet', form.locationStreet);
-				body.set('locationHouseNumber', form.locationHouseNumber ?? '');
-				body.set('locationPostcode', form.locationPostcode);
-				body.set('locationCity', form.locationCity);
+				body.set('date', vehicle.date);
+				body.set('time', vehicle.time);
+				body.set('locationStreet', vehicle.locationStreet);
+				body.set('locationHouseNumber', vehicle.locationHouseNumber ?? '');
+				body.set('locationPostcode', vehicle.locationPostcode);
+				body.set('locationCity', vehicle.locationCity);
 				body.set('vehicleIndex', String(index + 1));
 				body.set('vehicleTotal', String(form.vehicles.length));
 				body.set('licensePlate', vehicle.licensePlate);
@@ -247,10 +269,10 @@
 						firstName: form.firstName,
 						lastName: form.lastName,
 						locationAddress: formatAddress({
-							street: form.locationStreet,
-							houseNumber: form.locationHouseNumber,
-							postcode: form.locationPostcode,
-							city: form.locationCity
+							street: vehicle.locationStreet,
+							houseNumber: vehicle.locationHouseNumber,
+							postcode: vehicle.locationPostcode,
+							city: vehicle.locationCity
 						}),
 						incidentTypeLabels: incidentTypes.map((t) => t.label),
 						licensePlate: vehicle.licensePlate,
@@ -275,12 +297,6 @@
 			if (form.vehicles.length === 0) {
 				form = {
 					...form,
-					date: '',
-					time: '',
-					locationStreet: '',
-					locationHouseNumber: '',
-					locationPostcode: '',
-					locationCity: '',
 					photos: [],
 					vehicles: [makeEmptyVehicle()]
 				};
@@ -453,140 +469,37 @@
 		/>
 	</div>
 
-	<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-		<div class="lg:w-[380px] lg:flex-shrink-0">
-			<div class="rounded-card bg-surface p-4 shadow-card sm:p-6">
-				<h2 class="text-sm font-semibold tracking-wide text-ink-muted uppercase">Tatort</h2>
-
-				<div class="mt-3 grid grid-cols-2 gap-3">
-					<div>
-						<label for="date" class="block text-sm font-medium text-ink"
-							>Datum <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="date"
-							type="date"
-							required
-							aria-required="true"
-							bind:value={form.date}
-							class="mt-1 w-full rounded-control border border-border p-2"
-						/>
-						{#if errors.date}<p class="text-sm text-error-fg">{errors.date}</p>{/if}
-					</div>
-					<div>
-						<label for="time" class="block text-sm font-medium text-ink"
-							>Uhrzeit <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="time"
-							type="time"
-							required
-							aria-required="true"
-							bind:value={form.time}
-							class="mt-1 w-full rounded-control border border-border p-2"
-						/>
-						{#if errors.time}<p class="text-sm text-error-fg">{errors.time}</p>{/if}
-					</div>
+	<div class="flex flex-col gap-4">
+		<div
+			class={`grid grid-cols-1 gap-4 ${form.vehicles.length > 1 ? 'md:grid-cols-2' : ''} lg:grid-cols-1`}
+		>
+			{#each form.vehicles as vehicle, index (vehicle.id)}
+				<div id="vehicle-block-{vehicle.id}">
+					<VehicleBlock
+						{vehicle}
+						{index}
+						total={form.vehicles.length}
+						errors={errors.vehicles?.[index]}
+						pool={form.photos}
+						incidentTypes={city.incidentTypes}
+						maxPhotos={MAX_PHOTOS_PER_VEHICLE}
+						geocodeWarning={vehicleGeocodeWarnings[vehicle.id]}
+						onRemove={() => removeVehicle(vehicle.id)}
+						onPhotoToggled={(photoId, selected) => {
+							if (selected) applyPhotoExifToVehicle(vehicle, photoId);
+						}}
+					/>
 				</div>
-
-				<div class="mt-3 grid grid-cols-[2fr_1fr] gap-3">
-					<div>
-						<label for="locationStreet" class="block text-sm font-medium text-ink"
-							>Straße <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="locationStreet"
-							bind:value={form.locationStreet}
-							required
-							aria-required="true"
-							class="mt-1 w-full rounded-control border border-border p-2"
-						/>
-						{#if errors.locationStreet}<p class="text-sm text-error-fg">
-								{errors.locationStreet}
-							</p>{/if}
-					</div>
-					<div>
-						<label for="locationHouseNumber" class="block text-sm font-medium text-ink"
-							>Hausnr.</label
-						>
-						<input
-							id="locationHouseNumber"
-							bind:value={form.locationHouseNumber}
-							class="mt-1 w-full rounded-control border border-border p-2"
-						/>
-					</div>
-				</div>
-				{#if geocodeError}<p class="mt-1 text-sm text-warning-fg">{geocodeError}</p>{/if}
-				<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
-					<div>
-						<label for="locationPostcode" class="block text-sm font-medium text-ink"
-							>PLZ <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="locationPostcode"
-							bind:value={form.locationPostcode}
-							required
-							aria-required="true"
-							class="mt-1 w-full rounded-control border border-border p-2"
-						/>
-						{#if errors.locationPostcode}<p class="text-sm text-error-fg">
-								{errors.locationPostcode}
-							</p>{/if}
-					</div>
-					<div>
-						<label for="locationCity" class="block text-sm font-medium text-ink"
-							>Ort <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="locationCity"
-							bind:value={form.locationCity}
-							required
-							aria-required="true"
-							class="mt-1 w-full rounded-control border border-border p-2"
-						/>
-						{#if errors.locationCity}<p class="text-sm text-error-fg">{errors.locationCity}</p>{/if}
-					</div>
-				</div>
-
-				{#if form.locationStreet || form.locationCity}
-					<p class="mt-3 text-sm text-ink-muted">
-						{form.locationStreet}
-						{form.locationHouseNumber}<br />
-						{form.locationPostcode}
-						{form.locationCity}
-					</p>
-				{/if}
-			</div>
+			{/each}
 		</div>
 
-		<div class="flex flex-1 flex-col gap-4">
-			<div
-				class={`grid grid-cols-1 gap-4 ${form.vehicles.length > 1 ? 'md:grid-cols-2' : ''} lg:grid-cols-1`}
-			>
-				{#each form.vehicles as vehicle, index (vehicle.id)}
-					<div id="vehicle-block-{vehicle.id}">
-						<VehicleBlock
-							{vehicle}
-							{index}
-							total={form.vehicles.length}
-							errors={errors.vehicles?.[index]}
-							pool={form.photos}
-							incidentTypes={city.incidentTypes}
-							maxPhotos={MAX_PHOTOS_PER_VEHICLE}
-							onRemove={() => removeVehicle(vehicle.id)}
-						/>
-					</div>
-				{/each}
-			</div>
-
-			<button
-				type="button"
-				onclick={addVehicle}
-				class="rounded-control border border-primary-500 px-4 py-3 font-medium text-primary-600"
-			>
-				+ Weiteres Fahrzeug hinzufügen
-			</button>
-		</div>
+		<button
+			type="button"
+			onclick={addVehicle}
+			class="rounded-control border border-primary-500 px-4 py-3 font-medium text-primary-600"
+		>
+			+ Weiteres Fahrzeug hinzufügen
+		</button>
 	</div>
 
 	<div class="pb-24 lg:hidden"></div>

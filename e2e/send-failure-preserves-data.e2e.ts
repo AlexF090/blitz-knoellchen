@@ -39,10 +39,10 @@ test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 	await expect(page.locator('#addressPostcode')).toHaveValue('50667');
 	await expect(page.locator('#addressCity')).toHaveValue('Köln');
 	await expect(page.locator('#email')).toHaveValue('max@example.com');
-	await expect(page.locator('#locationStreet')).toHaveValue('Domkloster');
-	await expect(page.locator('#locationHouseNumber')).toHaveValue('4');
-	await expect(page.locator('#locationPostcode')).toHaveValue('50667');
-	await expect(page.locator('#locationCity')).toHaveValue('Köln');
+	await expect(page.locator('[id^="locationStreet-"]')).toHaveValue('Domkloster');
+	await expect(page.locator('[id^="locationHouseNumber-"]')).toHaveValue('4');
+	await expect(page.locator('[id^="locationPostcode-"]')).toHaveValue('50667');
+	await expect(page.locator('[id^="locationCity-"]')).toHaveValue('Köln');
 	await expect(page.getByLabel('Parken auf dem Gehweg')).toBeChecked();
 	await expect(page.getByLabel('Kennzeichen')).toHaveValue('K-AB 1234');
 });

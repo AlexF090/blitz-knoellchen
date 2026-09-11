@@ -20,14 +20,23 @@ export const POST: RequestHandler = async ({ request }) => {
 	const photos: PhotoEntry[] = photoBlobs.map((blob, index) => ({
 		id: String(index),
 		blob,
-		fileName: `beweisfoto-${index + 1}.jpg`
+		fileName: `beweisfoto-${index + 1}.jpg`,
+		gps: null,
+		date: null,
+		time: null
 	}));
 	const vehicle: VehicleEntry = {
 		id: '0',
 		photoIds: photos.map((photo) => photo.id),
 		licensePlate: String(formData.get('licensePlate') ?? ''),
 		incidentTypeIds: formData.getAll('incidentTypeIds').map(String),
-		notes: String(formData.get('notes') ?? '') || undefined
+		notes: String(formData.get('notes') ?? '') || undefined,
+		date: String(formData.get('date') ?? ''),
+		time: String(formData.get('time') ?? ''),
+		locationStreet: String(formData.get('locationStreet') ?? ''),
+		locationHouseNumber: String(formData.get('locationHouseNumber') ?? '') || undefined,
+		locationPostcode: String(formData.get('locationPostcode') ?? ''),
+		locationCity: String(formData.get('locationCity') ?? '')
 	};
 	const vehicleIndex = Number(formData.get('vehicleIndex') ?? '1');
 	const vehicleTotal = Number(formData.get('vehicleTotal') ?? '1');
@@ -40,12 +49,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		addressPostcode: String(formData.get('addressPostcode') ?? ''),
 		addressCity: String(formData.get('addressCity') ?? ''),
 		email: String(formData.get('email') ?? ''),
-		date: String(formData.get('date') ?? ''),
-		time: String(formData.get('time') ?? ''),
-		locationStreet: String(formData.get('locationStreet') ?? ''),
-		locationHouseNumber: String(formData.get('locationHouseNumber') ?? '') || undefined,
-		locationPostcode: String(formData.get('locationPostcode') ?? ''),
-		locationCity: String(formData.get('locationCity') ?? ''),
 		photos,
 		vehicles: [vehicle]
 	};
@@ -68,12 +71,12 @@ export const POST: RequestHandler = async ({ request }) => {
 		addressHouseNumber: data.addressHouseNumber,
 		addressPostcode: data.addressPostcode,
 		addressCity: data.addressCity,
-		date: data.date,
-		time: data.time,
-		locationStreet: data.locationStreet,
-		locationHouseNumber: data.locationHouseNumber,
-		locationPostcode: data.locationPostcode,
-		locationCity: data.locationCity,
+		date: vehicle.date,
+		time: vehicle.time,
+		locationStreet: vehicle.locationStreet,
+		locationHouseNumber: vehicle.locationHouseNumber,
+		locationPostcode: vehicle.locationPostcode,
+		locationCity: vehicle.locationCity,
 		incidentTypes: incidentTypes.map((t) => ({ label: t.label, description: t.description })),
 		licensePlate: vehicle.licensePlate,
 		notes: vehicle.notes,
