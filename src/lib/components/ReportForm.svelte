@@ -32,10 +32,13 @@
 	});
 
 	let form = $state<ReportFormData>({
-		firstName: profileStore.value.firstName,
-		lastName: profileStore.value.lastName,
-		address: profileStore.value.address,
-		email: profileStore.value.email,
+		firstName: '',
+		lastName: '',
+		addressStreet: '',
+		addressHouseNumber: '',
+		addressPostcode: '',
+		addressCity: '',
+		email: '',
 		date: '',
 		time: '',
 		locationStreet: '',
@@ -54,6 +57,34 @@
 	let sendError = $state<string | null>(null);
 	let sendResults = $state<{ licensePlate: string; ok: boolean }[]>([]);
 	let submitting = $state(false);
+	let profileSaved = $state(false);
+
+	$effect(() => {
+		profileStore.load().then(() => {
+			const profile = profileStore.value;
+			if (!form.firstName) form.firstName = profile.firstName;
+			if (!form.lastName) form.lastName = profile.lastName;
+			if (!form.addressStreet) form.addressStreet = profile.addressStreet;
+			if (!form.addressHouseNumber) form.addressHouseNumber = profile.addressHouseNumber;
+			if (!form.addressPostcode) form.addressPostcode = profile.addressPostcode;
+			if (!form.addressCity) form.addressCity = profile.addressCity;
+			if (!form.email) form.email = profile.email;
+		});
+	});
+
+	const onSaveProfile = async () => {
+		await profileStore.save({
+			firstName: form.firstName,
+			lastName: form.lastName,
+			addressStreet: form.addressStreet,
+			addressHouseNumber: form.addressHouseNumber ?? '',
+			addressPostcode: form.addressPostcode,
+			addressCity: form.addressCity,
+			email: form.email
+		});
+		profileSaved = true;
+		setTimeout(() => (profileSaved = false), 3000);
+	};
 
 	let usageCounts = $derived.by(() => {
 		const counts: Record<string, number> = {};
@@ -174,7 +205,10 @@
 				const body = new FormData();
 				body.set('firstName', form.firstName);
 				body.set('lastName', form.lastName);
-				body.set('address', form.address);
+				body.set('addressStreet', form.addressStreet);
+				body.set('addressHouseNumber', form.addressHouseNumber ?? '');
+				body.set('addressPostcode', form.addressPostcode);
+				body.set('addressCity', form.addressCity);
 				body.set('email', form.email);
 				body.set('date', form.date);
 				body.set('time', form.time);
@@ -229,15 +263,6 @@
 				return;
 			}
 
-			if (results.some((r) => r.ok)) {
-				profileStore.save({
-					firstName: form.firstName,
-					lastName: form.lastName,
-					address: form.address,
-					email: form.email
-				});
-			}
-
 			const succeededIds = new Set(results.filter((r) => r.ok).map((r) => r.vehicle.id));
 			form.vehicles = form.vehicles.filter((vehicle) => !succeededIds.has(vehicle.id));
 
@@ -281,6 +306,101 @@
 			</p>
 		{/if}
 	{/if}
+
+	<div class="rounded-card bg-surface p-4 shadow-card sm:p-6">
+		<div class="flex items-center justify-between gap-3">
+			<h2 class="text-sm font-semibold tracking-wide text-ink-muted uppercase">Deine Angaben</h2>
+			<button
+				type="button"
+				onclick={onSaveProfile}
+				class="rounded-control border border-primary-500 px-3 py-1.5 text-sm font-medium text-primary-600"
+			>
+				{profileSaved ? 'Gespeichert ✓' : 'Speichern'}
+			</button>
+		</div>
+
+		<div class="mt-3 grid grid-cols-2 gap-3">
+			<div>
+				<label for="firstName" class="block text-sm font-medium text-ink">Vorname</label>
+				<input
+					id="firstName"
+					autocomplete="given-name"
+					bind:value={form.firstName}
+					class="mt-1 w-full rounded-control border border-border p-2"
+				/>
+				{#if errors.firstName}<p class="text-sm text-error-fg">{errors.firstName}</p>{/if}
+			</div>
+			<div>
+				<label for="lastName" class="block text-sm font-medium text-ink">Nachname</label>
+				<input
+					id="lastName"
+					autocomplete="family-name"
+					bind:value={form.lastName}
+					class="mt-1 w-full rounded-control border border-border p-2"
+				/>
+				{#if errors.lastName}<p class="text-sm text-error-fg">{errors.lastName}</p>{/if}
+			</div>
+		</div>
+
+		<div class="mt-3 grid grid-cols-[2fr_1fr] gap-3">
+			<div>
+				<label for="addressStreet" class="block text-sm font-medium text-ink">Straße</label>
+				<input
+					id="addressStreet"
+					autocomplete="address-line1"
+					bind:value={form.addressStreet}
+					class="mt-1 w-full rounded-control border border-border p-2"
+				/>
+				{#if errors.addressStreet}<p class="text-sm text-error-fg">{errors.addressStreet}</p>{/if}
+			</div>
+			<div>
+				<label for="addressHouseNumber" class="block text-sm font-medium text-ink">Hausnr.</label>
+				<input
+					id="addressHouseNumber"
+					autocomplete="address-line2"
+					bind:value={form.addressHouseNumber}
+					class="mt-1 w-full rounded-control border border-border p-2"
+				/>
+			</div>
+		</div>
+
+		<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
+			<div>
+				<label for="addressPostcode" class="block text-sm font-medium text-ink">PLZ</label>
+				<input
+					id="addressPostcode"
+					autocomplete="postal-code"
+					bind:value={form.addressPostcode}
+					class="mt-1 w-full rounded-control border border-border p-2"
+				/>
+				{#if errors.addressPostcode}<p class="text-sm text-error-fg">
+						{errors.addressPostcode}
+					</p>{/if}
+			</div>
+			<div>
+				<label for="addressCity" class="block text-sm font-medium text-ink">Ort</label>
+				<input
+					id="addressCity"
+					autocomplete="address-level2"
+					bind:value={form.addressCity}
+					class="mt-1 w-full rounded-control border border-border p-2"
+				/>
+				{#if errors.addressCity}<p class="text-sm text-error-fg">{errors.addressCity}</p>{/if}
+			</div>
+		</div>
+
+		<div class="mt-3">
+			<label for="email" class="block text-sm font-medium text-ink">Deine E-Mail-Adresse</label>
+			<input
+				id="email"
+				type="email"
+				autocomplete="email"
+				bind:value={form.email}
+				class="mt-1 w-full rounded-control border border-border p-2"
+			/>
+			{#if errors.email}<p class="text-sm text-error-fg">{errors.email}</p>{/if}
+		</div>
+	</div>
 
 	<div bind:this={photosCardElement}>
 		<PhotoPool
@@ -411,50 +531,6 @@
 			>
 				+ Weiteres Fahrzeug hinzufügen
 			</button>
-
-			<div class="rounded-card bg-surface p-4 shadow-card sm:p-6">
-				<div class="grid grid-cols-2 gap-3">
-					<div>
-						<label for="firstName" class="block text-sm font-medium text-ink">Vorname</label>
-						<input
-							id="firstName"
-							bind:value={form.firstName}
-							class="mt-1 w-full rounded-control border border-border p-2"
-						/>
-						{#if errors.firstName}<p class="text-sm text-error-fg">{errors.firstName}</p>{/if}
-					</div>
-					<div>
-						<label for="lastName" class="block text-sm font-medium text-ink">Nachname</label>
-						<input
-							id="lastName"
-							bind:value={form.lastName}
-							class="mt-1 w-full rounded-control border border-border p-2"
-						/>
-						{#if errors.lastName}<p class="text-sm text-error-fg">{errors.lastName}</p>{/if}
-					</div>
-				</div>
-
-				<div class="mt-3">
-					<label for="address" class="block text-sm font-medium text-ink">Deine Adresse</label>
-					<input
-						id="address"
-						bind:value={form.address}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-					{#if errors.address}<p class="text-sm text-error-fg">{errors.address}</p>{/if}
-				</div>
-
-				<div class="mt-3">
-					<label for="email" class="block text-sm font-medium text-ink">Deine E-Mail-Adresse</label>
-					<input
-						id="email"
-						type="email"
-						bind:value={form.email}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-					{#if errors.email}<p class="text-sm text-error-fg">{errors.email}</p>{/if}
-				</div>
-			</div>
 		</div>
 	</div>
 
