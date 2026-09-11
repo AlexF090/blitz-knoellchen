@@ -581,10 +581,7 @@
 		</div>
 	{/if}
 
-	<div class="pb-24 lg:hidden"></div>
-	<div
-		class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 p-4 backdrop-blur-sm lg:static lg:mt-4 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
-	>
+	<div class="mt-4 border-t border-border pt-4">
 		<button
 			type="submit"
 			disabled={!formReady || submitting || photoProcessing}
@@ -592,5 +589,9 @@
 		>
 			{submitting ? 'Wird gesendet…' : 'Absenden'}
 		</button>
+		<p class="mt-4 text-center text-xs text-ink-muted">
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- Platzhalter, Route folgt später -->
+			<a href="/datenschutz" class="underline">Datenschutz</a>
+		</p>
 	</div>
 </form>
