@@ -9,6 +9,7 @@
 		processingError?: string | null;
 		processing?: boolean;
 		maxPhotos: number;
+		maxPhotosPerVehicle: number;
 		onAdd: (file: File) => void | Promise<void>;
 		onRemove: (photoId: string) => void;
 	}
@@ -20,6 +21,7 @@
 		processingError = null,
 		processing = false,
 		maxPhotos,
+		maxPhotosPerVehicle,
 		onAdd,
 		onRemove
 	}: Props = $props();
@@ -44,7 +46,10 @@
 	class:border-error-fg={error}
 >
 	<p class="text-sm font-medium text-ink">Beweisfotos *</p>
-	<p class="text-sm text-ink-muted">Mindestens ein Foto ist erforderlich, maximal {maxPhotos}.</p>
+	<p class="text-sm text-ink-muted">
+		Mindestens ein Foto ist erforderlich. Pro Fahrzeug können maximal {maxPhotosPerVehicle} Fotos ausgewählt
+		werden.
+	</p>
 
 	<div class="mt-3 grid grid-cols-3 gap-2">
 		{#each photos as photo (photo.id)}

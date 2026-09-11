@@ -9,8 +9,9 @@
 	import { embedExifMetadata } from '$lib/image/embedExif';
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
 	import {
+		getMaxPoolPhotos,
 		isFormValid,
-		MAX_PHOTOS_PER_REPORT,
+		MAX_PHOTOS_PER_VEHICLE,
 		validateProfileFields,
 		validateReportForm,
 		type PhotoEntry,
@@ -153,7 +154,7 @@
 			errors = { ...errors, photos: undefined };
 
 			// Bei genau einem Fahrzeug ist die Zuordnung eindeutig — direkt automatisch übernehmen.
-			if (form.vehicles.length === 1 && form.vehicles[0].photoIds.length < MAX_PHOTOS_PER_REPORT) {
+			if (form.vehicles.length === 1 && form.vehicles[0].photoIds.length < MAX_PHOTOS_PER_VEHICLE) {
 				form.vehicles[0].photoIds = [...form.vehicles[0].photoIds, entry.id];
 			}
 		} finally {
@@ -445,7 +446,8 @@
 			error={errors.photos}
 			processingError={photoProcessingError}
 			processing={photoProcessing}
-			maxPhotos={MAX_PHOTOS_PER_REPORT}
+			maxPhotos={getMaxPoolPhotos(form.vehicles.length)}
+			maxPhotosPerVehicle={MAX_PHOTOS_PER_VEHICLE}
 			onAdd={onAddPhoto}
 			onRemove={onRemovePhoto}
 		/>
@@ -570,7 +572,7 @@
 							errors={errors.vehicles?.[index]}
 							pool={form.photos}
 							incidentTypes={city.incidentTypes}
-							maxPhotos={MAX_PHOTOS_PER_REPORT}
+							maxPhotos={MAX_PHOTOS_PER_VEHICLE}
 							onRemove={() => removeVehicle(vehicle.id)}
 						/>
 					</div>

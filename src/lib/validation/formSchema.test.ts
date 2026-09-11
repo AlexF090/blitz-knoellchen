@@ -95,13 +95,43 @@ describe('validateReportForm', () => {
 		expect(isFormValid(errors)).toBe(true);
 	});
 
-	it('meldet mehr als drei Fotos im Pool', () => {
+	it('meldet mehr als drei Fotos im Pool bei nur einem Fahrzeug', () => {
 		const data = makeValidData();
 		const errors = validateReportForm({
 			...data,
 			photos: [makePhoto(), makePhoto(), makePhoto(), makePhoto()]
 		});
 		expect(errors.photos).toBeDefined();
+	});
+
+	it('erlaubt mehr als drei Fotos im Pool, wenn mehrere Fahrzeuge das rechtfertigen', () => {
+		const photos = [makePhoto(), makePhoto(), makePhoto(), makePhoto()];
+		const data = makeValidData();
+		const errors = validateReportForm({
+			...data,
+			photos,
+			vehicles: [
+				makeVehicle({ licensePlate: 'K-AA 1' }, [photos[0].id, photos[1].id]),
+				makeVehicle({ licensePlate: 'K-BB 2' }, [photos[2].id, photos[3].id])
+			]
+		});
+		expect(isFormValid(errors)).toBe(true);
+	});
+
+	it('meldet mehr als drei Fotos für ein einzelnes Fahrzeug', () => {
+		const photos = [makePhoto(), makePhoto(), makePhoto(), makePhoto()];
+		const data = makeValidData();
+		const errors = validateReportForm({
+			...data,
+			photos,
+			vehicles: [
+				makeVehicle(
+					{},
+					photos.map((p) => p.id)
+				)
+			]
+		});
+		expect(errors.vehicles?.[0].photoIds).toBeDefined();
 	});
 
 	it('meldet fehlendes Kennzeichen pro Fahrzeug', () => {
