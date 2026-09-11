@@ -4,6 +4,7 @@
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
 	import {
 		validateReportForm,
+		validateProfileFields,
 		isFormValid,
 		MAX_PHOTOS_PER_REPORT,
 		type PhotoEntry,
@@ -52,7 +53,6 @@
 	let photosCardElement = $state<HTMLDivElement | undefined>(undefined);
 	let photoProcessing = $state(false);
 	let photoProcessingError = $state<string | null>(null);
-	let addressManualRequired = $state(false);
 	let geocodeError = $state<string | null>(null);
 	let sendError = $state<string | null>(null);
 	let sendResults = $state<{ licensePlate: string; ok: boolean }[]>([]);
@@ -85,6 +85,10 @@
 	};
 
 	const onSaveProfile = async () => {
+		const profileErrors = validateProfileFields(form);
+		errors = { ...errors, ...profileErrors };
+		if (Object.keys(profileErrors).length > 0) return;
+
 		await saveProfileFields();
 		profileSaved = true;
 		setTimeout(() => (profileSaved = false), 3000);
@@ -105,7 +109,6 @@
 
 		if (isFirstPhoto) {
 			geocodeError = null;
-			addressManualRequired = false;
 
 			if (exif.date) form.date = exif.date;
 			if (exif.time) form.time = exif.time;
@@ -120,15 +123,12 @@
 				if (!address?.street || !address?.city) {
 					geocodeError =
 						'Adresse konnte nicht vollständig automatisch ermittelt werden — bitte prüfen/ergänzen.';
-					addressManualRequired = true;
 					// GPS-Koordinaten als Fallback-Info mitschicken, auch wenn die Adresse manuell erfasst wird.
 					const coordsNote = `GPS-Koordinaten des Fotos: ${exif.gps.lat}, ${exif.gps.lon}`;
 					for (const vehicle of form.vehicles) {
 						vehicle.notes = vehicle.notes ? `${vehicle.notes}\n${coordsNote}` : coordsNote;
 					}
 				}
-			} else {
-				addressManualRequired = true;
 			}
 		}
 
@@ -326,10 +326,14 @@
 
 		<div class="mt-3 grid grid-cols-2 gap-3">
 			<div>
-				<label for="firstName" class="block text-sm font-medium text-ink">Vorname</label>
+				<label for="firstName" class="block text-sm font-medium text-ink"
+					>Vorname <span class="text-error-fg">*</span></label
+				>
 				<input
 					id="firstName"
 					autocomplete="given-name"
+					required
+					aria-required="true"
 					bind:value={form.firstName}
 					onblur={saveProfileFields}
 					class="mt-1 w-full rounded-control border border-border p-2"
@@ -337,10 +341,14 @@
 				{#if errors.firstName}<p class="text-sm text-error-fg">{errors.firstName}</p>{/if}
 			</div>
 			<div>
-				<label for="lastName" class="block text-sm font-medium text-ink">Nachname</label>
+				<label for="lastName" class="block text-sm font-medium text-ink"
+					>Nachname <span class="text-error-fg">*</span></label
+				>
 				<input
 					id="lastName"
 					autocomplete="family-name"
+					required
+					aria-required="true"
 					bind:value={form.lastName}
 					onblur={saveProfileFields}
 					class="mt-1 w-full rounded-control border border-border p-2"
@@ -351,10 +359,14 @@
 
 		<div class="mt-3 grid grid-cols-[2fr_1fr] gap-3">
 			<div>
-				<label for="addressStreet" class="block text-sm font-medium text-ink">Straße</label>
+				<label for="addressStreet" class="block text-sm font-medium text-ink"
+					>Straße <span class="text-error-fg">*</span></label
+				>
 				<input
 					id="addressStreet"
 					autocomplete="address-line1"
+					required
+					aria-required="true"
 					bind:value={form.addressStreet}
 					onblur={saveProfileFields}
 					class="mt-1 w-full rounded-control border border-border p-2"
@@ -362,7 +374,9 @@
 				{#if errors.addressStreet}<p class="text-sm text-error-fg">{errors.addressStreet}</p>{/if}
 			</div>
 			<div>
-				<label for="addressHouseNumber" class="block text-sm font-medium text-ink">Hausnr.</label>
+				<label for="addressHouseNumber" class="block text-sm font-medium text-ink"
+					>Hausnr. (optional)</label
+				>
 				<input
 					id="addressHouseNumber"
 					autocomplete="address-line2"
@@ -375,10 +389,14 @@
 
 		<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
 			<div>
-				<label for="addressPostcode" class="block text-sm font-medium text-ink">PLZ</label>
+				<label for="addressPostcode" class="block text-sm font-medium text-ink"
+					>PLZ <span class="text-error-fg">*</span></label
+				>
 				<input
 					id="addressPostcode"
 					autocomplete="postal-code"
+					required
+					aria-required="true"
 					bind:value={form.addressPostcode}
 					onblur={saveProfileFields}
 					class="mt-1 w-full rounded-control border border-border p-2"
@@ -388,10 +406,14 @@
 					</p>{/if}
 			</div>
 			<div>
-				<label for="addressCity" class="block text-sm font-medium text-ink">Ort</label>
+				<label for="addressCity" class="block text-sm font-medium text-ink"
+					>Ort <span class="text-error-fg">*</span></label
+				>
 				<input
 					id="addressCity"
 					autocomplete="address-level2"
+					required
+					aria-required="true"
 					bind:value={form.addressCity}
 					onblur={saveProfileFields}
 					class="mt-1 w-full rounded-control border border-border p-2"
@@ -401,11 +423,15 @@
 		</div>
 
 		<div class="mt-3">
-			<label for="email" class="block text-sm font-medium text-ink">Deine E-Mail-Adresse</label>
+			<label for="email" class="block text-sm font-medium text-ink"
+				>Deine E-Mail-Adresse <span class="text-error-fg">*</span></label
+			>
 			<input
 				id="email"
 				type="email"
 				autocomplete="email"
+				required
+				aria-required="true"
 				bind:value={form.email}
 				onblur={saveProfileFields}
 				class="mt-1 w-full rounded-control border border-border p-2"
@@ -434,20 +460,28 @@
 
 				<div class="mt-3 grid grid-cols-2 gap-3">
 					<div>
-						<label for="date" class="block text-sm font-medium text-ink">Datum</label>
+						<label for="date" class="block text-sm font-medium text-ink"
+							>Datum <span class="text-error-fg">*</span></label
+						>
 						<input
 							id="date"
 							type="date"
+							required
+							aria-required="true"
 							bind:value={form.date}
 							class="mt-1 w-full rounded-control border border-border p-2"
 						/>
 						{#if errors.date}<p class="text-sm text-error-fg">{errors.date}</p>{/if}
 					</div>
 					<div>
-						<label for="time" class="block text-sm font-medium text-ink">Uhrzeit</label>
+						<label for="time" class="block text-sm font-medium text-ink"
+							>Uhrzeit <span class="text-error-fg">*</span></label
+						>
 						<input
 							id="time"
 							type="time"
+							required
+							aria-required="true"
 							bind:value={form.time}
 							class="mt-1 w-full rounded-control border border-border p-2"
 						/>
@@ -457,11 +491,14 @@
 
 				<div class="mt-3 grid grid-cols-[2fr_1fr] gap-3">
 					<div>
-						<label for="locationStreet" class="block text-sm font-medium text-ink">Straße</label>
+						<label for="locationStreet" class="block text-sm font-medium text-ink"
+							>Straße <span class="text-error-fg">*</span></label
+						>
 						<input
 							id="locationStreet"
 							bind:value={form.locationStreet}
-							required={addressManualRequired}
+							required
+							aria-required="true"
 							class="mt-1 w-full rounded-control border border-border p-2"
 						/>
 						{#if errors.locationStreet}<p class="text-sm text-error-fg">
@@ -470,7 +507,7 @@
 					</div>
 					<div>
 						<label for="locationHouseNumber" class="block text-sm font-medium text-ink"
-							>Hausnr.</label
+							>Hausnr. (optional)</label
 						>
 						<input
 							id="locationHouseNumber"
@@ -482,11 +519,14 @@
 				{#if geocodeError}<p class="mt-1 text-sm text-warning-fg">{geocodeError}</p>{/if}
 				<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
 					<div>
-						<label for="locationPostcode" class="block text-sm font-medium text-ink">PLZ</label>
+						<label for="locationPostcode" class="block text-sm font-medium text-ink"
+							>PLZ <span class="text-error-fg">*</span></label
+						>
 						<input
 							id="locationPostcode"
 							bind:value={form.locationPostcode}
-							required={addressManualRequired}
+							required
+							aria-required="true"
 							class="mt-1 w-full rounded-control border border-border p-2"
 						/>
 						{#if errors.locationPostcode}<p class="text-sm text-error-fg">
@@ -494,11 +534,14 @@
 							</p>{/if}
 					</div>
 					<div>
-						<label for="locationCity" class="block text-sm font-medium text-ink">Ort</label>
+						<label for="locationCity" class="block text-sm font-medium text-ink"
+							>Ort <span class="text-error-fg">*</span></label
+						>
 						<input
 							id="locationCity"
 							bind:value={form.locationCity}
-							required={addressManualRequired}
+							required
+							aria-required="true"
 							class="mt-1 w-full rounded-control border border-border p-2"
 						/>
 						{#if errors.locationCity}<p class="text-sm text-error-fg">{errors.locationCity}</p>{/if}

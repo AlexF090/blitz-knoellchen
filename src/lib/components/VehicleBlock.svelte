@@ -84,11 +84,13 @@
 
 	<div class="mt-3">
 		<label for="licensePlate-{vehicle.id}" class="block text-sm font-medium text-ink"
-			>Kennzeichen</label
+			>Kennzeichen <span class="text-error-fg">*</span></label
 		>
 		<input
 			id="licensePlate-{vehicle.id}"
 			bind:value={vehicle.licensePlate}
+			required
+			aria-required="true"
 			class="mt-1 w-full rounded-control border border-border p-2"
 		/>
 		{#if errors?.licensePlate}<p class="text-sm text-error-fg">{errors.licensePlate}</p>{/if}
@@ -96,7 +98,7 @@
 
 	<fieldset class="mt-3">
 		<legend class="block text-sm font-medium text-ink"
-			>Art des Verstoßes (Mehrfachauswahl möglich)</legend
+			>Art des Verstoßes (Mehrfachauswahl möglich) <span class="text-error-fg">*</span></legend
 		>
 		<div class="mt-1 flex flex-col gap-2">
 			{#each incidentTypes as type (type.id)}

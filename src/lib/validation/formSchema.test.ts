@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
 	isFormValid,
+	validateProfileFields,
 	validateReportForm,
 	type PhotoEntry,
+	type ProfileFields,
 	type ReportFormData,
 	type VehicleEntry
 } from './formSchema';
@@ -151,5 +153,78 @@ describe('validateReportForm', () => {
 		const errors = validateReportForm(data);
 		expect(errors.vehicles?.[0].licensePlate).toBeUndefined();
 		expect(errors.vehicles?.[1].licensePlate).toBeDefined();
+	});
+
+	it('meldet ungültiges Kennzeichenformat', () => {
+		const data = makeValidData();
+		data.vehicles[0].licensePlate = 'nur text';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].licensePlate).toBeDefined();
+	});
+
+	it.each(['K-AB 1234', 'K AB 1234', 'KAB1234', 'M-XY 1', 'K-E 123E', 'HH-AB 12H'])(
+		'akzeptiert gültiges Kennzeichenformat "%s"',
+		(licensePlate) => {
+			const data = makeValidData();
+			data.vehicles[0].licensePlate = licensePlate;
+			const errors = validateReportForm(data);
+			expect(errors.vehicles?.[0].licensePlate).toBeUndefined();
+		}
+	);
+
+	it('meldet ungültige Postleitzahl', () => {
+		const data = makeValidData();
+		const errors = validateReportForm({
+			...data,
+			addressPostcode: '123',
+			locationPostcode: 'abcde'
+		});
+		expect(errors.addressPostcode).toBeDefined();
+		expect(errors.locationPostcode).toBeDefined();
+	});
+
+	it('meldet ungültiges Datum', () => {
+		const data = makeValidData();
+		const errors = validateReportForm({ ...data, date: '2026-02-30' });
+		expect(errors.date).toBeDefined();
+	});
+
+	it('meldet Datum in der Zukunft', () => {
+		const data = makeValidData();
+		const errors = validateReportForm({ ...data, date: '2999-01-01' });
+		expect(errors.date).toBeDefined();
+	});
+
+	it('meldet ungültige Uhrzeit', () => {
+		const data = makeValidData();
+		const errors = validateReportForm({ ...data, time: '25:99' });
+		expect(errors.time).toBeDefined();
+	});
+});
+
+describe('validateProfileFields', () => {
+	const makeValidProfile = (): ProfileFields => ({
+		firstName: 'Max',
+		lastName: 'Mustermann',
+		addressStreet: 'Musterstraße',
+		addressPostcode: '50667',
+		addressCity: 'Köln',
+		email: 'max@example.com'
+	});
+
+	it('akzeptiert vollständig ausgefüllte Profildaten', () => {
+		expect(validateProfileFields(makeValidProfile())).toEqual({});
+	});
+
+	it('meldet fehlende Profil-Pflichtfelder, ohne Tatort-/Fahrzeugfelder zu prüfen', () => {
+		const errors = validateProfileFields({ ...makeValidProfile(), firstName: '', email: '' });
+		expect(errors.firstName).toBeDefined();
+		expect(errors.email).toBeDefined();
+		expect(Object.keys(errors)).toEqual(['firstName', 'email']);
+	});
+
+	it('meldet ungültige Postleitzahl im Profil', () => {
+		const errors = validateProfileFields({ ...makeValidProfile(), addressPostcode: '123' });
+		expect(errors.addressPostcode).toBeDefined();
 	});
 });
