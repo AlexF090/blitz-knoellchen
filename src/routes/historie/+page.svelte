@@ -21,8 +21,10 @@
 <main
 	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
 >
-	{#if loaded && entries.length === 0}
-		<p class="text-ink-muted">Noch keine Anzeigen versendet.</p>
+	{#if !loaded}
+		<p role="status" class="text-ink-muted">Historie wird geladen…</p>
+	{:else if entries.length === 0}
+		<p role="status" class="text-ink-muted">Noch keine Anzeigen versendet.</p>
 	{/if}
 
 	<ul class="flex flex-col gap-3">

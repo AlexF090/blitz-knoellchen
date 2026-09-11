@@ -45,7 +45,7 @@ test('Klick auf Backdrop schließt die Lightbox', async ({ page }) => {
 test('Entfernen-Button löst nicht die Lightbox aus und funktioniert weiterhin', async ({
 	page
 }) => {
-	await page.getByRole('button', { name: 'Foto entfernen' }).click();
+	await page.getByRole('button', { name: /entfernen/ }).click();
 
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
 	await expect(page.getByRole('button', { name: /vergrößern/ })).toHaveCount(0);

@@ -54,7 +54,7 @@
 	class:border-2={error}
 	class:border-error-fg={error}
 >
-	<p class="text-sm font-medium text-ink">Beweisfotos *</p>
+	<h2 class="text-sm font-medium text-ink">Beweisfotos *</h2>
 	<p class="text-sm text-ink-muted">
 		Mindestens ein Foto ist erforderlich. Pro Fahrzeug können maximal {maxPhotosPerVehicle} Fotos ausgewählt
 		werden.
@@ -69,11 +69,7 @@
 					aria-label="Foto {photo.fileName} vergrößern"
 					class="group block h-full w-full overflow-hidden rounded-control border border-border"
 				>
-					<img
-						src={objectUrl(photo.blob)}
-						alt="Beweisfoto {photo.fileName}"
-						class="h-full w-full object-cover"
-					/>
+					<img src={objectUrl(photo.blob)} alt="" class="h-full w-full object-cover" />
 					<span
 						class="absolute inset-0 flex items-center justify-center bg-ink/0 opacity-0 transition-opacity group-hover:bg-ink/20 group-hover:opacity-100 pointer-coarse:bg-ink/20 pointer-coarse:opacity-100"
 					>
@@ -96,15 +92,16 @@
 				</button>
 				{#if usageCounts[photo.id] > 1}
 					<span
+						aria-label="Verwendet bei {usageCounts[photo.id]} Fahrzeugen"
 						class="absolute top-1 left-1 rounded-full bg-primary-600 px-1.5 py-0.5 text-xs text-white"
 					>
-						{usageCounts[photo.id]}×
+						<span aria-hidden="true">{usageCounts[photo.id]}×</span>
 					</span>
 				{/if}
 				<button
 					type="button"
 					onclick={() => onRemove(photo.id)}
-					aria-label="Foto entfernen"
+					aria-label="Foto {photo.fileName} entfernen"
 					class="absolute -top-1 -right-1 flex size-6 items-center justify-center rounded-full bg-surface text-ink shadow-card"
 				>
 					×
@@ -121,7 +118,7 @@
 				<svg
 					viewBox="0 0 24 24"
 					fill="none"
-					class="size-6 animate-spin text-ink-muted"
+					class="size-6 animate-spin text-ink-muted motion-reduce:animate-none"
 					aria-hidden="true"
 				>
 					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25" />
@@ -156,8 +153,8 @@
 		class="sr-only"
 	/>
 
-	{#if batchError}<p class="mt-2 text-sm text-error-fg">{batchError}</p>{/if}
-	{#if processingError}<p class="mt-2 text-sm text-error-fg">{processingError}</p>{/if}
+	{#if batchError}<p role="alert" class="mt-2 text-sm text-error-fg">{batchError}</p>{/if}
+	{#if processingError}<p role="alert" class="mt-2 text-sm text-error-fg">{processingError}</p>{/if}
 	{#if error}<p role="alert" class="mt-2 text-sm text-error-fg">{error}</p>{/if}
 </div>
 

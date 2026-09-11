@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { RotateCcw, Trash2 } from '@lucide/svelte';
 	import type { IncidentType } from '$lib/config/cities';
+	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import { validateVehicle } from '$lib/validation/formSchema';
 	import type { PhotoEntry, VehicleEntry, VehicleErrors } from '$lib/validation/formSchema';
 	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
@@ -128,12 +129,12 @@
 				<dt class="text-xs font-medium text-ink-muted">Fotos</dt>
 				{#if vehicle.photoIds.length > 0}
 					<dd class="mt-1 flex flex-wrap gap-2">
-						{#each vehicle.photoIds as photoId (photoId)}
+						{#each vehicle.photoIds as photoId, photoIndex (photoId)}
 							{@const photo = pool.find((p) => p.id === photoId)}
 							{#if photo}
 								<img
 									src={objectUrl(photo.blob)}
-									alt="Foto {photo.fileName}"
+									alt="Beweisfoto {photoIndex + 1} von {vehicle.photoIds.length}"
 									class="size-14 rounded-control border border-border object-cover"
 								/>
 							{/if}
@@ -171,7 +172,7 @@
 			{/if}
 		</dl>
 		{#if errors}
-			<p class="mt-2 text-sm text-error-fg">Angaben unvollständig</p>
+			<p role="alert" class="mt-2 text-sm text-error-fg">Angaben unvollständig</p>
 		{/if}
 	{/if}
 
@@ -202,6 +203,7 @@
 							/>
 							{#if selected}
 								<span
+									aria-hidden="true"
 									class="absolute inset-0 flex items-center justify-center bg-primary-600/40 text-white"
 									>✓</span
 								>
@@ -228,9 +230,16 @@
 						bind:value={vehicle.date}
 						required
 						aria-required="true"
+						{...ariaFieldProps(`date-${vehicle.id}`, errors?.date)}
 						class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
 					/>
-					{#if errors?.date}<p class="text-sm text-error-fg">{errors.date}</p>{/if}
+					{#if errors?.date}<p
+							id="date-{vehicle.id}-error"
+							role="alert"
+							class="text-sm text-error-fg"
+						>
+							{errors.date}
+						</p>{/if}
 				</div>
 				<div class="min-w-0">
 					<label for="time-{vehicle.id}" class="block text-sm font-medium text-ink"
@@ -242,9 +251,16 @@
 						bind:value={vehicle.time}
 						required
 						aria-required="true"
+						{...ariaFieldProps(`time-${vehicle.id}`, errors?.time)}
 						class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
 					/>
-					{#if errors?.time}<p class="text-sm text-error-fg">{errors.time}</p>{/if}
+					{#if errors?.time}<p
+							id="time-{vehicle.id}-error"
+							role="alert"
+							class="text-sm text-error-fg"
+						>
+							{errors.time}
+						</p>{/if}
 				</div>
 			</div>
 			<div class="mt-2 grid grid-cols-[2fr_1fr] gap-3">
@@ -257,9 +273,14 @@
 						bind:value={vehicle.locationStreet}
 						required
 						aria-required="true"
+						{...ariaFieldProps(`locationStreet-${vehicle.id}`, errors?.locationStreet)}
 						class="mt-1 w-full rounded-control border border-border p-2"
 					/>
-					{#if errors?.locationStreet}<p class="text-sm text-error-fg">
+					{#if errors?.locationStreet}<p
+							id="locationStreet-{vehicle.id}-error"
+							role="alert"
+							class="text-sm text-error-fg"
+						>
 							{errors.locationStreet}
 						</p>{/if}
 				</div>
@@ -274,7 +295,9 @@
 					/>
 				</div>
 			</div>
-			{#if geocodeWarning}<p class="mt-1 text-sm text-warning-fg">{geocodeWarning}</p>{/if}
+			{#if geocodeWarning}<p role="status" class="mt-1 text-sm text-warning-fg">
+					{geocodeWarning}
+				</p>{/if}
 			<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
 				<div class="min-w-0">
 					<label for="locationPostcode-{vehicle.id}" class="block text-sm font-medium text-ink"
@@ -285,9 +308,14 @@
 						bind:value={vehicle.locationPostcode}
 						required
 						aria-required="true"
+						{...ariaFieldProps(`locationPostcode-${vehicle.id}`, errors?.locationPostcode)}
 						class="mt-1 w-full rounded-control border border-border p-2"
 					/>
-					{#if errors?.locationPostcode}<p class="text-sm text-error-fg">
+					{#if errors?.locationPostcode}<p
+							id="locationPostcode-{vehicle.id}-error"
+							role="alert"
+							class="text-sm text-error-fg"
+						>
 							{errors.locationPostcode}
 						</p>{/if}
 				</div>
@@ -300,9 +328,16 @@
 						bind:value={vehicle.locationCity}
 						required
 						aria-required="true"
+						{...ariaFieldProps(`locationCity-${vehicle.id}`, errors?.locationCity)}
 						class="mt-1 w-full rounded-control border border-border p-2"
 					/>
-					{#if errors?.locationCity}<p class="text-sm text-error-fg">{errors.locationCity}</p>{/if}
+					{#if errors?.locationCity}<p
+							id="locationCity-{vehicle.id}-error"
+							role="alert"
+							class="text-sm text-error-fg"
+						>
+							{errors.locationCity}
+						</p>{/if}
 				</div>
 			</div>
 		</div>
@@ -316,9 +351,16 @@
 				bind:value={vehicle.licensePlate}
 				required
 				aria-required="true"
+				{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
 				class="mt-1 w-full rounded-control border border-border p-2"
 			/>
-			{#if errors?.licensePlate}<p class="text-sm text-error-fg">{errors.licensePlate}</p>{/if}
+			{#if errors?.licensePlate}<p
+					id="licensePlate-{vehicle.id}-error"
+					role="alert"
+					class="text-sm text-error-fg"
+				>
+					{errors.licensePlate}
+				</p>{/if}
 		</div>
 
 		<fieldset class="mt-3">
@@ -338,7 +380,7 @@
 					</label>
 				{/each}
 			</div>
-			{#if errors?.incidentTypeIds}<p class="text-sm text-error-fg">
+			{#if errors?.incidentTypeIds}<p role="alert" class="text-sm text-error-fg">
 					{errors.incidentTypeIds}
 				</p>{/if}
 		</fieldset>
@@ -366,7 +408,7 @@
 				Fertig
 			</button>
 			{#if !isComplete()}
-				<div class="mt-1 text-xs text-ink-muted">
+				<div role="status" class="mt-1 text-xs text-ink-muted">
 					<p>Noch nicht einklappbar, bitte prüfen:</p>
 					<ul class="mt-1 list-disc pl-5">
 						{#each missingFieldMessages() as message (message)}
