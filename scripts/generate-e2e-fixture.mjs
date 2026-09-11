@@ -3,30 +3,30 @@
 // nötig — die JPEG-Bytes kommen aus einem echten <canvas>.toBlob via Playwright,
 // das ohnehin schon als Dependency installiert ist; der EXIF-APP1-Block wird von Hand
 // nach der gut dokumentierten TIFF/EXIF-Struktur zusammengesetzt).
-import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { chromium } from 'playwright';
 
-function u16(n) {
+const u16 = (n) => {
 	const b = Buffer.alloc(2);
 	b.writeUInt16BE(n, 0);
 	return b;
-}
-function u32(n) {
+};
+const u32 = (n) => {
 	const b = Buffer.alloc(4);
 	b.writeUInt32BE(n, 0);
 	return b;
-}
-function ascii(str) {
+};
+const ascii = (str) => {
 	return Buffer.from(str, 'ascii');
-}
-function ifdEntry(tag, type, count, valueOrOffset) {
+};
+const ifdEntry = (tag, type, count, valueOrOffset) => {
 	return Buffer.concat([u16(tag), u16(type), u32(count), u32(valueOrOffset)]);
-}
-function rational(num, den) {
+};
+const rational = (num, den) => {
 	return Buffer.concat([u32(num), u32(den)]);
-}
+};
 
-function buildExifApp1({ lat, lon, dateTimeOriginal }) {
+const buildExifApp1 = ({ lat, lon, dateTimeOriginal }) => {
 	// Layout-Offsets sind relativ zum TIFF-Header-Start (direkt nach "Exif\0\0").
 	const IFD0_OFFSET = 8;
 	const EXIF_IFD_OFFSET = 38;
@@ -51,13 +51,13 @@ function buildExifApp1({ lat, lon, dateTimeOriginal }) {
 		u32(0)
 	]);
 
-	function toDMS(value) {
+	const toDMS = (value) => {
 		const deg = Math.floor(value);
 		const minFloat = (value - deg) * 60;
 		const min = Math.floor(minFloat);
 		const sec = Math.round((minFloat - min) * 60 * 100); // Hundertstel-Sekunden
 		return [rational(deg, 1), rational(min, 1), rational(sec, 100)];
-	}
+	};
 
 	const latDms = Buffer.concat(toDMS(Math.abs(lat)));
 	const lonDms = Buffer.concat(toDMS(Math.abs(lon)));
@@ -86,9 +86,9 @@ function buildExifApp1({ lat, lon, dateTimeOriginal }) {
 	const length = segmentContent.length + 2;
 
 	return Buffer.concat([Buffer.from([0xff, 0xe1]), u16(length), segmentContent]);
-}
+};
 
-async function makeBaseJpeg() {
+const makeBaseJpeg = async () => {
 	const browser = await chromium.launch();
 	const page = await browser.newPage();
 	const base64 = await page.evaluate(async () => {
@@ -106,13 +106,13 @@ async function makeBaseJpeg() {
 	});
 	await browser.close();
 	return Buffer.from(base64, 'base64');
-}
+};
 
-function insertApp1(jpeg, app1) {
+const insertApp1 = (jpeg, app1) => {
 	// APP1 direkt nach dem SOI-Marker (FF D8) einfügen.
 	if (jpeg[0] !== 0xff || jpeg[1] !== 0xd8) throw new Error('Kein gültiges JPEG (SOI fehlt).');
 	return Buffer.concat([jpeg.subarray(0, 2), app1, jpeg.subarray(2)]);
-}
+};
 
 const baseJpeg = await makeBaseJpeg();
 const app1 = buildExifApp1({
