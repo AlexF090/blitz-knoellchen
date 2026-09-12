@@ -530,11 +530,12 @@
 	{:else}
 		<div class="rounded-card bg-surface p-4 shadow-card sm:p-6">
 			<h2 class="text-sm font-semibold tracking-wide text-ink-muted uppercase">Deine Angaben</h2>
-			<p class="mt-1 text-xs text-ink-muted">
-				Mit <span class="text-error-fg">*</span> markierte Felder sind Pflichtfelder.
-			</p>
 
 			{#if isEditingProfile}
+				<p class="mt-1 text-xs text-ink-muted">
+					Mit <span class="text-error-fg">*</span> markierte Felder sind Pflichtfelder.
+				</p>
+
 				<div class="mt-3 grid grid-cols-2 gap-3">
 					<div class="min-w-0">
 						<label for="firstName" class="block text-sm font-medium text-ink"
