@@ -66,6 +66,8 @@ Tatort: ${locationLine}
 
 Fahrzeug und Verstoß
 Kennzeichen: ${licensePlateLine}
+Länderkennzeichen: ${input.licensePlateCountry?.trim() || 'D'}
+Fahrzeugart: ${input.vehicleType?.trim() || 'nicht angegeben'}
 Fahrzeug: ${vehicleDescriptionLine}
 Art des Verstoßes: ${incidentLabels}
 Beschreibung: ${incidentDescriptions}

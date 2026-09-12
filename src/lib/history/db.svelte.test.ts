@@ -28,6 +28,8 @@ const makeVehicle = (overrides: Partial<VehicleEntry> = {}): VehicleEntry => ({
 	id: crypto.randomUUID(),
 	photoIds: [],
 	licensePlate: 'K-AB 1234',
+	licensePlateCountry: 'D',
+	vehicleType: 'PKW',
 	make: 'Unbekannt',
 	color: 'Rot',
 	incidentTypeIds: ['gehweg'],

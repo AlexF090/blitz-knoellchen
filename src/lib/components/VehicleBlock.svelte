@@ -10,6 +10,7 @@
 	import type { PhotoEntry, VehicleEntry, VehicleErrors } from '$lib/validation/formSchema';
 	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
 	import { VEHICLE_MAKES } from '$lib/config/vehicleMakes';
+	import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
 	import { formatAddress } from '$lib/geocode/formatAddress';
 	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
@@ -174,7 +175,9 @@
 			</div>
 			<div>
 				<dt class="text-xs font-medium text-ink-muted">Fahrzeug</dt>
-				<dd class="text-ink">{vehicle.make} · {vehicle.color || '—'}</dd>
+				<dd class="text-ink">
+					{vehicle.vehicleType || '—'} · {vehicle.make} · {vehicle.color || '—'}
+				</dd>
 			</div>
 			<div>
 				<dt class="text-xs font-medium text-ink-muted">Tatort</dt>
@@ -429,24 +432,60 @@
 			</div>
 		</div>
 
+		<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
+			<div class="min-w-0">
+				<label for="licensePlateCountry-{vehicle.id}" class="block text-sm font-medium text-ink"
+					>Länderkennz.</label
+				>
+				<input
+					id="licensePlateCountry-{vehicle.id}"
+					bind:value={vehicle.licensePlateCountry}
+					class="mt-1 w-full rounded-control border border-border p-2"
+				/>
+			</div>
+			<div class="min-w-0">
+				<label for="licensePlate-{vehicle.id}" class="block text-sm font-medium text-ink"
+					>Kennzeichen <span class="text-error-fg">*</span></label
+				>
+				<input
+					id="licensePlate-{vehicle.id}"
+					bind:value={vehicle.licensePlate}
+					required
+					aria-required="true"
+					{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
+					class="mt-1 w-full rounded-control border border-border p-2"
+				/>
+				{#if errors?.licensePlate}<p
+						id="licensePlate-{vehicle.id}-error"
+						role="alert"
+						class="text-sm text-error-fg"
+					>
+						{errors.licensePlate}
+					</p>{/if}
+			</div>
+		</div>
+
 		<div class="mt-3">
-			<label for="licensePlate-{vehicle.id}" class="block text-sm font-medium text-ink"
-				>Kennzeichen <span class="text-error-fg">*</span></label
+			<label for="vehicleType-{vehicle.id}" class="block text-sm font-medium text-ink"
+				>Fahrzeugart <span class="text-error-fg">*</span></label
 			>
-			<input
-				id="licensePlate-{vehicle.id}"
-				bind:value={vehicle.licensePlate}
+			<select
+				id="vehicleType-{vehicle.id}"
+				bind:value={vehicle.vehicleType}
 				required
 				aria-required="true"
-				{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
+				{...ariaFieldProps(`vehicleType-${vehicle.id}`, errors?.vehicleType)}
 				class="mt-1 w-full rounded-control border border-border p-2"
-			/>
-			{#if errors?.licensePlate}<p
-					id="licensePlate-{vehicle.id}-error"
+			>
+				<option value="" disabled>Bitte wählen</option>
+				{#each VEHICLE_TYPES as type (type)}<option value={type}>{type}</option>{/each}
+			</select>
+			{#if errors?.vehicleType}<p
+					id="vehicleType-{vehicle.id}-error"
 					role="alert"
 					class="text-sm text-error-fg"
 				>
-					{errors.licensePlate}
+					{errors.vehicleType}
 				</p>{/if}
 		</div>
 
@@ -600,7 +639,10 @@
 		{#if vehicle.color}
 			<div>
 				<dt class="text-xs font-medium text-ink-muted">Fahrzeug</dt>
-				<dd class="text-ink">{vehicle.make} · {vehicle.color}</dd>
+				<dd class="text-ink">
+					{vehicle.vehicleType ? `${vehicle.vehicleType} · ` : ''}{vehicle.make} ·
+					{vehicle.color}
+				</dd>
 			</div>
 		{/if}
 		{#if summaryAddress()}

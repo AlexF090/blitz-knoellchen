@@ -35,6 +35,7 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 	await page.getByLabel('Parken auf dem Gehweg').check();
 	await page.getByLabel('Parken im Halteverbot').check();
 	await page.getByLabel('Kennzeichen').fill('K AB 1234');
+	await page.getByLabel('Fahrzeugart').selectOption('PKW');
 	await page.getByLabel('Farbe').fill('Rot');
 
 	await page.getByRole('button', { name: 'Absenden' }).click();

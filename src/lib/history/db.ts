@@ -9,6 +9,8 @@ export interface HistoryEntry {
 	locationAddress: string;
 	incidentTypeLabels: string[];
 	licensePlate?: string;
+	licensePlateCountry?: string;
+	vehicleType?: string;
 	make?: string;
 	color?: string;
 	notes?: string;

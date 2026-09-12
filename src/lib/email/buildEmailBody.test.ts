@@ -18,6 +18,8 @@ const baseInput: EmailTemplateInput = {
 		{ label: 'Parken auf dem Gehweg', description: 'Das Fahrzeug parkte auf dem Gehweg.' }
 	],
 	licensePlate: 'K-AB 1234',
+	licensePlateCountry: 'D',
+	vehicleType: 'PKW',
 	make: 'VW',
 	color: 'Rot',
 	notes: 'Fahrzeug stand seit über einer Stunde dort.',
@@ -36,6 +38,8 @@ describe('buildEmailBody', () => {
 		expect(result.body).toContain('Art des Verstoßes: Parken auf dem Gehweg');
 		expect(result.body).toContain('Beschreibung: Das Fahrzeug parkte auf dem Gehweg.');
 		expect(result.body).toContain('Kennzeichen: K-AB 1234');
+		expect(result.body).toContain('Länderkennzeichen: D');
+		expect(result.body).toContain('Fahrzeugart: PKW');
 		expect(result.body).toContain('Fahrzeug: VW (Farbe: Rot)');
 		expect(result.body).toContain('Weitere Angaben: Fahrzeug stand seit über einer Stunde dort.');
 	});
@@ -125,6 +129,16 @@ describe('buildEmailBody', () => {
 	it('fällt bei fehlender Marke/Farbe auf Platzhaltertext zurück', () => {
 		const result = buildEmailBody({ ...baseInput, make: undefined, color: undefined });
 		expect(result.body).toContain('Fahrzeug: unbekannt (Farbe: nicht angegeben)');
+	});
+
+	it('fällt bei fehlendem Länderkennzeichen auf "D" zurück', () => {
+		const result = buildEmailBody({ ...baseInput, licensePlateCountry: undefined });
+		expect(result.body).toContain('Länderkennzeichen: D');
+	});
+
+	it('fällt bei fehlender Fahrzeugart auf Platzhaltertext zurück', () => {
+		const result = buildEmailBody({ ...baseInput, vehicleType: undefined });
+		expect(result.body).toContain('Fahrzeugart: nicht angegeben');
 	});
 
 	it('behält Sonderzeichen (ö/ä/ü/ß) korrekt bei', () => {
