@@ -22,7 +22,10 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 	const vehicleDescriptionLine = `${input.make?.trim() || 'unbekannt'} (Farbe: ${input.color?.trim() || 'nicht angegeben'})`;
 	const notes = input.notes?.trim();
 	const incidentLabels = input.incidentTypes.map((t) => t.label).join(', ');
-	const incidentDescriptions = input.incidentTypes.map((t) => `- ${t.description}`).join('\n');
+	const incidentDescriptions =
+		input.incidentTypes.length > 1
+			? `\n${input.incidentTypes.map((t) => `- ${t.description}`).join('\n')}`
+			: input.incidentTypes[0].description;
 	const locationLine = formatAddress({
 		street: input.locationStreet,
 		houseNumber: input.locationHouseNumber,
@@ -39,25 +42,37 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 			? `${input.photoCount} Beweisfotos sind dieser E-Mail beigefügt.`
 			: 'Ein Beweisfoto ist dieser E-Mail beigefügt.';
 	const timeLine = input.endTime?.trim()
-		? `in der Zeit von ${input.time} Uhr bis ${input.endTime.trim()} Uhr`
-		: `um ${input.time} Uhr`;
-	const phoneLine = input.phone?.trim() ? ` sowie telefonisch unter ${input.phone.trim()}` : '';
+		? `${input.time} Uhr bis ${input.endTime.trim()} Uhr`
+		: `${input.time} Uhr`;
+	const phoneLine = input.phone?.trim() ? `\nTelefon: ${input.phone.trim()}` : '';
+
+	const introLine =
+		input.incidentTypes.length > 1
+			? 'hiermit zeige ich folgende Verkehrsverstöße an:'
+			: 'hiermit zeige ich folgenden Verkehrsverstoß an:';
 
 	const body = `Sehr geehrte Damen und Herren,
 
-hiermit zeige ich, ${input.firstName} ${input.lastName}, wohnhaft in ${addressLine}, an,
-dass am ${formatGermanDate(input.date)} ${timeLine} in der ${locationLine} folgender Sachverhalt
-vorlag:
+${introLine}
 
-${incidentDescriptions}
+Angaben zur anzeigenden Person
+Name: ${input.firstName} ${input.lastName}
+Anschrift: ${addressLine}${phoneLine}
 
-Art des Verstoßes: ${incidentLabels}
-Kennzeichen des Fahrzeugs: ${licensePlateLine}
+Tatzeit und Tatort
+Datum: ${formatGermanDate(input.date)}
+Uhrzeit: ${timeLine}
+Tatort: ${locationLine}
+
+Fahrzeug und Verstoß
+Kennzeichen: ${licensePlateLine}
 Fahrzeug: ${vehicleDescriptionLine}
-${notes ? `Weitere Angaben: ${notes}\n\n` : ''}${photoLine}
+Art des Verstoßes: ${incidentLabels}
+Beschreibung: ${incidentDescriptions}
+${notes ? `\nWeitere Angaben: ${notes}\n` : ''}
+${photoLine}
 
-Ich stehe für Rückfragen und ggf. als Zeuge zur Verfügung und bin unter dieser E-Mail-Adresse${phoneLine}
-erreichbar.
+Ich stehe für Rückfragen und gegebenenfalls als Zeuge zur Verfügung.
 
 Mit freundlichen Grüßen
 ${input.firstName} ${input.lastName}`;
