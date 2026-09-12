@@ -66,9 +66,9 @@ nur Anzeige-/Fließtext gebraucht wird (E-Mail-Text, lokale Historie). `houseNum
 optional (Formular wie Provider) — nicht jeder Verstoßort lässt sich einer exakten Hausnummer
 zuordnen.
 
-Offener Punkt: LocationIQs kostenloser Tarif sieht laut Nutzungsbedingungen einen sichtbaren
-Attributions-Link in der UI vor — aktuell in diesem Projekt noch nicht umgesetzt, vor
-Produktivbetrieb nachholen.
+LocationIQs kostenloser Tarif sieht laut Nutzungsbedingungen einen sichtbaren Attributions-Link
+in der UI vor — umgesetzt als dezenter Link im global eingebundenen `Footer.svelte` (neben
+Datenschutz-Link und Versionsnummer, erscheint dadurch auf jeder Route).
 
 Zusätzlich zum Reverse-Geocoding gibt es einen **Autocomplete**-Proxy
 (`src/routes/api/geocode/autocomplete/+server.ts`, `src/lib/geocode/autocomplete.ts`) für die
