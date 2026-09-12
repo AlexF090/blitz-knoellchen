@@ -657,7 +657,7 @@
 				<button
 					type="button"
 					onclick={onSaveProfile}
-					class="mt-4 rounded-control border border-primary-500 px-3 py-1.5 text-sm font-medium text-primary-600"
+					class="mt-4 rounded-control border border-primary-500 px-4 py-2.5 text-sm font-medium text-primary-600"
 				>
 					Speichern
 				</button>
@@ -673,7 +673,7 @@
 				<button
 					type="button"
 					onclick={onEditProfile}
-					class="mt-4 rounded-control border border-primary-500 px-3 py-1.5 text-sm font-medium text-primary-600"
+					class="mt-4 rounded-control border border-primary-500 px-4 py-2.5 text-sm font-medium text-primary-600"
 				>
 					Bearbeiten
 				</button>
