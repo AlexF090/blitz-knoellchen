@@ -1,7 +1,7 @@
 {
 	"name": "blitz-knoellchen",
 	"private": true,
-	"version": "1.0.35",
+	"version": "1.0.36",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev --host",
@@ -47,6 +47,7 @@
 	"dependencies": {
 		"@fontsource/archivo": "^5.3.0",
 		"@lucide/svelte": "^1.43.0",
+		"@vercel/analytics": "^2.0.1",
 		"@vite-pwa/sveltekit": "^1.1.0",
 		"exifreader": "^4.44.1",
 		"heic-to": "^1.5.2",
