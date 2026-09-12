@@ -20,5 +20,5 @@
 	style="font-family: 'Archivo', sans-serif;"
 >
 	<span class="text-ink">BLITZ</span>
-	<span class="text-brand-red">KNÖLLCHEN</span>
+	<span class="text-primary-600">KNÖLLCHEN</span>
 </span>

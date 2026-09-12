@@ -64,12 +64,12 @@ export default defineConfig({
 					maskable: {
 						sizes: [512],
 						padding: 0,
-						resizeOptions: { background: '#ec3013' }
+						resizeOptions: { background: '#255a54' }
 					},
 					apple: {
 						sizes: [180],
 						padding: 0,
-						resizeOptions: { background: '#ec3013' }
+						resizeOptions: { background: '#255a54' }
 					}
 				}
 			},

@@ -11,9 +11,9 @@
 	const clipId = `brand-icon-paper-cut-corner-${uid}`;
 </script>
 
-<!-- Feste Markenfarben, kein Theme-Bezug (siehe app-icon.svg) — dieselbe Form, nur inline
-     eingebettet statt als <img>, damit sie ohne zusätzlichen Netzwerk-Request in der Nav-Bar
-     erscheint. -->
+<!-- Feste Farbe (entspricht Primary-Token, Stufe 600, Light Mode, siehe app-icon.svg), kein
+     Theme-Bezug — dieselbe Form, nur inline eingebettet statt als <img>, damit sie ohne
+     zusätzlichen Netzwerk-Request in der Nav-Bar erscheint. -->
 <svg
 	width={size}
 	height={size}
@@ -22,7 +22,7 @@
 	class="shrink-0"
 	xmlns="http://www.w3.org/2000/svg"
 >
-	<rect width="512" height="512" fill="#ec3013" />
+	<rect width="512" height="512" fill="#255a54" />
 	<clipPath id={clipId}>
 		<polygon points="97.75,97.75 376.27,97.75 414.25,135.73 414.25,414.25 97.75,414.25" />
 	</clipPath>
@@ -31,6 +31,6 @@
 	</g>
 	<polygon
 		points="269.96,168.73 203.64,264.73 249.02,264.73 235.06,343.27 311.86,242.04 262.98,242.04"
-		fill="#ec3013"
+		fill="#255a54"
 	/>
 </svg>
