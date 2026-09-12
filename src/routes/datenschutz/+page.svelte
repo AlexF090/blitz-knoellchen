@@ -62,8 +62,16 @@
 				du die Adresse manuell eingeben.
 			</p>
 			<p class="mt-2">
-				Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einer schnell
-				ausfüllbaren Anzeige, ohne die Adresse manuell recherchieren zu müssen).
+				Zusätzlich bietet die App bei der manuellen Adresseingabe (sowohl bei deiner eigenen
+				Anschrift als auch beim Tatort) eine Adressvorschlagsliste während des Tippens an. Dafür
+				wird dein bereits eingetippter Text – anders als beim Reverse Geocoding oben – ebenfalls
+				über einen eigenen Server-Endpunkt live an <strong>LocationIQ</strong> übertragen, um passende
+				Vorschläge zu ermitteln; das kann auch bei deiner eigenen Adresse geschehen. Diese Anfragen laufen
+				ohne Fallback auf BigDataCloud; schlägt die Anfrage fehl, erscheint einfach keine Vorschlagsliste.
+			</p>
+			<p class="mt-2">
+				Rechtsgrundlage für beide Funktionen ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse
+				an einer schnell ausfüllbaren Anzeige, ohne die Adresse manuell recherchieren zu müssen).
 			</p>
 		</section>
 
@@ -122,7 +130,26 @@
 		</section>
 
 		<section>
-			<h2>9. Deine Rechte</h2>
+			<h2>9. Daten des gemeldeten Fahrzeughalters bzw. Fahrers</h2>
+			<p>
+				Zweck der App ist es, einen Parkverstoß einer anderen Person anzuzeigen. Dabei werden neben
+				deinen eigenen Angaben zwangsläufig auch personenbezogene Daten dieser Person verarbeitet
+				und an die Bußgeldstelle Köln übermittelt: das Kennzeichen des Fahrzeugs, das Beweisfoto
+				(das ggf. auch die Person selbst zeigen kann) sowie Tatort und Tatzeit. Diese Daten werden
+				ausschließlich zur Erstattung der Anzeige verarbeitet, nicht für andere Zwecke gespeichert
+				oder ausgewertet.
+			</p>
+			<p class="mt-2">
+				Rechtsgrundlage hierfür ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der
+				Anzeige von Verkehrsverstößen gegenüber der zuständigen Behörde). Nach Eingang der Anzeige
+				bei der Bußgeldstelle Köln liegt die weitere Verarbeitung dieser Daten – einschließlich
+				etwaiger Auskunfts- oder Löschungsansprüche der betroffenen Person – in der Verantwortung
+				der Bußgeldstelle als datenverarbeitende Behörde, nicht mehr bei dieser App.
+			</p>
+		</section>
+
+		<section>
+			<h2>10. Deine Rechte</h2>
 			<p>
 				Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16 DSGVO), Löschung (Art.
 				17 DSGVO), Einschränkung der Verarbeitung (Art. 18 DSGVO), Datenübertragbarkeit (Art. 20
@@ -135,7 +162,7 @@
 		</section>
 
 		<section>
-			<h2>10. Speicherdauer</h2>
+			<h2>11. Speicherdauer</h2>
 			<p>
 				Daten, die zum Versand der Anzeige an Brevo bzw. die Bußgeldstelle Köln übermittelt werden,
 				verbleiben so lange dort, wie es für die Bearbeitung des Verstoßes bzw. gesetzliche
@@ -146,7 +173,7 @@
 		</section>
 
 		<section>
-			<h2>11. Änderungen dieser Datenschutzerklärung</h2>
+			<h2>12. Änderungen dieser Datenschutzerklärung</h2>
 			<p>
 				Diese Datenschutzerklärung wird bei Bedarf angepasst, wenn sich die Datenverarbeitung in der
 				App ändert. Stand: September 2026.
