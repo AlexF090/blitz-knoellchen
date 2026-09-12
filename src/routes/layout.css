@@ -40,8 +40,51 @@
 	--radius-control: 0.625rem;
 	--shadow-card:
 		0 1px 2px oklch(26.6% 0.0348 183.03 / 0.04), 0 4px 16px oklch(26.6% 0.0348 183.03 / 0.06);
+	/* Für schwebende Overlays (Sheets/Dialoge) — Cards liegen flach, Overlays schweben darüber */
+	--shadow-overlay: 0 8px 24px oklch(0% 0 0 / 0.12), 0 2px 8px oklch(0% 0 0 / 0.08);
 
 	--font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* Dark Mode — dieselben Variablennamen wie oben, systemgesteuert. Da alle Komponenten
+   ausschließlich die semantischen Tokens nutzen (nie rohe Farben), reicht diese
+   Neudefinition, ohne dass eine Komponente angefasst werden muss. Kontrastwerte sind
+   gegen denselben WCAG-Maßstab wie --color-border oben geprüft (3:1 UI-Komponenten,
+   4.5:1 Fließtext). */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--color-primary-50: oklch(24% 0.02 186.89);
+		--color-primary-100: oklch(30% 0.03 184.89);
+		--color-primary-300: oklch(45% 0.05 185.63);
+		--color-primary-500: oklch(62% 0.07 185.65);
+		--color-primary-600: oklch(68% 0.065 185.34);
+		--color-primary-700: oklch(78% 0.05 183.37);
+		--color-primary-900: oklch(90% 0.03 183.03);
+
+		--color-ink: oklch(94% 0.004 173.48);
+		--color-ink-muted: oklch(72% 0.01 159.5);
+		/* "elevated", nicht reines Schwarz — iOS-typische Materials-Optik */
+		--color-surface: oklch(20% 0.004 173.48);
+		--color-surface-sunken: oklch(14% 0.004 128.49);
+		--color-border: oklch(38% 0.006 160.06);
+
+		--color-success-bg: oklch(24% 0.03 145.45);
+		--color-success-fg: oklch(75% 0.09 147.46);
+		--color-error-bg: oklch(26% 0.035 22.08);
+		--color-error-fg: oklch(75% 0.12 28.85);
+		--color-warning-bg: oklch(26% 0.03 83.06);
+		--color-warning-fg: oklch(78% 0.09 67.57);
+
+		--color-vehicle-1: oklch(70% 0.09 247.81);
+		--color-vehicle-2: oklch(70% 0.11 301.77);
+		--color-vehicle-3: oklch(74% 0.12 355.3);
+		--color-vehicle-4: oklch(72% 0.09 150.4);
+		--color-vehicle-5: oklch(74% 0.09 65.44);
+		--color-vehicle-6: oklch(75% 0.07 195.32);
+
+		--shadow-card: 0 1px 2px oklch(0% 0 0 / 0.3), 0 4px 16px oklch(0% 0 0 / 0.35);
+		--shadow-overlay: 0 8px 24px oklch(0% 0 0 / 0.4), 0 2px 8px oklch(0% 0 0 / 0.3);
+	}
 }
 
 html {
@@ -57,6 +100,11 @@ body {
 
 button:not(:disabled) {
 	cursor: pointer;
+	@apply transition-transform duration-150 ease-out;
+}
+
+button:not(:disabled):active {
+	@apply scale-[97%];
 }
 
 button:disabled {
@@ -66,4 +114,83 @@ button:disabled {
 :focus-visible {
 	outline: 2px solid var(--color-primary-600);
 	outline-offset: 2px;
+}
+
+/* Native <dialog>-Elemente fahren beim showModal()/close() sanft ein UND aus, statt hart zu
+   erscheinen/verschwinden. Die Transition muss auf dem Basis-Selektor (nicht nur [open])
+   liegen, sonst greift beim Entfernen von [open] keine Transition mehr und das Schließen
+   springt hart — @starting-style deckt nur den Enter-Fall ab, der geschlossene Zustand
+   (translate/opacity/scale) muss hier explizit stehen, damit close() dorthin zurück-
+   animiert. allow-discrete hält display/overlay für die Dauer der Transition offen.
+   Kein Tailwind-Utility-Äquivalent vorhanden (Safari ≥17.4, Chrome ≥117 nötig; ohne Support
+   erscheint/verschwindet der Dialog schlicht sofort, kein Fallback nötig). */
+dialog {
+	opacity: 0;
+	translate: 0 100%;
+	transition:
+		translate 300ms cubic-bezier(0, 0, 0.2, 1),
+		opacity 300ms cubic-bezier(0, 0, 0.2, 1),
+		display 300ms allow-discrete,
+		overlay 300ms allow-discrete;
+}
+
+dialog[open] {
+	opacity: 1;
+	translate: 0 0;
+}
+
+@starting-style {
+	dialog[open] {
+		opacity: 0;
+		translate: 0 100%;
+	}
+}
+
+@media (min-width: 640px) {
+	dialog {
+		translate: 0 0;
+		scale: 0.96;
+	}
+
+	dialog[open] {
+		scale: 1;
+	}
+
+	@starting-style {
+		dialog[open] {
+			translate: 0 0;
+			scale: 0.96;
+		}
+	}
+}
+
+/* Dimmt den Hintergrund passend zum Sheet/Dialog sanft ein UND aus — wie bei
+   iOS/macOS-Systemdialogen. Analoges Muster zum <dialog> selbst. */
+dialog::backdrop {
+	opacity: 0;
+	transition: opacity 300ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+dialog[open]::backdrop {
+	opacity: 1;
+}
+
+@starting-style {
+	dialog[open]::backdrop {
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	button:not(:disabled):active {
+		transform: none;
+	}
+
+	dialog {
+		transition: none;
+	}
+
+	dialog::backdrop {
+		transition: none;
+	}
 }

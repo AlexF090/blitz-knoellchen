@@ -2,13 +2,18 @@
 	import { RotateCcw, Trash2 } from '@lucide/svelte';
 	import type { IncidentType } from '$lib/config/cities';
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
+	import { triggerHaptic } from '$lib/haptics/vibrate';
+	import { transitionDuration } from '$lib/motion/reducedMotion';
+	import { fade } from 'svelte/transition';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import { validateVehicle } from '$lib/validation/formSchema';
 	import type { PhotoEntry, VehicleEntry, VehicleErrors } from '$lib/validation/formSchema';
 	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
 	import { VEHICLE_MAKES } from '$lib/config/vehicleMakes';
 	import { formatAddress } from '$lib/geocode/formatAddress';
+	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	interface Props {
 		vehicle: VehicleEntry;
@@ -39,12 +44,13 @@
 	}: Props = $props();
 
 	let open = $state(true);
-	let resetDialog: HTMLDialogElement | undefined;
+	let resetDialog = $state<HTMLDialogElement | undefined>(undefined);
 
 	const openResetDialog = () => resetDialog?.showModal();
 
 	const confirmReset = () => {
 		resetDialog?.close();
+		triggerHaptic('warning');
 		if (total > 1) onRemove();
 		else onReset();
 	};
@@ -75,9 +81,11 @@
 	const selectHalteverstoss = () => {
 		vehicle.timeMode = 'halteverstoss';
 		vehicle.endTime = '';
+		triggerHaptic('selection');
 	};
 	const selectParkverstoss = () => {
 		vehicle.timeMode = 'parkverstoss';
+		triggerHaptic('selection');
 	};
 
 	const summaryIncidentTypes = () =>
@@ -137,7 +145,10 @@
 	</div>
 
 	{#if !open}
-		<dl class="mt-3 flex flex-col gap-3 text-sm">
+		<dl
+			transition:fade={{ duration: transitionDuration(150) }}
+			class="mt-3 flex flex-col gap-3 text-sm"
+		>
 			<div>
 				<dt class="text-xs font-medium text-ink-muted">Fotos</dt>
 				{#if vehicle.photoIds.length > 0}
@@ -241,26 +252,36 @@
 
 			<fieldset class="mt-2">
 				<legend class="text-sm font-medium text-ink">Art der Zeitangabe</legend>
-				<div class="mt-1 flex flex-wrap gap-3 text-sm text-ink">
-					<label class="flex cursor-pointer items-center gap-1.5 py-1">
+				<div class="mt-1 inline-flex w-full rounded-control bg-surface-sunken p-1">
+					<label
+						class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
+							py-1.5 text-center text-sm font-medium text-ink-muted transition-colors
+							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
+					>
 						<input
 							type="radio"
 							name="timeMode-{vehicle.id}"
+							aria-label="Halteverstoß (Einzelzeitpunkt)"
 							checked={vehicle.timeMode !== 'parkverstoss'}
 							onchange={selectHalteverstoss}
-							class="size-4 border-border"
+							class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
 						/>
-						Halteverstoß (Einzelzeitpunkt)
+						Halteverstoß
 					</label>
-					<label class="flex cursor-pointer items-center gap-1.5 py-1">
+					<label
+						class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
+							py-1.5 text-center text-sm font-medium text-ink-muted transition-colors
+							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
+					>
 						<input
 							type="radio"
 							name="timeMode-{vehicle.id}"
+							aria-label="Parkverstoß (Zeitraum, mind. 4 Min.)"
 							checked={vehicle.timeMode === 'parkverstoss'}
 							onchange={selectParkverstoss}
-							class="size-4 border-border"
+							class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
 						/>
-						Parkverstoß (Zeitraum, mind. 4 Min.)
+						Parkverstoß
 					</label>
 				</div>
 				{#if vehicle.timeMode === 'parkverstoss'}
@@ -519,13 +540,17 @@
 				type="button"
 				onclick={() => isComplete() && (open = false)}
 				disabled={!isComplete()}
-				class="flex w-full items-center justify-center gap-1 rounded-control bg-primary-500 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-border disabled:text-ink-muted"
+				class="flex w-full items-center justify-center gap-1 {buttonPrimary} disabled:cursor-not-allowed disabled:bg-border disabled:text-ink-muted"
 				aria-expanded={open}
 			>
 				Fertig
 			</button>
 			{#if !isComplete()}
-				<div role="status" class="mt-1 text-xs text-ink-muted">
+				<div
+					role="status"
+					transition:fade={{ duration: transitionDuration(150) }}
+					class="mt-1 text-xs text-ink-muted"
+				>
 					<p>Noch nicht einklappbar, bitte prüfen:</p>
 					<ul class="mt-1 list-disc pl-5">
 						{#each missingFieldMessages() as message (message)}
@@ -538,7 +563,7 @@
 			<button
 				type="button"
 				onclick={() => (open = true)}
-				class="flex w-full items-center justify-center gap-1 rounded-control border border-primary-500 px-4 py-2.5 text-sm font-semibold text-primary-600"
+				class="flex w-full items-center justify-center gap-1 {buttonSecondary}"
 				aria-expanded={open}
 			>
 				Bearbeiten
@@ -547,15 +572,12 @@
 	</div>
 </div>
 
-<dialog
-	bind:this={resetDialog}
-	onclick={handleResetBackdropClick}
-	aria-labelledby="reset-dialog-title-{vehicle.id}"
-	class="m-auto w-[90vw] max-w-sm rounded-card bg-surface p-4 shadow-card backdrop:bg-ink/70 sm:p-6"
+<ConfirmDialog
+	bind:dialog={resetDialog}
+	onBackdropClick={handleResetBackdropClick}
+	titleId="reset-dialog-title-{vehicle.id}"
+	title={total > 1 ? 'Fahrzeug/Vorgang entfernen?' : 'Fahrzeug/Vorgang zurücksetzen?'}
 >
-	<h3 id="reset-dialog-title-{vehicle.id}" class="text-sm font-semibold text-ink">
-		{total > 1 ? 'Fahrzeug/Vorgang entfernen?' : 'Fahrzeug/Vorgang zurücksetzen?'}
-	</h3>
 	<p class="mt-1 text-sm text-ink-muted">
 		{total > 1
 			? 'Dieser Datensatz wird unwiderruflich aus der Anzeige entfernt.'
@@ -606,21 +628,12 @@
 			</div>
 		{/if}
 	</dl>
-
-	<div class="mt-4 flex gap-2">
-		<button
-			type="button"
-			onclick={() => resetDialog?.close()}
-			class="flex-1 rounded-control border border-primary-500 px-4 py-2.5 text-sm font-semibold text-primary-600"
-		>
+	{#snippet actions()}
+		<button type="button" onclick={() => resetDialog?.close()} class="flex-1 {buttonSecondary}">
 			Abbrechen
 		</button>
-		<button
-			type="button"
-			onclick={confirmReset}
-			class="flex-1 rounded-control bg-error-fg px-4 py-3 text-sm font-semibold text-white"
-		>
+		<button type="button" onclick={confirmReset} class="flex-1 {buttonDestructive}">
 			Entfernen
 		</button>
-	</div>
-</dialog>
+	{/snippet}
+</ConfirmDialog>

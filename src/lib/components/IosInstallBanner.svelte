@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { Share, SquarePlus } from '@lucide/svelte';
+	import { fly } from 'svelte/transition';
 	import { browser } from '$app/environment';
+	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { isIosSafari } from '$lib/pwa/isIosSafari';
 
 	let visible = $state(false);
@@ -21,7 +23,8 @@
 {#if visible}
 	<div
 		role="note"
-		class="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-primary-600 px-4 py-3 text-sm text-white shadow-card"
+		transition:fly={{ y: 80, duration: transitionDuration(250) }}
+		class="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-primary-600/90 px-4 py-3 text-sm text-white shadow-card backdrop-blur-sm"
 	>
 		<p class="flex flex-wrap items-center gap-2">
 			Installiere die App: Tippe auf <Share class="inline size-4 shrink-0" aria-hidden="true" />
