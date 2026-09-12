@@ -41,7 +41,8 @@ export const parseExif = async (file: Blob): Promise<ParsedExif> => {
 				: null;
 
 		return { date, time, gps, dateTimeOriginal };
-	} catch {
+	} catch (error) {
+		console.error('parseExif fehlgeschlagen:', error);
 		return EMPTY;
 	}
 };

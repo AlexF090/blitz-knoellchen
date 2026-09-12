@@ -6,7 +6,8 @@ export const fetchAddress = async (lat: number, lon: number): Promise<GeocodeAdd
 		if (!response.ok) return null;
 		const data = await response.json();
 		return data.address ?? null;
-	} catch {
+	} catch (error) {
+		console.error('fetchAddress fehlgeschlagen:', error);
 		return null;
 	}
 };
