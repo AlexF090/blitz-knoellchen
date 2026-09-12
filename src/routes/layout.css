@@ -181,6 +181,15 @@ dialog[open]::backdrop {
 	}
 }
 
+/* WebKit gibt dem nativen Datum-/Zeit-Picker-Widget eine interne Mindestbreite, die
+   `width`/`min-width` auf dem Input selbst ignoriert — auf schmalen Viewports (z.B.
+   iPhone 12 Pro, 390px) ragt das Feld dadurch über seinen Container hinaus. Kein
+   Tailwind-Utility-Äquivalent vorhanden, daher globales CSS statt Utility-Klasse. */
+input[type='date'],
+input[type='time'] {
+	-webkit-min-logical-width: 0%;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	button:not(:disabled):active {
 		transform: none;
