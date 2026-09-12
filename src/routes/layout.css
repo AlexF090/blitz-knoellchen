@@ -181,13 +181,28 @@ dialog[open]::backdrop {
 	}
 }
 
-/* WebKit gibt dem nativen Datum-/Zeit-Picker-Widget eine interne Mindestbreite, die
-   `width`/`min-width` auf dem Input selbst ignoriert — auf schmalen Viewports (z.B.
-   iPhone 12 Pro, 390px) ragt das Feld dadurch über seinen Container hinaus. Kein
-   Tailwind-Utility-Äquivalent vorhanden, daher globales CSS statt Utility-Klasse. */
+/* iOS 17 rendert Datum-/Zeit-Inputs intern als `display: inline-flex` mit eigenem
+   Shadow-DOM-Widget und ignoriert dabei `width: 100%` auf dem Input komplett (in iOS 18
+   behoben) — auf schmalen Viewports (z.B. iPhone 12 Pro, 390px) ragt das Feld dadurch
+   über seinen Container hinaus. `appearance: none` nimmt dem Widget sein natives Sizing,
+   erst dadurch greift `width: 100%` wieder; `min-height` gleicht den dadurch entstehenden
+   Höhen-Kollaps aus. Kein Tailwind-Utility-Äquivalent für ::-webkit-date-and-time-value
+   vorhanden, daher globales CSS statt Utility-Klasse. */
 input[type='date'],
 input[type='time'] {
-	-webkit-min-logical-width: 0%;
+	appearance: none;
+	-webkit-appearance: none;
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	min-height: 2.5rem;
+	overflow: hidden;
+}
+
+input::-webkit-date-and-time-value {
+	text-align: left;
+	min-height: 1.2em;
 }
 
 @media (prefers-reduced-motion: reduce) {
