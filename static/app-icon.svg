@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+	<!-- Statisches Markenasset (Homescreen-Icon/Favicon) — bewusst mit literalen Hex-Farben statt
+	     oklch-Theme-Tokens, da Icon/Favicon plattformseitig immer identisch aussehen müssen,
+	     unabhängig vom Light/Dark-Modus der App-UI. -->
+	<rect width="512" height="512" fill="#ec3013" />
+	<clipPath id="paper-cut-corner">
+		<polygon points="97.75,97.75 376.27,97.75 414.25,135.73 414.25,414.25 97.75,414.25" />
+	</clipPath>
+	<g clip-path="url(#paper-cut-corner)">
+		<rect x="97.75" y="97.75" width="316.51" height="316.51" fill="#f3f2f2" />
+	</g>
+	<polygon
+		points="269.96,168.73 203.64,264.73 249.02,264.73 235.06,343.27 311.86,242.04 262.98,242.04"
+		fill="#ec3013"
+	/>
+</svg>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ArrowLeft, History } from '@lucide/svelte';
+	import LogoLockup from '$lib/components/branding/LogoLockup.svelte';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { buttonDestructive, buttonSecondary } from '$lib/ui/buttonStyles';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -10,9 +11,10 @@
 		linkLabel: string;
 		linkIcon: 'history' | 'back';
 		onResetConfirm?: () => void;
+		logo?: boolean;
 	}
 
-	let { title, linkHref, linkLabel, linkIcon, onResetConfirm }: Props = $props();
+	let { title, linkHref, linkLabel, linkIcon, onResetConfirm, logo = false }: Props = $props();
 
 	const TAP_RESET_THRESHOLD = 5;
 	const TAP_TIMEOUT_MS = 1500;
@@ -53,7 +55,15 @@
 	>
 		<h1 class="text-xl font-semibold tracking-tight text-ink md:text-2xl">
 			{#if onResetConfirm}
-				<button type="button" onclick={handleTitleTap} class="-m-1 p-1">{title}</button>
+				<button type="button" onclick={handleTitleTap} aria-label={title} class="-m-1 flex p-1">
+					{#if logo}
+						<LogoLockup />
+					{:else}
+						{title}
+					{/if}
+				</button>
+			{:else if logo}
+				<LogoLockup />
 			{:else}
 				{title}
 			{/if}
