@@ -28,17 +28,16 @@ describe('buildEmailBody', () => {
 	it('erzeugt Betreff und Text im Normalfall', () => {
 		const result = buildEmailBody(baseInput);
 		expect(result.subject).toBe('Anzeige einer Verkehrsordnungswidrigkeit (Falschparken)');
-		expect(result.body).toContain('Max Mustermann');
-		expect(result.body).toContain('Musterstraße 1, 50667 Köln');
-		expect(result.body).toContain('01.03.2026');
-		expect(result.body).toContain('14:30');
-		expect(result.body).toContain('Domkloster 4, 50667 Köln');
-		expect(result.body).toContain('Parken auf dem Gehweg');
-		expect(result.body).toContain('Das Fahrzeug parkte auf dem Gehweg.');
-		expect(result.body).toContain('K-AB 1234');
+		expect(result.body).toContain('Name: Max Mustermann');
+		expect(result.body).toContain('Anschrift: Musterstraße 1, 50667 Köln');
+		expect(result.body).toContain('Datum: 01.03.2026');
+		expect(result.body).toContain('Uhrzeit: 14:30 Uhr');
+		expect(result.body).toContain('Tatort: Domkloster 4, 50667 Köln');
+		expect(result.body).toContain('Art des Verstoßes: Parken auf dem Gehweg');
+		expect(result.body).toContain('Beschreibung: Das Fahrzeug parkte auf dem Gehweg.');
+		expect(result.body).toContain('Kennzeichen: K-AB 1234');
 		expect(result.body).toContain('Fahrzeug: VW (Farbe: Rot)');
-		expect(result.body).toContain('um 14:30 Uhr');
-		expect(result.body).toContain('Fahrzeug stand seit über einer Stunde dort.');
+		expect(result.body).toContain('Weitere Angaben: Fahrzeug stand seit über einer Stunde dort.');
 	});
 
 	it('kombiniert mehrere Verstoßarten zu Label-Liste und Beschreibungs-Absätzen', () => {
@@ -52,6 +51,7 @@ describe('buildEmailBody', () => {
 				}
 			]
 		});
+		expect(result.body).toContain('hiermit zeige ich folgende Verkehrsverstöße an:');
 		expect(result.body).toContain(
 			'Art des Verstoßes: Parken auf dem Gehweg, Parken im Halteverbot'
 		);
@@ -59,9 +59,14 @@ describe('buildEmailBody', () => {
 		expect(result.body).toContain('- Das Fahrzeug parkte zusätzlich im Halteverbot.');
 	});
 
+	it('formuliert den Einleitungssatz bei nur einer Verstoßart im Singular', () => {
+		const result = buildEmailBody(baseInput);
+		expect(result.body).toContain('hiermit zeige ich folgenden Verkehrsverstoß an:');
+	});
+
 	it('markiert fehlendes Kennzeichen als "nicht erfasst"', () => {
 		const result = buildEmailBody({ ...baseInput, licensePlate: undefined });
-		expect(result.body).toContain('Kennzeichen des Fahrzeugs: nicht erfasst');
+		expect(result.body).toContain('Kennzeichen: nicht erfasst');
 	});
 
 	it('lässt die Zeile "Weitere Angaben" bei fehlendem Freitext ganz weg', () => {
@@ -71,7 +76,7 @@ describe('buildEmailBody', () => {
 
 	it('baut die Tatort-Adresse auch ohne Hausnummer zusammen', () => {
 		const result = buildEmailBody({ ...baseInput, locationHouseNumber: undefined });
-		expect(result.body).toContain('in der Domkloster, 50667 Köln');
+		expect(result.body).toContain('Tatort: Domkloster, 50667 Köln');
 	});
 
 	it('erwähnt ein einzelnes Beweisfoto im Singular', () => {
@@ -96,28 +101,25 @@ describe('buildEmailBody', () => {
 		);
 	});
 
-	it('erwähnt die Telefonnummer im Schlusssatz, wenn angegeben', () => {
+	it('erwähnt die Telefonnummer als eigene Zeile, wenn angegeben', () => {
 		const result = buildEmailBody({ ...baseInput, phone: '0221 12345678' });
-		expect(result.body).toContain(
-			'bin unter dieser E-Mail-Adresse sowie telefonisch unter 0221 12345678\nerreichbar.'
-		);
+		expect(result.body).toContain('Telefon: 0221 12345678');
 	});
 
-	it('lässt den Telefon-Hinweis bei fehlender Nummer weg', () => {
+	it('lässt die Telefon-Zeile bei fehlender Nummer weg', () => {
 		const result = buildEmailBody({ ...baseInput, phone: undefined });
-		expect(result.body).toContain('bin unter dieser E-Mail-Adresse\nerreichbar.');
-		expect(result.body).not.toContain('telefonisch');
+		expect(result.body).not.toContain('Telefon:');
 	});
 
 	it('formuliert einen Zeitraum, wenn endTime gesetzt ist', () => {
 		const result = buildEmailBody({ ...baseInput, time: '14:00', endTime: '14:10' });
-		expect(result.body).toContain('in der Zeit von 14:00 Uhr bis 14:10 Uhr');
+		expect(result.body).toContain('Uhrzeit: 14:00 Uhr bis 14:10 Uhr');
 	});
 
 	it('formuliert einen Einzelzeitpunkt ohne endTime', () => {
 		const result = buildEmailBody({ ...baseInput, endTime: undefined });
-		expect(result.body).toContain('um 14:30 Uhr');
-		expect(result.body).not.toContain('in der Zeit von');
+		expect(result.body).toContain('Uhrzeit: 14:30 Uhr');
+		expect(result.body).not.toContain('bis');
 	});
 
 	it('fällt bei fehlender Marke/Farbe auf Platzhaltertext zurück', () => {
