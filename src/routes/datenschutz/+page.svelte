@@ -34,8 +34,8 @@
 			<p>
 				Die App verarbeitet personenbezogene Daten an drei Stellen: beim Auslesen der Foto-Metadaten
 				direkt auf deinem Gerät, beim Ermitteln einer Adresse aus GPS-Koordinaten und beim Versand
-				der fertigen Anzeige per E-Mail. Es findet keine Analyse deines Nutzungsverhaltens statt –
-				die App enthält keine Analyse-, Tracking- oder Werbe-Tools.
+				der fertigen Anzeige per E-Mail. Zusätzlich wird eine anonyme, cookie-lose
+				Reichweitenmessung (Abschnitt 7) eingesetzt.
 			</p>
 		</section>
 
@@ -116,6 +116,13 @@
 				Beim Aufruf der App verarbeitet Vercel technisch notwendige Zugriffsdaten (z. B. IP-Adresse, Zeitpunkt
 				des Zugriffs) zur Bereitstellung und Absicherung des Dienstes. Rechtsgrundlage ist Art. 6 Abs.
 				1 lit. f DSGVO (berechtigtes Interesse am sicheren und stabilen Betrieb der App).
+			</p>
+			<p class="mt-2">
+				Zusätzlich nutzt diese App <strong>Vercel Web Analytics</strong>, um anonyme, aggregierte
+				Nutzungsstatistiken (z. B. Seitenaufrufe) zu erheben. Dieser Dienst arbeitet ohne Cookies
+				und ohne dauerhafte Speicherung der IP-Adresse; eine Zuordnung zu dir als Person findet
+				nicht statt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der
+				Weiterentwicklung und Verbesserung der App auf Basis anonymer Nutzungszahlen).
 			</p>
 		</section>
 

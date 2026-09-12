@@ -1,10 +1,14 @@
 <script lang="ts">
 	import './layout.css';
 	import { pwaAssetsHead } from 'virtual:pwa-assets/head';
+	import { dev } from '$app/environment';
+	import { injectAnalytics } from '@vercel/analytics/sveltekit';
 	import Footer from '$lib/components/Footer.svelte';
 	import InstallBanner from '$lib/components/InstallBanner.svelte';
 	import IosInstallBanner from '$lib/components/IosInstallBanner.svelte';
 	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
+
+	injectAnalytics({ mode: dev ? 'development' : 'production' });
 
 	let { children } = $props();
 </script>
