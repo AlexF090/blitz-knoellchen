@@ -5,6 +5,34 @@ Ziel: eine Anzeige in unter 30 Sekunden vom Smartphone aus verschicken — Foto 
 liest Datum/GPS aus, Adresse wird per Reverse-Geocoding ermittelt, Verstoßart auswählen,
 absenden.
 
+## Was die App macht
+
+**Blitz-Knöllchen** richtet sich an Menschen, die spontan im Alltag ein falsch geparktes Auto
+sehen und es melden wollen, ohne eine native Mail-App zu öffnen oder die Details manuell
+zusammenzusuchen. Ablauf in der App:
+
+1. **Foto aufnehmen oder auswählen.** Aus dem Foto werden automatisch Aufnahmedatum und
+   GPS-Position aus den EXIF-Metadaten ausgelesen (auch bei iPhone-HEIC-Fotos, die dafür
+   client-seitig zu JPEG konvertiert werden).
+2. **Adresse per Reverse-Geocoding.** Aus den GPS-Koordinaten ermittelt die App automatisch
+   Straße, Hausnummer, PLZ und Ort des Tatorts (mit Adress-Autocomplete beim manuellen
+   Nachbessern). Ist kein GPS-Tag vorhanden oder schlägt das Geocoding fehl, wird das
+   Adressfeld editierbar und muss manuell ausgefüllt werden.
+3. **Verstoß erfassen.** Auswahl einer oder mehrerer Verstoßarten (z. B. Gehweg, Kreuzungsbereich),
+   Unterscheidung Halte-/Parkverstoß (inkl. Mindestparkzeit-Regel), Kennzeichen, Marke und
+   Farbe des Fahrzeugs sowie die eigenen Kontaktdaten (Name, Adresse, E-Mail, optional Telefon).
+4. **Absenden.** Die App verschickt eine fertig formulierte E-Mail an die Bußgeldstelle Köln
+   (Versand serverseitig über Brevo) inklusive komprimiertem Foto, in das Datum/GPS wieder
+   eingebettet werden. Der Melder erhält automatisch eine Kopie ins eigene Postfach.
+5. **Historie.** Bereits versendete Anzeigen werden lokal auf dem Gerät (IndexedDB) gespeichert
+   und lassen sich in der App nachschlagen — inkl. komprimiertem Foto-Thumbnail.
+
+Die App ist als installierbare PWA gebaut (Android: automatisches Install-Banner; iOS: Hinweis
+zu „Zum Home-Bildschirm“ über Safaris Teilen-Menü) und funktioniert dadurch wie eine native App
+auf dem Homescreen. Details zu Architekturentscheidungen (Brevo, Geocoding-Fallback-Kette,
+HEIC-Handling etc.) stehen in [`CLAUDE.md`](./CLAUDE.md), der ursprüngliche Auftrag mit allen
+Anforderungen in [`PROMPT.md`](./PROMPT.md).
+
 ## Voraussetzungen
 
 - Node.js ≥ 20
