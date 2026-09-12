@@ -10,12 +10,6 @@
 	--color-primary-700: oklch(36.88% 0.0497 183.37);
 	--color-primary-900: oklch(26.6% 0.0348 183.03);
 
-	/* Markenrot aus dem Logo (#ec3013) — exklusiv für Icon/Wortmarke, bewusst NICHT als
-	   --color-primary-* übernommen: liegt farblich zu nah an --color-error-*, App-weite
-	   Primäraktion und destruktive/Fehler-Aktion müssten sonst über Helligkeit statt Farbton
-	   unterschieden werden. */
-	--color-brand-red: oklch(61.12% 0.2252 31.45);
-
 	/* Neutrals — wärmeres Grau statt Tailwind-Gray */
 	--color-ink: oklch(25.77% 0.0094 173.48);
 	--color-ink-muted: oklch(49.62% 0.0155 159.5);
@@ -66,11 +60,6 @@
 		--color-primary-600: oklch(68% 0.065 185.34);
 		--color-primary-700: oklch(78% 0.05 183.37);
 		--color-primary-900: oklch(90% 0.03 183.03);
-
-		/* Aufgehellt gegenüber Light Mode (61,12% → 74%), analog zum bestehenden Muster bei
-		   --color-error-fg — gleicher Hue (31.45), damit die Marke erkennbar bleibt, aber
-		   ausreichend Kontrast gegen den dunklen --color-surface-Hintergrund liefert. */
-		--color-brand-red: oklch(74% 0.16 31.45);
 
 		--color-ink: oklch(94% 0.004 173.48);
 		--color-ink-muted: oklch(72% 0.01 159.5);
