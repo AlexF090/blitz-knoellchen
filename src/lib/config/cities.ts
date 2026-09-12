@@ -24,6 +24,8 @@ export interface EmailTemplateInput {
 	locationCity: string;
 	incidentTypes: Pick<IncidentType, 'label' | 'description'>[];
 	licensePlate?: string;
+	licensePlateCountry?: string;
+	vehicleType?: string;
 	make?: string;
 	color?: string;
 	notes?: string;

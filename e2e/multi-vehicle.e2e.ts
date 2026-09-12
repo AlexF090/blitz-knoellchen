@@ -36,6 +36,7 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 	const vehicleBlocks = page.locator('[id^="vehicle-block-"]');
 	await expect(vehicleBlocks).toHaveCount(1);
 	await vehicleBlocks.first().getByLabel('Kennzeichen').fill('K-AA 111');
+	await vehicleBlocks.first().getByLabel('Fahrzeugart').selectOption('PKW');
 	await vehicleBlocks.first().getByLabel('Farbe').fill('Blau');
 	await vehicleBlocks.first().getByLabel('Parken auf dem Gehweg').check();
 
@@ -45,6 +46,7 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 	const secondVehicle = vehicleBlocks.nth(1);
 	await secondVehicle.getByRole('button', { name: /auswählen/ }).click();
 	await secondVehicle.getByLabel('Kennzeichen').fill('K-BB 222');
+	await secondVehicle.getByLabel('Fahrzeugart').selectOption('PKW');
 	await secondVehicle.getByLabel('Farbe').fill('Grün');
 	await secondVehicle.getByLabel('Parken im Halteverbot').check();
 

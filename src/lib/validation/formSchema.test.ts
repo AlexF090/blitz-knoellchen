@@ -25,6 +25,8 @@ const makeVehicle = (overrides: Partial<VehicleEntry> = {}, photoIds: string[]):
 	id: crypto.randomUUID(),
 	photoIds,
 	licensePlate: 'K-AB 1234',
+	licensePlateCountry: 'D',
+	vehicleType: 'PKW',
 	make: 'Unbekannt',
 	color: 'Rot',
 	incidentTypeIds: ['gehweg'],
@@ -259,6 +261,35 @@ describe('validateReportForm', () => {
 		data.vehicles[0].color = '';
 		const errors = validateReportForm(data);
 		expect(errors.vehicles?.[0].color).toBeDefined();
+	});
+
+	it('meldet fehlende Fahrzeugart', () => {
+		const data = makeValidData();
+		data.vehicles[0].vehicleType = '';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].vehicleType).toBeDefined();
+	});
+
+	it('meldet ungültige Fahrzeugart', () => {
+		const data = makeValidData();
+		data.vehicles[0].vehicleType = 'Fahrrad';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].vehicleType).toBeDefined();
+	});
+
+	it.each([
+		'PKW',
+		'LKW',
+		'LKW mit Anhänger',
+		'Motorrad',
+		'Bus',
+		'Anhänger ohne Zugfahrzeug',
+		'Sonstiges'
+	])('akzeptiert gültige Fahrzeugart "%s"', (vehicleType) => {
+		const data = makeValidData();
+		data.vehicles[0].vehicleType = vehicleType;
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].vehicleType).toBeUndefined();
 	});
 });
 

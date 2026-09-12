@@ -1,4 +1,5 @@
 import type { GeocodeAddress } from '$lib/geocode/geocodeAddress';
+import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
 
 export interface PhotoEntry {
 	id: string;
@@ -28,6 +29,12 @@ export interface VehicleEntry {
 	id: string;
 	photoIds: string[];
 	licensePlate: string;
+	// Nationalitätszeichen des Kennzeichens (z. B. "D"), im Original-Formular ein eigenes Feld
+	// neben dem Kennzeichen — Freitext mit sinnvollem Default statt Formatzwang.
+	licensePlateCountry: string;
+	// Leer = noch nicht gewählt, wie bei incidentTypeIds ein Pflichtfeld ohne Default (das
+	// Original-Formular hat hier ebenfalls keine Vorauswahl).
+	vehicleType: string;
 	make: string;
 	color: string;
 	incidentTypeIds: string[];
@@ -47,6 +54,7 @@ export interface VehicleEntry {
 export type VehicleErrors = Partial<
 	Record<
 		| 'licensePlate'
+		| 'vehicleType'
 		| 'make'
 		| 'color'
 		| 'incidentTypeIds'
@@ -140,6 +148,12 @@ export const validateVehicle = (vehicle: VehicleEntry, photos: PhotoEntry[]): Ve
 		errors.licensePlate = 'Bitte Kennzeichen angeben.';
 	} else if (!LICENSE_PLATE_PATTERN.test(vehicle.licensePlate.trim())) {
 		errors.licensePlate = 'Kennzeichen wirkt ungültig (z.B. K-AB 1234).';
+	}
+	if (
+		!vehicle.vehicleType.trim() ||
+		!VEHICLE_TYPES.includes(vehicle.vehicleType.trim() as (typeof VEHICLE_TYPES)[number])
+	) {
+		errors.vehicleType = 'Bitte Fahrzeugart auswählen.';
 	}
 	if (!vehicle.make.trim()) errors.make = 'Marke ist erforderlich (ggf. „Unbekannt").';
 	if (!vehicle.color.trim())

@@ -38,6 +38,8 @@
 		id: crypto.randomUUID(),
 		photoIds: [],
 		licensePlate: '',
+		licensePlateCountry: 'D',
+		vehicleType: '',
 		make: 'Unbekannt',
 		color: '',
 		incidentTypeIds: [],
@@ -399,6 +401,8 @@
 				body.set('vehicleIndex', String(index + 1));
 				body.set('vehicleTotal', String(form.vehicles.length));
 				body.set('licensePlate', vehicle.licensePlate);
+				body.set('licensePlateCountry', vehicle.licensePlateCountry);
+				body.set('vehicleType', vehicle.vehicleType);
 				body.set('make', vehicle.make);
 				body.set('color', vehicle.color);
 				for (const id of vehicle.incidentTypeIds) body.append('incidentTypeIds', id);
@@ -430,6 +434,8 @@
 						}),
 						incidentTypeLabels: incidentTypes.map((t) => t.label),
 						licensePlate: normalizeLicensePlate(vehicle.licensePlate),
+						licensePlateCountry: vehicle.licensePlateCountry,
+						vehicleType: vehicle.vehicleType,
 						make: vehicle.make,
 						color: vehicle.color,
 						notes: vehicle.notes,

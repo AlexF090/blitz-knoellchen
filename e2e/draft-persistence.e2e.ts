@@ -33,6 +33,7 @@ test('Fahrzeugdaten überleben einen Reload als Entwurf', async ({ page }) => {
 	await page.locator('[id^="locationCity-"]').fill('Köln');
 	await page.getByLabel('Parken auf dem Gehweg').check();
 	await page.getByLabel('Kennzeichen').fill('K-AB 1234');
+	await page.getByLabel('Fahrzeugart').selectOption('PKW');
 
 	// Autosave ist debounced (800ms) — kurz warten, bevor neu geladen wird.
 	await page.waitForTimeout(1200);
@@ -45,6 +46,7 @@ test('Fahrzeugdaten überleben einen Reload als Entwurf', async ({ page }) => {
 	await expect(page.getByText('Max Mustermann')).toBeVisible();
 
 	await expect(page.getByLabel('Kennzeichen')).toHaveValue('K-AB 1234');
+	await expect(page.getByLabel('Fahrzeugart')).toHaveValue('PKW');
 	await expect(page.getByLabel('Parken auf dem Gehweg')).toBeChecked();
 	await expect(page.locator('[id^="locationStreet-"]')).toHaveValue('Domkloster');
 });

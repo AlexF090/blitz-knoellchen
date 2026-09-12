@@ -27,6 +27,7 @@ test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 	await page.locator('#photo-pool-input').setInputFiles(FIXTURE);
 	await page.getByLabel('Parken auf dem Gehweg').check();
 	await page.getByLabel('Kennzeichen').fill('K-AB 1234');
+	await page.getByLabel('Fahrzeugart').selectOption('PKW');
 	await page.getByLabel('Farbe').fill('Rot');
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
@@ -46,5 +47,6 @@ test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 	await expect(page.locator('[id^="locationCity-"]')).toHaveValue('Köln');
 	await expect(page.getByLabel('Parken auf dem Gehweg')).toBeChecked();
 	await expect(page.getByLabel('Kennzeichen')).toHaveValue('K-AB 1234');
+	await expect(page.getByLabel('Fahrzeugart')).toHaveValue('PKW');
 	await expect(page.getByLabel('Farbe')).toHaveValue('Rot');
 });
