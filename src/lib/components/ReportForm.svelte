@@ -8,7 +8,10 @@
 	import { compressImage } from '$lib/image/compress';
 	import { convertHeicToJpeg, isHeicFile } from '$lib/image/convertHeic';
 	import { embedExifMetadata } from '$lib/image/embedExif';
+	import { triggerHaptic } from '$lib/haptics/vibrate';
+	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
+	import { buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import {
 		getMaxPoolPhotos,
@@ -23,6 +26,7 @@
 		type VehicleErrors
 	} from '$lib/validation/formSchema';
 	import { tick } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import PhotoPool from './PhotoPool.svelte';
 	import VehicleBlock from './VehicleBlock.svelte';
@@ -446,6 +450,7 @@
 				return;
 			}
 
+			triggerHaptic('success');
 			const succeededIds = new Set(results.filter((r) => r.ok).map((r) => r.vehicle.id));
 			form.vehicles = form.vehicles.filter((vehicle) => !succeededIds.has(vehicle.id));
 
@@ -467,10 +472,20 @@
 
 <form onsubmit={onSubmit} class="flex flex-col gap-4">
 	{#if sendError}
-		<p role="alert" class="rounded-card bg-error-bg p-3 text-error-fg">{sendError}</p>
+		<p
+			role="alert"
+			transition:fly={{ y: -8, duration: transitionDuration(200) }}
+			class="rounded-card bg-error-bg p-3 text-error-fg"
+		>
+			{sendError}
+		</p>
 	{:else if sendResults.length > 0}
 		{#if sendResults.every((r) => r.ok)}
-			<p role="status" class="rounded-card bg-success-bg p-3 text-success-fg">
+			<p
+				role="status"
+				transition:fly={{ y: -8, duration: transitionDuration(200) }}
+				class="rounded-card bg-success-bg p-3 text-success-fg"
+			>
 				{sendResults.length > 1
 					? `Alle ${sendResults.length} Anzeigen erfolgreich versendet.`
 					: 'Anzeige erfolgreich versendet.'}
@@ -478,7 +493,11 @@
 				im Posteingang ankommt.
 			</p>
 		{:else}
-			<p role="alert" class="rounded-card bg-warning-bg p-3 text-warning-fg">
+			<p
+				role="alert"
+				transition:fly={{ y: -8, duration: transitionDuration(200) }}
+				class="rounded-card bg-warning-bg p-3 text-warning-fg"
+			>
 				{sendResults.filter((r) => r.ok).length} von {sendResults.length} Anzeigen erfolgreich versendet.
 				Fehlgeschlagen: {sendResults
 					.filter((r) => !r.ok)
@@ -654,11 +673,7 @@
 					/>
 				</div>
 
-				<button
-					type="button"
-					onclick={onSaveProfile}
-					class="mt-4 rounded-control border border-primary-500 px-4 py-2.5 text-sm font-medium text-primary-600"
-				>
+				<button type="button" onclick={onSaveProfile} class="mt-4 {buttonSecondary}">
 					Speichern
 				</button>
 			{:else}
@@ -670,11 +685,7 @@
 					{#if form.phone}<p>{form.phone}</p>{/if}
 				</div>
 
-				<button
-					type="button"
-					onclick={onEditProfile}
-					class="mt-4 rounded-control border border-primary-500 px-4 py-2.5 text-sm font-medium text-primary-600"
-				>
+				<button type="button" onclick={onEditProfile} class="mt-4 {buttonSecondary}">
 					Bearbeiten
 				</button>
 			{/if}
@@ -719,11 +730,7 @@
 				{/each}
 			</div>
 
-			<button
-				type="button"
-				onclick={addVehicle}
-				class="rounded-control border border-primary-500 px-4 py-3 font-medium text-primary-600"
-			>
+			<button type="button" onclick={addVehicle} class={buttonSecondary}>
 				+ Weiteres Fahrzeug hinzufügen
 			</button>
 		</div>
@@ -733,7 +740,7 @@
 		<button
 			type="submit"
 			disabled={!formReady || submitting || photoProcessing}
-			class="mx-auto block w-full max-w-md rounded-control bg-primary-600 px-4 py-3 font-medium text-white hover:bg-primary-700 disabled:opacity-50 lg:max-w-5xl"
+			class="mx-auto block w-full max-w-md lg:max-w-5xl {buttonPrimary}"
 		>
 			{submitting ? 'Wird gesendet…' : 'Absenden'}
 		</button>

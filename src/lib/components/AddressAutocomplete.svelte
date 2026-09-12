@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { fly } from 'svelte/transition';
 	import { createAddressSuggestionsController } from '$lib/geocode/addressSuggestionsController';
 	import type { AddressSuggestion } from '$lib/geocode/autocomplete';
+	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 
 	interface Props {
@@ -121,6 +123,7 @@
 		<ul
 			id={listboxId}
 			role="listbox"
+			in:fly={{ y: -4, duration: transitionDuration(150) }}
 			class="absolute z-10 mt-1 w-full rounded-control border border-border bg-surface shadow-card"
 		>
 			{#each suggestions as suggestion, index (suggestion.label + index)}

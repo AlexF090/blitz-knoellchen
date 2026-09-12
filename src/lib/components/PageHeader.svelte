@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { ArrowLeft, History } from '@lucide/svelte';
+	import { triggerHaptic } from '$lib/haptics/vibrate';
+	import { buttonDestructive, buttonSecondary } from '$lib/ui/buttonStyles';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	interface Props {
 		title: string;
@@ -33,6 +36,7 @@
 
 	const confirmReset = () => {
 		resetDialog?.close();
+		triggerHaptic('warning');
 		onResetConfirm?.();
 	};
 
@@ -41,11 +45,13 @@
 	};
 </script>
 
-<div class="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur-sm">
+<div
+	class="sticky top-0 z-40 border-b border-surface/40 bg-surface/70 backdrop-blur-xl backdrop-saturate-150"
+>
 	<div
 		class="mx-auto flex max-w-md items-center justify-between px-4 py-3 sm:px-6 md:max-w-3xl lg:max-w-5xl"
 	>
-		<h1 class="text-xl font-semibold text-ink md:text-2xl">
+		<h1 class="text-xl font-semibold tracking-tight text-ink md:text-2xl">
 			{#if onResetConfirm}
 				<button type="button" onclick={handleTitleTap} class="-m-1 p-1">{title}</button>
 			{:else}
@@ -70,35 +76,23 @@
 </div>
 
 {#if onResetConfirm}
-	<dialog
-		bind:this={resetDialog}
-		onclick={handleResetBackdropClick}
-		aria-labelledby="reset-form-dialog-title"
-		class="m-auto w-[90vw] max-w-sm rounded-card bg-surface p-4 shadow-card backdrop:bg-ink/70 sm:p-6"
+	<ConfirmDialog
+		bind:dialog={resetDialog}
+		onBackdropClick={handleResetBackdropClick}
+		titleId="reset-form-dialog-title"
+		title="Formular komplett zurücksetzen?"
 	>
-		<h3 id="reset-form-dialog-title" class="text-sm font-semibold text-ink">
-			Formular komplett zurücksetzen?
-		</h3>
 		<p class="mt-1 text-sm text-ink-muted">
 			„Deine Angaben“, alle Fotos und Fahrzeuge/Vorgänge werden unwiderruflich gelöscht. Dein
 			gespeichertes Profil bleibt für die nächste Anzeige erhalten.
 		</p>
-
-		<div class="mt-4 flex gap-2">
-			<button
-				type="button"
-				onclick={() => resetDialog?.close()}
-				class="flex-1 rounded-control border border-primary-500 px-4 py-2.5 text-sm font-semibold text-primary-600"
-			>
+		{#snippet actions()}
+			<button type="button" onclick={() => resetDialog?.close()} class="flex-1 {buttonSecondary}">
 				Abbrechen
 			</button>
-			<button
-				type="button"
-				onclick={confirmReset}
-				class="flex-1 rounded-control bg-error-fg px-4 py-3 text-sm font-semibold text-white"
-			>
+			<button type="button" onclick={confirmReset} class="flex-1 {buttonDestructive}">
 				Zurücksetzen
 			</button>
-		</div>
-	</dialog>
+		{/snippet}
+	</ConfirmDialog>
 {/if}
