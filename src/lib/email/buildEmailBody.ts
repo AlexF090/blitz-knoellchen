@@ -45,6 +45,7 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 		? `${input.time} Uhr bis ${input.endTime.trim()} Uhr`
 		: `${input.time} Uhr`;
 	const phoneLine = input.phone?.trim() ? `\nTelefon: ${input.phone.trim()}` : '';
+	const descriptionLabel = input.incidentTypes.length > 1 ? 'Beschreibung:' : 'Beschreibung: ';
 
 	const introLine =
 		input.incidentTypes.length > 1
@@ -70,7 +71,7 @@ Länderkennzeichen: ${input.licensePlateCountry?.trim() || 'D'}
 Fahrzeugart: ${input.vehicleType?.trim() || 'nicht angegeben'}
 Fahrzeug: ${vehicleDescriptionLine}
 Art des Verstoßes: ${incidentLabels}
-Beschreibung: ${incidentDescriptions}
+${descriptionLabel}${incidentDescriptions}
 ${notes ? `\nWeitere Angaben: ${notes}\n` : ''}
 ${photoLine}
 

@@ -1,6 +1,6 @@
+import type { EmailTemplateInput } from '$lib/config/cities';
 import { describe, expect, it } from 'vitest';
 import { buildEmailBody } from './buildEmailBody';
-import type { EmailTemplateInput } from '$lib/config/cities';
 
 const baseInput: EmailTemplateInput = {
 	firstName: 'Max',
@@ -61,6 +61,20 @@ describe('buildEmailBody', () => {
 		);
 		expect(result.body).toContain('- Das Fahrzeug parkte auf dem Gehweg.');
 		expect(result.body).toContain('- Das Fahrzeug parkte zusätzlich im Halteverbot.');
+	});
+
+	it('lässt bei mehreren Verstoßarten kein Trailing-Leerzeichen nach "Beschreibung:" stehen', () => {
+		const result = buildEmailBody({
+			...baseInput,
+			incidentTypes: [
+				{ label: 'Parken auf dem Gehweg', description: 'Das Fahrzeug parkte auf dem Gehweg.' },
+				{
+					label: 'Parken im Halteverbot',
+					description: 'Das Fahrzeug parkte zusätzlich im Halteverbot.'
+				}
+			]
+		});
+		expect(result.body).toContain('Beschreibung:\n- Das Fahrzeug parkte auf dem Gehweg.');
 	});
 
 	it('formuliert den Einleitungssatz bei nur einer Verstoßart im Singular', () => {
