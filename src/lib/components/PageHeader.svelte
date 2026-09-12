@@ -73,9 +73,12 @@
 	<dialog
 		bind:this={resetDialog}
 		onclick={handleResetBackdropClick}
+		aria-labelledby="reset-form-dialog-title"
 		class="m-auto w-[90vw] max-w-sm rounded-card bg-surface p-4 shadow-card backdrop:bg-ink/70 sm:p-6"
 	>
-		<h3 class="text-sm font-semibold text-ink">Formular komplett zurücksetzen?</h3>
+		<h3 id="reset-form-dialog-title" class="text-sm font-semibold text-ink">
+			Formular komplett zurücksetzen?
+		</h3>
 		<p class="mt-1 text-sm text-ink-muted">
 			„Deine Angaben“, alle Fotos und Fahrzeuge/Vorgänge werden unwiderruflich gelöscht. Dein
 			gespeichertes Profil bleibt für die nächste Anzeige erhalten.
@@ -85,14 +88,14 @@
 			<button
 				type="button"
 				onclick={() => resetDialog?.close()}
-				class="flex-1 rounded-control border border-primary-500 py-2.5 text-sm font-semibold text-primary-600"
+				class="flex-1 rounded-control border border-primary-500 px-4 py-2.5 text-sm font-semibold text-primary-600"
 			>
 				Abbrechen
 			</button>
 			<button
 				type="button"
 				onclick={confirmReset}
-				class="flex-1 rounded-control bg-error-fg py-2.5 text-sm font-semibold text-white"
+				class="flex-1 rounded-control bg-error-fg px-4 py-3 text-sm font-semibold text-white"
 			>
 				Zurücksetzen
 			</button>

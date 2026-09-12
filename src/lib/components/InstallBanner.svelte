@@ -38,7 +38,7 @@
 				type="button"
 				onclick={dismiss}
 				aria-label="Hinweis schließen"
-				class="rounded px-2 py-1 text-white/80 hover:text-white"
+				class="rounded p-2.5 text-white/80 hover:text-white"
 			>
 				✕
 			</button>

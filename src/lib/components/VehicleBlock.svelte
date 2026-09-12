@@ -126,7 +126,7 @@
 			onclick={openResetDialog}
 			aria-label={total > 1 ? 'Fahrzeug/Vorfall entfernen' : 'Fahrzeug/Vorfall zurücksetzen'}
 			title={total > 1 ? 'Entfernen' : 'Zurücksetzen'}
-			class="flex size-9 items-center justify-center rounded-full text-error-fg hover:bg-error-fg/10"
+			class="flex size-10 items-center justify-center rounded-full text-error-fg hover:bg-error-fg/10"
 		>
 			{#if total > 1}
 				<Trash2 class="size-5" aria-hidden="true" />
@@ -204,7 +204,7 @@
 			{#if pool.length === 0}
 				<p class="mt-1 text-sm text-ink-muted">Zuerst oben ein Foto hinzufügen.</p>
 			{:else}
-				<div class="mt-1 grid grid-cols-4 gap-2 sm:grid-cols-6">
+				<div class="mt-1 grid grid-cols-4 gap-2 sm:grid-cols-6 sm:gap-3">
 					{#each pool as photo (photo.id)}
 						{@const selected = vehicle.photoIds.includes(photo.id)}
 						<button
@@ -241,8 +241,8 @@
 
 			<fieldset class="mt-2">
 				<legend class="text-sm font-medium text-ink">Art der Zeitangabe</legend>
-				<div class="mt-1 flex flex-wrap gap-4 text-sm text-ink">
-					<label class="flex cursor-pointer items-center gap-1.5">
+				<div class="mt-1 flex flex-wrap gap-3 text-sm text-ink">
+					<label class="flex cursor-pointer items-center gap-1.5 py-1">
 						<input
 							type="radio"
 							name="timeMode-{vehicle.id}"
@@ -252,7 +252,7 @@
 						/>
 						Halteverstoß (Einzelzeitpunkt)
 					</label>
-					<label class="flex cursor-pointer items-center gap-1.5">
+					<label class="flex cursor-pointer items-center gap-1.5 py-1">
 						<input
 							type="radio"
 							name="timeMode-{vehicle.id}"
@@ -486,7 +486,7 @@
 			>
 			<div class="mt-1 flex flex-col gap-2">
 				{#each incidentTypes as type (type.id)}
-					<label class="flex cursor-pointer items-center gap-2 text-sm text-ink">
+					<label class="flex cursor-pointer items-center gap-2 py-1 text-sm text-ink">
 						<input
 							type="checkbox"
 							checked={vehicle.incidentTypeIds.includes(type.id)}
@@ -519,7 +519,7 @@
 				type="button"
 				onclick={() => isComplete() && (open = false)}
 				disabled={!isComplete()}
-				class="flex w-full items-center justify-center gap-1 rounded-control bg-primary-500 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-border disabled:text-ink-muted"
+				class="flex w-full items-center justify-center gap-1 rounded-control bg-primary-500 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-border disabled:text-ink-muted"
 				aria-expanded={open}
 			>
 				Fertig
@@ -538,7 +538,7 @@
 			<button
 				type="button"
 				onclick={() => (open = true)}
-				class="flex w-full items-center justify-center gap-1 rounded-control border border-primary-500 py-2.5 text-sm font-semibold text-primary-600"
+				class="flex w-full items-center justify-center gap-1 rounded-control border border-primary-500 px-4 py-2.5 text-sm font-semibold text-primary-600"
 				aria-expanded={open}
 			>
 				Bearbeiten
@@ -550,9 +550,10 @@
 <dialog
 	bind:this={resetDialog}
 	onclick={handleResetBackdropClick}
+	aria-labelledby="reset-dialog-title-{vehicle.id}"
 	class="m-auto w-[90vw] max-w-sm rounded-card bg-surface p-4 shadow-card backdrop:bg-ink/70 sm:p-6"
 >
-	<h3 class="text-sm font-semibold text-ink">
+	<h3 id="reset-dialog-title-{vehicle.id}" class="text-sm font-semibold text-ink">
 		{total > 1 ? 'Fahrzeug/Vorgang entfernen?' : 'Fahrzeug/Vorgang zurücksetzen?'}
 	</h3>
 	<p class="mt-1 text-sm text-ink-muted">
@@ -561,7 +562,7 @@
 			: 'Die bereits eingetragenen Daten werden unwiderruflich gelöscht.'}
 	</p>
 
-	<dl class="mt-3 flex flex-col gap-2 text-sm">
+	<dl class="mt-3 flex flex-col gap-3 text-sm">
 		{#if vehicle.photoIds.length > 0}
 			<div>
 				<dt class="text-xs font-medium text-ink-muted">Foto Auswahl</dt>
@@ -610,14 +611,14 @@
 		<button
 			type="button"
 			onclick={() => resetDialog?.close()}
-			class="flex-1 rounded-control border border-primary-500 py-2.5 text-sm font-semibold text-primary-600"
+			class="flex-1 rounded-control border border-primary-500 px-4 py-2.5 text-sm font-semibold text-primary-600"
 		>
 			Abbrechen
 		</button>
 		<button
 			type="button"
 			onclick={confirmReset}
-			class="flex-1 rounded-control bg-error-fg py-2.5 text-sm font-semibold text-white"
+			class="flex-1 rounded-control bg-error-fg px-4 py-3 text-sm font-semibold text-white"
 		>
 			Entfernen
 		</button>

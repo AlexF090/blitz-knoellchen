@@ -102,7 +102,7 @@
 					type="button"
 					onclick={() => onRemove(photo.id)}
 					aria-label="Foto {photo.fileName} entfernen"
-					class="absolute -top-1 -right-1 flex size-6 items-center justify-center rounded-full bg-surface text-ink shadow-card"
+					class="absolute -top-1 -right-1 flex size-9 items-center justify-center rounded-full bg-surface text-ink shadow-card"
 				>
 					×
 				</button>

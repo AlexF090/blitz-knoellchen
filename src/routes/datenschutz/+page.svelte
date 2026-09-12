@@ -16,7 +16,7 @@
 <main
 	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 text-sm text-ink sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
 >
-	<div class="flex flex-col gap-5 leading-relaxed [&_h2]:mt-2 [&_h2]:font-semibold [&_h2]:text-ink">
+	<div class="flex flex-col gap-4 leading-relaxed [&_h2]:mt-2 [&_h2]:font-semibold [&_h2]:text-ink">
 		<section>
 			<h2>1. Verantwortlicher</h2>
 			<p>
