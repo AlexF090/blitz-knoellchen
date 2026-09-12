@@ -16,6 +16,7 @@
 </svelte:head>
 
 <PageHeader
+	logo
 	title="Blitz-Knöllchen"
 	linkHref={resolve('/historie')}
 	linkLabel="Historie"

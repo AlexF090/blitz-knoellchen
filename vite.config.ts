@@ -36,17 +36,42 @@ export default defineConfig({
 				start_url: '/',
 				display: 'standalone',
 				background_color: 'oklch(100% 0 0)',
-				theme_color: 'oklch(100% 0 0)',
-				icons: [
-					{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-					{ src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-					{
-						src: '/icons/icon-maskable-512.png',
-						sizes: '512x512',
-						type: 'image/png',
-						purpose: 'maskable'
+				theme_color: 'oklch(100% 0 0)'
+				// icons: von @vite-pwa/assets-generator generiert, s. pwaAssets unten
+				// (overrideManifestIcons).
+			},
+			pwaAssets: {
+				// Muss direkt in `static/` liegen (SvelteKits Pendant zu Vites `publicDir`), nicht
+				// in einem Unterordner: die generierten Dateinamen (`pwa-*.png`, `favicon.ico`, …)
+				// werden root-relativ ins Manifest geschrieben, ein Unterordner hier würde zu
+				// einem Pfad-Mismatch zwischen erzeugter Datei und Manifest-Eintrag führen.
+				image: 'static/app-icon.svg',
+				// theme-color-Meta wird bereits manuell (hell/dunkel-abhängig) in +layout.svelte
+				// gesetzt — kein zusätzliches, nur-helles theme-color aus dem Manifest injizieren.
+				injectThemeColor: false,
+				overrideManifestIcons: true,
+				// Eigenes Preset statt 'minimal-2023' (Default): das Icon ist bereits ein
+				// randloses, quadratisches Vollbild-Motiv mit eigenem Innenabstand (Zettelform),
+				// das Standard-Padding (30 % + weißer Hintergrund für maskable/apple) würde es
+				// zusätzlich verkleinern und einen sichtbaren weißen Rand einfügen.
+				preset: {
+					transparent: {
+						sizes: [64, 192, 512],
+						favicons: [[48, 'favicon.ico']],
+						padding: 0,
+						resizeOptions: { background: 'transparent' }
+					},
+					maskable: {
+						sizes: [512],
+						padding: 0,
+						resizeOptions: { background: '#ec3013' }
+					},
+					apple: {
+						sizes: [180],
+						padding: 0,
+						resizeOptions: { background: '#ec3013' }
 					}
-				]
+				}
 			},
 			workbox: {
 				// Nur die App-Shell vorcachen, kein komplexes Runtime-Caching.
