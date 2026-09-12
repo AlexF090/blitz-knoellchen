@@ -196,8 +196,10 @@
 	{#if open}
 		<div class="mt-3">
 			<p class="text-sm font-medium text-ink">
-				Welche Fotos zeigen dieses Fahrzeug? (max. {maxPhotos})
-				<span class="text-error-fg">*</span>
+				Fotos mit diesem Fahrzeug
+				<span class="whitespace-nowrap">
+					(max. {maxPhotos}) <span class="text-error-fg">*</span>
+				</span>
 			</p>
 			{#if pool.length === 0}
 				<p class="mt-1 text-sm text-ink-muted">Zuerst oben ein Foto hinzufügen.</p>
