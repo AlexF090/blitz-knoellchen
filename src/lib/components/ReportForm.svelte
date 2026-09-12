@@ -181,7 +181,13 @@
 		if (photo.time) vehicle.time ||= photo.time;
 
 		if (vehicle.locationStreet.trim() && vehicle.locationCity.trim()) return;
-		if (!photo.gps) return;
+		if (!photo.gps) {
+			vehicleGeocodeWarnings = {
+				...vehicleGeocodeWarnings,
+				[vehicle.id]: 'Keine Standortdaten im Foto gefunden — bitte Adresse manuell eingeben.'
+			};
+			return;
+		}
 
 		const address = await resolvePhotoAddress(photo);
 		applyAddressSuggestion(vehicle, address ?? {}, false);
