@@ -60,6 +60,49 @@ describe('createLocationIqAutocompleteProvider', () => {
 		]);
 	});
 
+	it('hängt den Stadtteil mit Bindestrich an die Stadt an, wenn vorhanden', async () => {
+		const fetchFn = vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify([
+						{
+							display_name:
+								'24, Schwester-Firma-Weg, Zündorf, Köln, Nordrhein-Westfalen, 51143, Deutschland',
+							address: {
+								road: 'Schwester-Firma-Weg',
+								house_number: '24',
+								postcode: '51143',
+								city: 'Köln',
+								suburb: 'Zündorf'
+							}
+						}
+					])
+				)
+		) as unknown as typeof fetch;
+		const provider = createLocationIqAutocompleteProvider('test-key', fetchFn);
+
+		const [suggestion] = await provider.search('Schwester-Firma-Weg 24');
+		expect(suggestion.label).toBe('Schwester-Firma-Weg 24, 51143 Köln-Zündorf');
+	});
+
+	it('fällt auf display_name zurück, wenn kein Straßenname vorliegt', async () => {
+		const fetchFn = vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify([
+						{
+							display_name: 'Zündorf, Köln, Nordrhein-Westfalen, Deutschland',
+							address: { city: 'Köln', suburb: 'Zündorf' }
+						}
+					])
+				)
+		) as unknown as typeof fetch;
+		const provider = createLocationIqAutocompleteProvider('test-key', fetchFn);
+
+		const [suggestion] = await provider.search('Zündorf');
+		expect(suggestion.label).toBe('Zündorf, Köln, Nordrhein-Westfalen, Deutschland');
+	});
+
 	it('wirft bei HTTP-Fehler eine aussagekräftige Fehlermeldung', async () => {
 		const fetchFn = vi.fn(
 			async () => new Response(null, { status: 429 })
