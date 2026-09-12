@@ -11,6 +11,36 @@ export interface AddressSuggestion {
 const REQUEST_TIMEOUT_MS = 5000;
 const MIN_QUERY_LENGTH = 3;
 
+// Ersetzt LocationIQs `display_name` (Reihenfolge Hausnr./Straße/Stadtteil/Stadt/Bundesland/Land,
+// nicht per API-Parameter anpassbar) durch ein an deutsche Postadressen angelehntes Format
+// ("Straße Hausnr., PLZ Stadt-Stadtteil"). Fällt auf `display_name` zurück, wenn kein Straßenname
+// vorliegt (z.B. Treffer ist selbst ein Stadtteil/POI).
+const buildSuggestionLabel = (item: {
+	display_name?: unknown;
+	address?: {
+		road?: unknown;
+		house_number?: unknown;
+		postcode?: unknown;
+		city?: unknown;
+		suburb?: unknown;
+	};
+}): string => {
+	const street = item?.address?.road ? String(item.address.road) : null;
+	if (!street) return String(item?.display_name ?? '');
+
+	const houseNumber = item?.address?.house_number ? String(item.address.house_number) : null;
+	const postcode = item?.address?.postcode ? String(item.address.postcode) : null;
+	const city = item?.address?.city ? String(item.address.city) : null;
+	const suburb = item?.address?.suburb ? String(item.address.suburb) : null;
+
+	const streetLine = houseNumber ? `${street} ${houseNumber}` : street;
+	const cityLine = [postcode, suburb && city ? `${city}-${suburb}` : city]
+		.filter(Boolean)
+		.join(' ');
+
+	return cityLine ? `${streetLine}, ${cityLine}` : streetLine;
+};
+
 // Die App deckt aktuell nur Köln ab (s. CLAUDE.md, "Weitere Stadt hinzufügen") — die Suche wird
 // deshalb hart auf eine Köln-Bounding-Box begrenzt (`bounded=1`), statt eine ungenutzte
 // Multi-City-Parametrisierung vorzubereiten. Format laut LocationIQ-Doku: viewbox=left,top,right,bottom
@@ -30,7 +60,7 @@ export const createLocationIqAutocompleteProvider = (apiKey: string, fetchFn: ty
 			if (!Array.isArray(data)) return [];
 
 			return data.map((item) => ({
-				label: String(item?.display_name ?? ''),
+				label: buildSuggestionLabel(item),
 				street: item?.address?.road ?? null,
 				houseNumber: item?.address?.house_number ?? null,
 				postcode: item?.address?.postcode ?? null,
