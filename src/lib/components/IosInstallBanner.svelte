@@ -4,19 +4,27 @@
 	import { browser } from '$app/environment';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { isIosSafari } from '$lib/pwa/isIosSafari';
+	import { installPrompt } from '$lib/pwa/installPrompt.svelte';
 
-	let visible = $state(false);
+	let isIosSafariUser = $state(false);
+	let dismissed = $state(false);
 
 	if (browser) {
 		const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-		visible = !isStandalone && isIosSafari(navigator.userAgent);
+		isIosSafariUser = !isStandalone && isIosSafari(navigator.userAgent);
 	}
+
+	// installPrompt.canInstall hat Vorrang: Der native Chromium-Weg (InstallBanner.svelte) ist
+	// zuverlässiger als diese UA-Heuristik. Ohne diesen Ausschluss könnten in Browser-Edge-Fällen
+	// (UA, die von isIosSafari fälschlich erkannt wird, aber dennoch beforeinstallprompt feuert)
+	// beide role="note"-Banner gleichzeitig sichtbar sein.
+	const visible = $derived(isIosSafariUser && !installPrompt.canInstall && !dismissed);
 
 	// Bewusst kein "dauerhaft ausblenden" per localStorage — solange die App nicht als PWA
 	// installiert ist, soll der Hinweis bei jedem Öffnen wieder erscheinen. Das Kreuz schließt
 	// ihn nur für die aktuelle Ansicht.
 	const dismiss = () => {
-		visible = false;
+		dismissed = true;
 	};
 </script>
 
