@@ -12,6 +12,10 @@
 		// zu sein als der Standard-Bestätigungsdialog — Mobile bleibt davon unberührt (immer volle
 		// Breite als Bottom-Sheet).
 		desktopMaxWidthClass?: string;
+		// Für Dialoge, die eine aktive Entscheidung erzwingen (z.B. Demo-/Live-Modus-Auswahl) —
+		// unterbindet das Schließen per Escape-Taste zusätzlich zum ignorierten Backdrop-Klick,
+		// den der Aufrufer dafür in onBackdropClick selbst zu einem No-op macht.
+		dismissable?: boolean;
 	}
 
 	let {
@@ -21,13 +25,19 @@
 		children,
 		actions,
 		onBackdropClick,
-		desktopMaxWidthClass = 'sm:max-w-sm'
+		desktopMaxWidthClass = 'sm:max-w-sm',
+		dismissable = true
 	}: Props = $props();
+
+	const oncancel = (event: Event) => {
+		if (!dismissable) event.preventDefault();
+	};
 </script>
 
 <dialog
 	bind:this={dialog}
 	onclick={onBackdropClick}
+	{oncancel}
 	aria-labelledby={titleId}
 	class="fixed inset-x-0 top-auto bottom-0 m-0 max-h-[85vh] w-full max-w-none overflow-y-auto
 		rounded-t-card rounded-b-none border-t border-surface/40 bg-surface/70 p-4 shadow-overlay
