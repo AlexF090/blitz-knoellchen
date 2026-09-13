@@ -3,6 +3,7 @@
 	import { pwaAssetsHead } from 'virtual:pwa-assets/head';
 	import { dev } from '$app/environment';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
+	import AppModeDialog from '$lib/components/AppModeDialog.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import InstallBanner from '$lib/components/InstallBanner.svelte';
 	import IosInstallBanner from '$lib/components/IosInstallBanner.svelte';
@@ -33,3 +34,4 @@
 <Footer />
 <IosInstallBanner />
 <InstallBanner />
+<AppModeDialog />
