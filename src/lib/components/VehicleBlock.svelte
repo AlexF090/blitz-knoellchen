@@ -20,7 +20,7 @@
 		VehicleEntry,
 		VehicleErrors
 	} from '$lib/validation/formSchema';
-	import { validateVehicle } from '$lib/validation/formSchema';
+	import { normalizeLicensePlate, validateVehicle } from '$lib/validation/formSchema';
 	import { Eye, RotateCcw, Trash2 } from '@lucide/svelte';
 	import { fade } from 'svelte/transition';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
@@ -100,6 +100,26 @@
 
 	const handleResetBackdropClick = (event: MouseEvent) => {
 		if (event.target === resetDialog) resetDialog.close();
+	};
+
+	// Kennzeichen bestehen international nur aus Großbuchstaben — kleingeschriebene Eingaben
+	// werden beim Tippen live großgeschrieben. `toUpperCase()` ändert die String-Länge nicht,
+	// daher muss die Cursorposition nur nach dem manuellen Setzen von `input.value` (das den
+	// Cursor sonst ans Ende springen lassen würde) wiederhergestellt werden.
+	const handleLicensePlateInput = (event: Event & { currentTarget: HTMLInputElement }) => {
+		const input = event.currentTarget;
+		const { selectionStart, selectionEnd } = input;
+		const uppercased = input.value.toUpperCase();
+		input.value = uppercased;
+		input.setSelectionRange(selectionStart, selectionEnd);
+		vehicle.licensePlate = uppercased;
+	};
+
+	// Beim Verlassen des Feldes zusätzlich ins kanonische Format bringen (z. B. "K AB 1234" ->
+	// "K-AB1234") — dieselbe Funktion, die auch beim Absenden genutzt wird, hier nur schon
+	// vorab für sichtbares Feedback.
+	const handleLicensePlateBlur = () => {
+		vehicle.licensePlate = normalizeLicensePlate(vehicle.licensePlate, vehicle.licensePlateCountry);
 	};
 
 	const objectUrl = (blob: Blob) => URL.createObjectURL(blob);
@@ -508,9 +528,12 @@
 						>
 						<input
 							id="licensePlate-{vehicle.id}"
-							bind:value={vehicle.licensePlate}
+							value={vehicle.licensePlate}
+							oninput={handleLicensePlateInput}
+							onblur={handleLicensePlateBlur}
 							required
 							aria-required="true"
+							autocapitalize="characters"
 							{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
 							class="mt-1 w-full rounded-control border border-border p-2"
 						/>
