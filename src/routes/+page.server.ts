@@ -10,5 +10,9 @@ import type { PageServerLoad } from './$types';
 // den echten Absender (`EMAIL_FROM`, der in `api/send/+server.ts` als `sender.email` verschickt
 // wird), damit Nutzer wissen, nach welcher Adresse sie in Postfach/Spam-Ordner suchen müssen.
 export const load: PageServerLoad = () => {
-	return { recipientEmail: getRecipientEmail(CITIES.koeln.id), senderEmail: EMAIL_FROM };
+	return {
+		demoRecipientEmail: getRecipientEmail(CITIES.koeln.id, 'demo'),
+		liveRecipientEmail: getRecipientEmail(CITIES.koeln.id, 'live'),
+		senderEmail: EMAIL_FROM
+	};
 };

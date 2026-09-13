@@ -1,14 +1,21 @@
-import { RECIPIENT_EMAIL } from '$env/static/private';
+import { RECIPIENT_EMAIL_DEMO, RECIPIENT_EMAIL_LIVE } from '$env/static/private';
+import type { AppMode } from '$lib/appMode.svelte';
+
+export type { AppMode };
 
 // Getrennt von cities.ts, weil $env/static/private niemals von clientseitigem
 // Code importiert werden darf (SvelteKit lehnt das beim Build ab). Ein zweiter
-// Städte-Eintrag würde hier eine weitere env-gestützte Zeile bekommen.
-const RECIPIENT_EMAILS: Record<string, string> = {
-	koeln: RECIPIENT_EMAIL
+// Städte-Eintrag würde hier zwei weitere env-gestützte Zeilen bekommen.
+const DEMO_RECIPIENT_EMAILS: Record<string, string> = {
+	koeln: RECIPIENT_EMAIL_DEMO
+};
+const LIVE_RECIPIENT_EMAILS: Record<string, string> = {
+	koeln: RECIPIENT_EMAIL_LIVE
 };
 
-export const getRecipientEmail = (cityId: string): string => {
-	const email = RECIPIENT_EMAILS[cityId];
-	if (!email) throw new Error(`Keine Empfänger-E-Mail für Stadt "${cityId}" konfiguriert.`);
+export const getRecipientEmail = (cityId: string, mode: AppMode): string => {
+	const table = mode === 'live' ? LIVE_RECIPIENT_EMAILS : DEMO_RECIPIENT_EMAILS;
+	const email = table[cityId];
+	if (!email) throw new Error(`Keine ${mode}-Empfänger-E-Mail für Stadt "${cityId}" konfiguriert.`);
 	return email;
 };

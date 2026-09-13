@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { BREVO_API_KEY, EMAIL_FROM } from '$env/static/private';
+import type { AppMode } from '$lib/appMode.svelte';
 import { CITIES } from '$lib/config/cities';
 import { getRecipientEmail } from '$lib/config/cities.server';
 import {
@@ -55,6 +56,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	};
 	const vehicleIndex = Number(formData.get('vehicleIndex') ?? '1');
 	const vehicleTotal = Number(formData.get('vehicleTotal') ?? '1');
+	// Fällt bei fehlendem/ungültigem Wert bewusst auf 'demo' zurück — nie ungewollt live an die
+	// Bußgeldstelle senden, nur weil ein Client den Modus nicht mitschickt.
+	const modeValue = formData.get('mode');
+	const mode: AppMode = modeValue === 'live' ? 'live' : 'demo';
 
 	const data: ReportFormData = {
 		firstName: String(formData.get('firstName') ?? ''),
@@ -107,7 +112,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			},
 			body: JSON.stringify({
 				sender: { email: EMAIL_FROM },
-				to: [{ email: getRecipientEmail(city.id) }],
+				to: [{ email: getRecipientEmail(city.id, mode) }],
 				replyTo: { email: data.email },
 				bcc: [{ email: data.email }],
 				subject,
