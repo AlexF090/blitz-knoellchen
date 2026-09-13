@@ -472,7 +472,7 @@
 							city: vehicle.locationCity
 						}),
 						incidentTypeLabels: incidentTypes.map((t) => t.label),
-						licensePlate: normalizeLicensePlate(vehicle.licensePlate),
+						licensePlate: normalizeLicensePlate(vehicle.licensePlate, vehicle.licensePlateCountry),
 						licensePlateCountry: vehicle.licensePlateCountry,
 						vehicleType: vehicle.vehicleType,
 						make: vehicle.make,
@@ -484,7 +484,7 @@
 			}
 
 			sendResults = results.map((r) => ({
-				licensePlate: normalizeLicensePlate(r.vehicle.licensePlate),
+				licensePlate: normalizeLicensePlate(r.vehicle.licensePlate, r.vehicle.licensePlateCountry),
 				ok: r.ok
 			}));
 

@@ -34,7 +34,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	const vehicle: VehicleEntry = {
 		id: '0',
 		photoIds: photos.map((photo) => photo.id),
-		licensePlate: normalizeLicensePlate(String(formData.get('licensePlate') ?? '')),
+		licensePlate: normalizeLicensePlate(
+			String(formData.get('licensePlate') ?? ''),
+			String(formData.get('licensePlateCountry') ?? '')
+		),
 		licensePlateCountry: String(formData.get('licensePlateCountry') ?? ''),
 		vehicleType: String(formData.get('vehicleType') ?? ''),
 		make: String(formData.get('make') ?? ''),
