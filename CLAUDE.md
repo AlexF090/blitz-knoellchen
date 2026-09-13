@@ -234,22 +234,29 @@ erneut mit der Stadt Köln abgleichen**:
 - **Länderkennzeichen:** Pflichtfeld, Default `"D"` (weit überwiegender Regelfall bei in Köln
   gemeldeten Verstößen, bleibt aber editierbar für ausländische Kennzeichen).
 
-### Demo/Live-Modus-Auswahl bei jedem Seitenaufruf
+### Demo/Live-Modus-Auswahl pro Session, manuell über das Header-Badge wechselbar
 
 Solange die App nicht vollständig getestet ist, würde ein versehentlicher Live-Versand eine
 echte Ordnungswidrigkeits-Anzeige an die Stadt Köln auslösen. Deshalb fragt ein blockierender
 Dialog (`src/lib/components/AppModeDialog.svelte`, global über `src/routes/+layout.svelte`
-eingebunden) bei **jedem** Seitenaufruf/Reload, ob im **Demo-Modus** (Anzeige geht an eine
-interne Test-Adresse) oder im **Live-Modus** (Anzeige geht tatsächlich an die Bußgeldstelle
-Köln) gearbeitet werden soll — weder Backdrop-Klick noch Escape schließen ihn, nur die beiden
-Buttons. Die Wahl wird **bewusst nicht** in `localStorage`/`sessionStorage` persistiert (analog
-zum "kein dauerhaftes Ausblenden"-Muster von `IosInstallBanner.svelte`): Solange die App aktiv
-weiterentwickelt wird, soll jeder Reload die Entscheidung erneut erzwingen, statt sich auf eine
-veraltete Session-Wahl zu verlassen.
+eingebunden), ob im **Demo-Modus** (Anzeige geht an eine interne Test-Adresse) oder im
+**Live-Modus** (Anzeige geht tatsächlich an die Bußgeldstelle Köln) gearbeitet werden soll —
+weder Backdrop-Klick noch Escape schließen ihn, nur die beiden Buttons. Die Wahl wird in
+`sessionStorage` gespeichert (`STORAGE_KEY` in `src/lib/appMode.svelte.ts`) und gilt dadurch
+**pro Tab/Session**: Ein Reload behält die zuletzt getroffene Wahl, ein neuer Tab/eine neue
+Session erzwingt die Entscheidung erneut. Bewusst kein `localStorage`, damit die Wahl nicht
+dauerhaft über Sessions hinweg bestehen bleibt — anfangs wurde hier auf jeden Reload erneut
+gefragt (reiner In-Memory-Modul-State, kein Persistieren), das erwies sich im täglichen
+Gebrauch aber als zu aufdringlich.
 
-Der gewählte Modus liegt als reines Client-Runen-Modul in `src/lib/appMode.svelte.ts` (`AppMode
-= 'demo' | 'live'`) und wird an zwei Stellen konsumiert: `PageHeader.svelte` zeigt ihn
-dauerhaft als Badge neben dem Logo/Titel an (Live auffällig in Fehlerfarbe, da real
+Ein Klick auf das Modus-Badge im Header (`PageHeader.svelte`, jetzt ein `<button>` statt eines
+reinen `<span>`) ruft `appMode.requestChange()` auf und öffnet den Dialog jederzeit erneut, um
+den Modus manuell zu wechseln — der zuvor in `sessionStorage` gespeicherte Wert wird dabei erst
+mit der nächsten expliziten Auswahl überschrieben, nicht schon beim Öffnen des Dialogs.
+
+Der gewählte Modus liegt als Client-Runen-Modul in `src/lib/appMode.svelte.ts` (`AppMode =
+'demo' | 'live'`) und wird an zwei Stellen konsumiert: `PageHeader.svelte` zeigt ihn dauerhaft
+als klickbares Badge neben dem Logo/Titel an (Live auffällig in Fehlerfarbe, da real
 konsequenzenbehaftet), `ReportForm.svelte` leitet daraus die angezeigte
 E-Mail-Vorschau-Adresse ab und schickt den Modus beim Absenden als `mode`-Feld im FormData an
 `/api/send`. Der Server (`src/routes/api/send/+server.ts`) validiert `mode` gegen `'live'` und
