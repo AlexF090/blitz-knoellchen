@@ -41,8 +41,10 @@ test('Fahrzeugdaten überleben einen Reload als Entwurf', async ({ page }) => {
 	// Autosave ist debounced (800ms) — kurz warten, bevor neu geladen wird.
 	await page.waitForTimeout(1200);
 
+	// sessionStorage überlebt den Reload (s. ADR "Demo/Live-Modus-Auswahl" in CLAUDE.md) — der
+	// Dialog erscheint hier bewusst nicht erneut, ein zweiter chooseAppMode()-Aufruf würde ewig
+	// auf einen nie erscheinenden Dialog warten.
 	await page.reload();
-	await chooseAppMode(page);
 
 	// Kein Flash: "Deine Angaben" soll sofort im gelesenen Zustand stehen, nie leer im
 	// Bearbeiten-Modus aufblitzen.
