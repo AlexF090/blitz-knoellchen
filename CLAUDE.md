@@ -234,6 +234,38 @@ erneut mit der Stadt Köln abgleichen**:
 - **Länderkennzeichen:** Pflichtfeld, Default `"D"` (weit überwiegender Regelfall bei in Köln
   gemeldeten Verstößen, bleibt aber editierbar für ausländische Kennzeichen).
 
+### Demo/Live-Modus-Auswahl bei jedem Seitenaufruf
+
+Solange die App nicht vollständig getestet ist, würde ein versehentlicher Live-Versand eine
+echte Ordnungswidrigkeits-Anzeige an die Stadt Köln auslösen. Deshalb fragt ein blockierender
+Dialog (`src/lib/components/AppModeDialog.svelte`, global über `src/routes/+layout.svelte`
+eingebunden) bei **jedem** Seitenaufruf/Reload, ob im **Demo-Modus** (Anzeige geht an eine
+interne Test-Adresse) oder im **Live-Modus** (Anzeige geht tatsächlich an die Bußgeldstelle
+Köln) gearbeitet werden soll — weder Backdrop-Klick noch Escape schließen ihn, nur die beiden
+Buttons. Die Wahl wird **bewusst nicht** in `localStorage`/`sessionStorage` persistiert (analog
+zum "kein dauerhaftes Ausblenden"-Muster von `IosInstallBanner.svelte`): Solange die App aktiv
+weiterentwickelt wird, soll jeder Reload die Entscheidung erneut erzwingen, statt sich auf eine
+veraltete Session-Wahl zu verlassen.
+
+Der gewählte Modus liegt als reines Client-Runen-Modul in `src/lib/appMode.svelte.ts` (`AppMode
+= 'demo' | 'live'`) und wird an zwei Stellen konsumiert: `PageHeader.svelte` zeigt ihn
+dauerhaft als Badge neben dem Logo/Titel an (Live auffällig in Fehlerfarbe, da real
+konsequenzenbehaftet), `ReportForm.svelte` leitet daraus die angezeigte
+E-Mail-Vorschau-Adresse ab und schickt den Modus beim Absenden als `mode`-Feld im FormData an
+`/api/send`. Der Server (`src/routes/api/send/+server.ts`) validiert `mode` gegen `'live'` und
+fällt bei jedem anderen/fehlenden Wert **sicher auf `'demo'`** zurück — ein manipulierter oder
+vergessener Client-Wert darf nie zu einem ungewollten Live-Versand führen.
+
+Empfänger-seitig gibt es dafür zwei getrennte Env-Vars statt der bisherigen einen
+(`RECIPIENT_EMAIL` → `RECIPIENT_EMAIL_DEMO`/`RECIPIENT_EMAIL_LIVE`,
+`src/lib/config/cities.server.ts`, `getRecipientEmail(cityId, mode)`) — bewusst über Env-Vars
+statt hartcodiert im Code, damit sich die Zieladresse der Stadt Köln ohne Deploy ändern lässt
+und alle Empfänger-Adressen an einer Stelle konfigurierbar bleiben. Die offizielle Adresse der
+Bußgeldstelle Köln für Fremdanzeigen ist laut
+["Falsch geparktes Fahrzeug melden – Stadt Köln"](https://www.stadt-koeln.de/service/produkte/00449/index.html)
+**`bussgeldstelle@stadt-koeln.de`** (Stand 2026-09-13, vor Produktivbetrieb erneut
+gegenprüfen, s. auch FAQ-Rohtext-Abschnitt oben).
+
 ### Versionsnummer: einzige Quelle der Wahrheit ist `package.json`
 
 Die in der App angezeigte Versionsnummer (site-weiter Footer, `src/lib/components/
@@ -261,7 +293,9 @@ Für Minor-/Major-Sprünge (Breaking Changes, größere Features) den Patch-Bump
 | `src/lib/components/`                            | Svelte-Komponenten (`ReportForm.svelte`, `VehicleBlock.svelte`, `AddressAutocomplete.svelte`, `Footer.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
 | `src/lib/components/branding/`                   | Logo-/Wortmarken-Komponenten (`BrandIcon.svelte`, `LogoLockup.svelte`, `Wordmark.svelte`), s. ADR "Branding-Assets" oben                                        |
 | `src/lib/config/cities.ts`                       | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import                                                                         |
-| `src/lib/config/cities.server.ts`                | Serverseitige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`                                                                             |
+| `src/lib/config/cities.server.ts`                | Serverseitige, modusabhängige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`                                                             |
+| `src/lib/appMode.svelte.ts`                      | Client-Runen-Modul für die Demo-/Live-Modus-Wahl, s. ADR "Demo/Live-Modus-Auswahl" oben                                                                         |
+| `src/lib/components/AppModeDialog.svelte`        | Blockierender Demo-/Live-Auswahldialog, global in `+layout.svelte` eingebunden                                                                                  |
 | `src/lib/config/vehicleMakes.ts`                 | Kuratierte Marken-Liste für die Marke-`<datalist>` (Fahrzeugbeschreibung), Freitext bleibt möglich                                                              |
 | `src/lib/config/vehicleTypes.ts`                 | Feste Fahrzeugart-Liste (`VEHICLE_TYPES`), geschlossene Auswahl statt Freitext                                                                                  |
 | `src/lib/email/buildEmailBody.ts`                | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                                                                                            |
@@ -328,20 +362,21 @@ nicht:
 
 1. In `src/lib/config/cities.ts` einen zweiten Eintrag im `CITIES`-Record ergänzen (`id`,
    `label`, `incidentTypes`, `buildEmailBody`).
-2. In `src/lib/config/cities.server.ts` die zugehörige Empfänger-E-Mail in
-   `RECIPIENT_EMAILS` ergänzen (eigene ENV-Variable, da `$env/static/private` nur
-   serverseitig importierbar ist).
+2. In `src/lib/config/cities.server.ts` die zugehörigen Empfänger-E-Mails in
+   `DEMO_RECIPIENT_EMAILS`/`LIVE_RECIPIENT_EMAILS` ergänzen (je eine eigene ENV-Variable, da
+   `$env/static/private` nur serverseitig importierbar ist).
 3. Keine UI zur Stadtauswahl bauen, solange nicht explizit gefordert — das ist bewusst
    außerhalb des aktuellen Scopes (YAGNI).
 
 ## Umgebungsvariablen
 
-| Variable             | Zweck                                                                                                              |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `BREVO_API_KEY`      | API-Key für den E-Mail-Versand über Brevo.                                                                         |
-| `EMAIL_FROM`         | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain).                                         |
-| `RECIPIENT_EMAIL`    | Empfänger der Anzeige-Mail (Testphase: eigene Adresse; Produktion: Bußgeldstelle Köln).                            |
-| `LOCATIONIQ_API_KEY` | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider), auch für Adress-Autocomplete. |
+| Variable               | Zweck                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `BREVO_API_KEY`        | API-Key für den E-Mail-Versand über Brevo.                                                                         |
+| `EMAIL_FROM`           | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain).                                         |
+| `RECIPIENT_EMAIL_DEMO` | Empfänger im Demo-Modus (interne Test-Adresse), s. ADR "Demo/Live-Modus-Auswahl" oben.                             |
+| `RECIPIENT_EMAIL_LIVE` | Empfänger im Live-Modus (Bußgeldstelle Köln, `bussgeldstelle@stadt-koeln.de`).                                     |
+| `LOCATIONIQ_API_KEY`   | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider), auch für Adress-Autocomplete. |
 
 Immer über `.env.example` dokumentieren, echte Werte nie committen. Serverseitige Secrets
 ausschließlich über `$env/static/private` einbinden (siehe `cities.server.ts`,
