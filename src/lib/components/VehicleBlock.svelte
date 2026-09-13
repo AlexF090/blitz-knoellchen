@@ -806,8 +806,9 @@
 				<p class="text-ink">{recipientEmail}</p>
 			</div>
 			<p class="text-base text-ink-muted">
-				Eine Kopie geht zusätzlich an deine eigene Adresse ({profile.email}) — als Antwort-Adresse
-				und BCC.
+				Eine Kopie geht zusätzlich an deine eigene Adresse{profile.email
+					? ` (${profile.email})`
+					: ''} — als Antwort-Adresse und BCC.
 			</p>
 			<div>
 				<p class="text-base font-medium text-ink-muted">Betreff</p>
