@@ -1,27 +1,28 @@
 <script lang="ts">
-	import { Eye, RotateCcw, Trash2 } from '@lucide/svelte';
 	import type { City, IncidentType } from '$lib/config/cities';
+	import { INCIDENT_TYPE_ICONS } from '$lib/config/incidentTypeIcons';
+	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
+	import { VEHICLE_MAKES } from '$lib/config/vehicleMakes';
+	import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
 	import {
 		buildEmailTemplateInput,
 		resolveVehicleIncidentTypes
 	} from '$lib/email/buildEmailTemplateInput';
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
+	import { formatAddress } from '$lib/geocode/formatAddress';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
-	import { fade } from 'svelte/transition';
+	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
-	import { validateVehicle } from '$lib/validation/formSchema';
 	import type {
 		PhotoEntry,
 		ProfileFields,
 		VehicleEntry,
 		VehicleErrors
 	} from '$lib/validation/formSchema';
-	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
-	import { VEHICLE_MAKES } from '$lib/config/vehicleMakes';
-	import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
-	import { formatAddress } from '$lib/geocode/formatAddress';
-	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
+	import { validateVehicle } from '$lib/validation/formSchema';
+	import { Eye, RotateCcw, Trash2 } from '@lucide/svelte';
+	import { fade } from 'svelte/transition';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 
@@ -162,19 +163,31 @@
 			? [...vehicle.incidentTypeIds, id]
 			: vehicle.incidentTypeIds.filter((existing) => existing !== id);
 	};
+
+	// Die Fahrzeug-Felder liegen im selben <form> wie der eigentliche Absenden-Button —
+	// ohne diesen Handler würde Enter in einem Feld das gesamte Formular abschicken statt nur
+	// diese Karte in den Lese-Modus zu klappen (analog zu "Fertig" oben).
+	const onVehicleFieldKeydown = (event: KeyboardEvent) => {
+		if (event.key !== 'Enter') return;
+		event.preventDefault();
+		if (isComplete()) open = false;
+	};
 </script>
 
 <div
 	class="rounded-card border-l-4 {getVehicleAccentClass(index)} bg-surface p-4 shadow-card sm:p-6"
 >
 	<div class="flex items-center justify-between gap-2">
-		<h3 class="text-sm font-semibold text-ink">
-			{total > 1 ? `Fahrzeug/Vorfall ${index + 1}` : 'Fahrzeug/Vorfall'}
-		</h3>
+		<div>
+			<h3 class="text-sm font-semibold text-ink">
+				{total > 1 ? `Vorfall ${index + 1}` : 'Vorfall'}
+			</h3>
+			<p class="text-xs text-ink-muted">Betrifft ein Fahrzeug</p>
+		</div>
 		<button
 			type="button"
 			onclick={openResetDialog}
-			aria-label={total > 1 ? 'Fahrzeug/Vorfall entfernen' : 'Fahrzeug/Vorfall zurücksetzen'}
+			aria-label={total > 1 ? 'Vorfall entfernen' : 'Vorfall zurücksetzen'}
 			title={total > 1 ? 'Entfernen' : 'Zurücksetzen'}
 			class="flex size-10 items-center justify-center rounded-full text-error-fg hover:bg-error-fg/10"
 		>
@@ -249,368 +262,382 @@
 	{/if}
 
 	{#if open}
-		<div class="mt-3">
-			<p class="text-sm font-medium text-ink">
-				Fotos mit diesem Fahrzeug
-				<span class="whitespace-nowrap">
-					(max. {maxPhotos}) <span class="text-error-fg">*</span>
-				</span>
-			</p>
-			{#if pool.length === 0}
-				<p class="mt-1 text-sm text-ink-muted">Zuerst oben ein Foto hinzufügen.</p>
-			{:else}
-				<div class="mt-1 grid grid-cols-4 gap-2 sm:grid-cols-6 sm:gap-3">
-					{#each pool as photo (photo.id)}
-						{@const selected = vehicle.photoIds.includes(photo.id)}
-						<button
-							type="button"
-							onclick={() => togglePhoto(photo.id)}
-							class="relative aspect-square overflow-hidden rounded-control border border-border"
-							class:ring-2={selected}
-							class:ring-primary-500={selected}
-							aria-pressed={selected}
-						>
-							<img
-								src={objectUrl(photo.blob)}
-								alt="Foto {photo.fileName} auswählen"
-								class="h-full w-full object-cover"
-							/>
-							{#if selected}
-								<span
-									aria-hidden="true"
-									class="absolute inset-0 flex items-center justify-center bg-primary-600/40 text-white"
-									>✓</span
-								>
-							{/if}
-						</button>
-					{/each}
-				</div>
-			{/if}
-			{#if errors?.photoIds}<p role="alert" class="mt-1 text-sm text-error-fg">
-					{errors.photoIds}
-				</p>{/if}
-		</div>
-
-		<div class="mt-3 rounded-control border border-border p-3">
-			<p class="text-sm font-medium text-ink">Tatort</p>
-
-			<fieldset class="mt-2">
-				<legend class="text-sm font-medium text-ink">Art der Zeitangabe</legend>
-				<div class="mt-1 inline-flex w-full rounded-control bg-surface-sunken p-1">
-					<label
-						class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
-							py-1.5 text-center text-sm font-medium text-ink-muted transition-colors
-							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
-					>
-						<input
-							type="radio"
-							name="timeMode-{vehicle.id}"
-							aria-label="Halteverstoß (Einzelzeitpunkt)"
-							checked={vehicle.timeMode !== 'parkverstoss'}
-							onchange={selectHalteverstoss}
-							class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-						/>
-						Halteverstoß
-					</label>
-					<label
-						class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
-							py-1.5 text-center text-sm font-medium text-ink-muted transition-colors
-							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
-					>
-						<input
-							type="radio"
-							name="timeMode-{vehicle.id}"
-							aria-label="Parkverstoß (Zeitraum, mind. 4 Min.)"
-							checked={vehicle.timeMode === 'parkverstoss'}
-							onchange={selectParkverstoss}
-							class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-						/>
-						Parkverstoß
-					</label>
-				</div>
-				{#if vehicle.timeMode === 'parkverstoss'}
-					<p class="mt-1 text-xs text-ink-muted">
-						Für die Ahndung eines Parkverstoßes muss das Fahrzeug mindestens 4 Minuten durchgängig
-						geparkt gewesen sein.
-					</p>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div onkeydown={onVehicleFieldKeydown}>
+			<div class="mt-3">
+				<p class="text-sm font-medium text-ink">
+					Fotos mit diesem Fahrzeug
+					<span class="whitespace-nowrap">
+						(max. {maxPhotos}) <span class="text-error-fg">*</span>
+					</span>
+				</p>
+				{#if pool.length === 0}
+					<p class="mt-1 text-sm text-ink-muted">Zuerst oben ein Foto hinzufügen.</p>
+				{:else}
+					<div class="mt-1 grid grid-cols-4 gap-2 sm:grid-cols-6 sm:gap-3">
+						{#each pool as photo (photo.id)}
+							{@const selected = vehicle.photoIds.includes(photo.id)}
+							<button
+								type="button"
+								onclick={() => togglePhoto(photo.id)}
+								class="relative aspect-square overflow-hidden rounded-control border border-border"
+								class:ring-2={selected}
+								class:ring-primary-500={selected}
+								aria-pressed={selected}
+							>
+								<img
+									src={objectUrl(photo.blob)}
+									alt="Foto {photo.fileName} auswählen"
+									class="h-full w-full object-cover"
+								/>
+								{#if selected}
+									<span
+										aria-hidden="true"
+										class="absolute inset-0 flex items-center justify-center bg-primary-600/40 text-white"
+										>✓</span
+									>
+								{/if}
+							</button>
+						{/each}
+					</div>
 				{/if}
-			</fieldset>
+				{#if errors?.photoIds}<p role="alert" class="mt-1 text-sm text-error-fg">
+						{errors.photoIds}
+					</p>{/if}
+			</div>
 
-			<div
-				class={`mt-2 grid grid-cols-1 gap-3 ${vehicle.timeMode === 'parkverstoss' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
-			>
-				<div class="min-w-0">
-					<label for="date-{vehicle.id}" class="block text-sm font-medium text-ink"
-						>Datum <span class="text-error-fg">*</span></label
-					>
-					<input
-						id="date-{vehicle.id}"
-						type="date"
-						bind:value={vehicle.date}
-						required
-						aria-required="true"
-						{...ariaFieldProps(`date-${vehicle.id}`, errors?.date)}
-						class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
-					/>
-					{#if errors?.date}<p
-							id="date-{vehicle.id}-error"
-							role="alert"
-							class="text-sm text-error-fg"
+			<fieldset class="mt-3 rounded-control border border-border p-3">
+				<legend class="px-1 text-sm font-medium text-ink">Tatort</legend>
+
+				<fieldset class="mt-2">
+					<legend class="text-sm font-medium text-ink">Art der Zeitangabe</legend>
+					<div class="mt-1 inline-flex w-full rounded-control bg-surface-sunken p-1">
+						<label
+							class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
+							py-1.5 text-center text-sm font-medium text-ink-muted transition-colors
+							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
 						>
-							{errors.date}
-						</p>{/if}
-				</div>
-				<div class="min-w-0">
-					<label for="time-{vehicle.id}" class="block text-sm font-medium text-ink"
-						>{vehicle.timeMode === 'parkverstoss' ? 'Von' : 'Uhrzeit'}
-						<span class="text-error-fg">*</span></label
-					>
-					<input
-						id="time-{vehicle.id}"
-						type="time"
-						bind:value={vehicle.time}
-						required
-						aria-required="true"
-						{...ariaFieldProps(`time-${vehicle.id}`, errors?.time)}
-						class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
-					/>
-					{#if errors?.time}<p
-							id="time-{vehicle.id}-error"
-							role="alert"
-							class="text-sm text-error-fg"
+							<input
+								type="radio"
+								name="timeMode-{vehicle.id}"
+								aria-label="Halteverstoß (Einzelzeitpunkt)"
+								checked={vehicle.timeMode !== 'parkverstoss'}
+								onchange={selectHalteverstoss}
+								class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+							/>
+							Halteverstoß
+						</label>
+						<label
+							class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
+							py-1.5 text-center text-sm font-medium text-ink-muted transition-colors
+							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
 						>
-							{errors.time}
-						</p>{/if}
-				</div>
-				{#if vehicle.timeMode === 'parkverstoss'}
+							<input
+								type="radio"
+								name="timeMode-{vehicle.id}"
+								aria-label="Parkverstoß (Zeitraum, mind. 4 Min.)"
+								checked={vehicle.timeMode === 'parkverstoss'}
+								onchange={selectParkverstoss}
+								class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+							/>
+							Parkverstoß
+						</label>
+					</div>
+					{#if vehicle.timeMode === 'parkverstoss'}
+						<p class="mt-1 text-xs text-ink-muted">
+							Für die Ahndung eines Parkverstoßes muss das Fahrzeug mindestens 4 Minuten durchgängig
+							geparkt gewesen sein.
+						</p>
+					{/if}
+				</fieldset>
+
+				<div
+					class={`mt-2 grid grid-cols-1 gap-3 ${vehicle.timeMode === 'parkverstoss' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
+				>
 					<div class="min-w-0">
-						<label for="endTime-{vehicle.id}" class="block text-sm font-medium text-ink"
-							>Bis <span class="text-error-fg">*</span></label
+						<label for="date-{vehicle.id}" class="block text-sm font-medium text-ink"
+							>Datum <span class="text-error-fg">*</span></label
 						>
 						<input
-							id="endTime-{vehicle.id}"
-							type="time"
-							bind:value={vehicle.endTime}
+							id="date-{vehicle.id}"
+							type="date"
+							bind:value={vehicle.date}
 							required
 							aria-required="true"
-							{...ariaFieldProps(`endTime-${vehicle.id}`, errors?.endTime)}
+							{...ariaFieldProps(`date-${vehicle.id}`, errors?.date)}
 							class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
 						/>
-						{#if errors?.endTime}<p
-								id="endTime-{vehicle.id}-error"
+						{#if errors?.date}<p
+								id="date-{vehicle.id}-error"
 								role="alert"
 								class="text-sm text-error-fg"
 							>
-								{errors.endTime}
+								{errors.date}
 							</p>{/if}
 					</div>
-				{/if}
-			</div>
-			<div class="mt-2 grid grid-cols-[2fr_1fr] gap-3">
-				<AddressAutocomplete
-					id="locationStreet-{vehicle.id}"
-					label="Straße"
-					required
-					error={errors?.locationStreet}
-					bind:value={vehicle.locationStreet}
-					onSelect={(suggestion) => applyAddressSuggestion(vehicle, suggestion, true)}
-				/>
-				<div class="min-w-0">
-					<label for="locationHouseNumber-{vehicle.id}" class="block text-sm font-medium text-ink"
-						>Hausnr.</label
-					>
-					<input
-						id="locationHouseNumber-{vehicle.id}"
-						bind:value={vehicle.locationHouseNumber}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-				</div>
-			</div>
-			{#if geocodeWarning}<p role="status" class="mt-1 text-sm text-warning-fg">
-					{geocodeWarning}
-				</p>{/if}
-			<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
-				<div class="min-w-0">
-					<label for="locationPostcode-{vehicle.id}" class="block text-sm font-medium text-ink"
-						>PLZ <span class="text-error-fg">*</span></label
-					>
-					<input
-						id="locationPostcode-{vehicle.id}"
-						bind:value={vehicle.locationPostcode}
-						required
-						aria-required="true"
-						{...ariaFieldProps(`locationPostcode-${vehicle.id}`, errors?.locationPostcode)}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-					{#if errors?.locationPostcode}<p
-							id="locationPostcode-{vehicle.id}-error"
-							role="alert"
-							class="text-sm text-error-fg"
+					<div class="min-w-0">
+						<label for="time-{vehicle.id}" class="block text-sm font-medium text-ink"
+							>{vehicle.timeMode === 'parkverstoss' ? 'Von' : 'Uhrzeit'}
+							<span class="text-error-fg">*</span></label
 						>
-							{errors.locationPostcode}
-						</p>{/if}
-				</div>
-				<div class="min-w-0">
-					<label for="locationCity-{vehicle.id}" class="block text-sm font-medium text-ink"
-						>Ort <span class="text-error-fg">*</span></label
-					>
-					<input
-						id="locationCity-{vehicle.id}"
-						bind:value={vehicle.locationCity}
-						required
-						aria-required="true"
-						{...ariaFieldProps(`locationCity-${vehicle.id}`, errors?.locationCity)}
-						class="mt-1 w-full rounded-control border border-border p-2"
-					/>
-					{#if errors?.locationCity}<p
-							id="locationCity-{vehicle.id}-error"
-							role="alert"
-							class="text-sm text-error-fg"
-						>
-							{errors.locationCity}
-						</p>{/if}
-				</div>
-			</div>
-		</div>
-
-		<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
-			<div class="min-w-0">
-				<label for="licensePlateCountry-{vehicle.id}" class="block text-sm font-medium text-ink"
-					>Länderkennz.</label
-				>
-				<input
-					id="licensePlateCountry-{vehicle.id}"
-					bind:value={vehicle.licensePlateCountry}
-					class="mt-1 w-full rounded-control border border-border p-2"
-				/>
-			</div>
-			<div class="min-w-0">
-				<label for="licensePlate-{vehicle.id}" class="block text-sm font-medium text-ink"
-					>Kennzeichen <span class="text-error-fg">*</span></label
-				>
-				<input
-					id="licensePlate-{vehicle.id}"
-					bind:value={vehicle.licensePlate}
-					required
-					aria-required="true"
-					{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
-					class="mt-1 w-full rounded-control border border-border p-2"
-				/>
-				{#if errors?.licensePlate}<p
-						id="licensePlate-{vehicle.id}-error"
-						role="alert"
-						class="text-sm text-error-fg"
-					>
-						{errors.licensePlate}
-					</p>{/if}
-			</div>
-		</div>
-
-		<div class="mt-3">
-			<label for="vehicleType-{vehicle.id}" class="block text-sm font-medium text-ink"
-				>Fahrzeugart <span class="text-error-fg">*</span></label
-			>
-			<select
-				id="vehicleType-{vehicle.id}"
-				bind:value={vehicle.vehicleType}
-				required
-				aria-required="true"
-				{...ariaFieldProps(`vehicleType-${vehicle.id}`, errors?.vehicleType)}
-				class="mt-1 w-full rounded-control border border-border p-2"
-			>
-				<option value="" disabled>Bitte wählen</option>
-				{#each VEHICLE_TYPES as type (type)}<option value={type}>{type}</option>{/each}
-			</select>
-			{#if errors?.vehicleType}<p
-					id="vehicleType-{vehicle.id}-error"
-					role="alert"
-					class="text-sm text-error-fg"
-				>
-					{errors.vehicleType}
-				</p>{/if}
-		</div>
-
-		<div class="mt-3 grid grid-cols-2 gap-3">
-			<div class="min-w-0">
-				<label for="make-{vehicle.id}" class="block text-sm font-medium text-ink"
-					>Marke <span class="text-error-fg">*</span></label
-				>
-				<input
-					id="make-{vehicle.id}"
-					list="vehicle-makes-{vehicle.id}"
-					bind:value={vehicle.make}
-					required
-					aria-required="true"
-					{...ariaFieldProps(`make-${vehicle.id}`, errors?.make)}
-					class="mt-1 w-full rounded-control border border-border p-2"
-				/>
-				<datalist id="vehicle-makes-{vehicle.id}">
-					{#each VEHICLE_MAKES as make (make)}<option value={make}></option>{/each}
-				</datalist>
-				{#if errors?.make}<p
-						id="make-{vehicle.id}-error"
-						role="alert"
-						class="text-sm text-error-fg"
-					>
-						{errors.make}
-					</p>{/if}
-			</div>
-			<div class="min-w-0">
-				<label for="color-{vehicle.id}" class="block text-sm font-medium text-ink"
-					>Farbe <span class="text-error-fg">*</span></label
-				>
-				<input
-					id="color-{vehicle.id}"
-					placeholder="z. B. Rot, hell, dunkel"
-					bind:value={vehicle.color}
-					required
-					aria-required="true"
-					{...ariaFieldProps(`color-${vehicle.id}`, errors?.color)}
-					class="mt-1 w-full rounded-control border border-border p-2"
-				/>
-				{#if errors?.color}<p
-						id="color-{vehicle.id}-error"
-						role="alert"
-						class="text-sm text-error-fg"
-					>
-						{errors.color}
-					</p>{/if}
-			</div>
-		</div>
-		<p class="mt-1 text-xs text-ink-muted">
-			Genaue Farbe unbekannt? Auch Beschreibungen wie „hell" oder „dunkel" reichen aus.
-		</p>
-
-		<fieldset class="mt-3">
-			<legend class="block text-sm font-medium text-ink"
-				>Art des Verstoßes (Mehrfachauswahl möglich) <span class="text-error-fg">*</span></legend
-			>
-			<div class="mt-1 flex flex-col gap-2">
-				{#each incidentTypes as type (type.id)}
-					<label class="flex cursor-pointer items-center gap-2 py-1 text-sm text-ink">
 						<input
-							type="checkbox"
-							checked={vehicle.incidentTypeIds.includes(type.id)}
-							onchange={(e) => toggleIncidentType(type.id, e.currentTarget.checked)}
-							class="size-4 rounded border-border"
+							id="time-{vehicle.id}"
+							type="time"
+							bind:value={vehicle.time}
+							required
+							aria-required="true"
+							{...ariaFieldProps(`time-${vehicle.id}`, errors?.time)}
+							class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
 						/>
-						{type.label}
-					</label>
-				{/each}
-			</div>
-			{#if errors?.incidentTypeIds}<p role="alert" class="text-sm text-error-fg">
-					{errors.incidentTypeIds}
-				</p>{/if}
-		</fieldset>
+						{#if errors?.time}<p
+								id="time-{vehicle.id}-error"
+								role="alert"
+								class="text-sm text-error-fg"
+							>
+								{errors.time}
+							</p>{/if}
+					</div>
+					{#if vehicle.timeMode === 'parkverstoss'}
+						<div class="min-w-0">
+							<label for="endTime-{vehicle.id}" class="block text-sm font-medium text-ink"
+								>Bis <span class="text-error-fg">*</span></label
+							>
+							<input
+								id="endTime-{vehicle.id}"
+								type="time"
+								bind:value={vehicle.endTime}
+								required
+								aria-required="true"
+								{...ariaFieldProps(`endTime-${vehicle.id}`, errors?.endTime)}
+								class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
+							/>
+							{#if errors?.endTime}<p
+									id="endTime-{vehicle.id}-error"
+									role="alert"
+									class="text-sm text-error-fg"
+								>
+									{errors.endTime}
+								</p>{/if}
+						</div>
+					{/if}
+				</div>
+				<div class="mt-2 grid grid-cols-[2fr_1fr] gap-3">
+					<AddressAutocomplete
+						id="locationStreet-{vehicle.id}"
+						label="Straße"
+						required
+						error={errors?.locationStreet}
+						bind:value={vehicle.locationStreet}
+						onSelect={(suggestion) => applyAddressSuggestion(vehicle, suggestion, true)}
+					/>
+					<div class="min-w-0">
+						<label for="locationHouseNumber-{vehicle.id}" class="block text-sm font-medium text-ink"
+							>Hausnr.</label
+						>
+						<input
+							id="locationHouseNumber-{vehicle.id}"
+							bind:value={vehicle.locationHouseNumber}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+					</div>
+				</div>
+				{#if geocodeWarning}<p role="status" class="mt-1 text-sm text-warning-fg">
+						{geocodeWarning}
+					</p>{/if}
+				<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
+					<div class="min-w-0">
+						<label for="locationPostcode-{vehicle.id}" class="block text-sm font-medium text-ink"
+							>PLZ <span class="text-error-fg">*</span></label
+						>
+						<input
+							id="locationPostcode-{vehicle.id}"
+							bind:value={vehicle.locationPostcode}
+							required
+							aria-required="true"
+							{...ariaFieldProps(`locationPostcode-${vehicle.id}`, errors?.locationPostcode)}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+						{#if errors?.locationPostcode}<p
+								id="locationPostcode-{vehicle.id}-error"
+								role="alert"
+								class="text-sm text-error-fg"
+							>
+								{errors.locationPostcode}
+							</p>{/if}
+					</div>
+					<div class="min-w-0">
+						<label for="locationCity-{vehicle.id}" class="block text-sm font-medium text-ink"
+							>Ort <span class="text-error-fg">*</span></label
+						>
+						<input
+							id="locationCity-{vehicle.id}"
+							bind:value={vehicle.locationCity}
+							required
+							aria-required="true"
+							{...ariaFieldProps(`locationCity-${vehicle.id}`, errors?.locationCity)}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+						{#if errors?.locationCity}<p
+								id="locationCity-{vehicle.id}-error"
+								role="alert"
+								class="text-sm text-error-fg"
+							>
+								{errors.locationCity}
+							</p>{/if}
+					</div>
+				</div>
+			</fieldset>
 
-		<div class="mt-3">
-			<label for="notes-{vehicle.id}" class="block text-sm font-medium text-ink"
-				>Weitere Angaben (optional)</label
-			>
-			<textarea
-				id="notes-{vehicle.id}"
-				bind:value={vehicle.notes}
-				class="mt-1 w-full rounded-control border border-border p-2"></textarea>
+			<fieldset class="mt-3 rounded-control border border-border p-3">
+				<legend class="px-1 text-sm font-medium text-ink">Fahrzeug</legend>
+
+				<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
+					<div class="min-w-0">
+						<label for="licensePlateCountry-{vehicle.id}" class="block text-sm font-medium text-ink"
+							>Länderkennz.</label
+						>
+						<input
+							id="licensePlateCountry-{vehicle.id}"
+							bind:value={vehicle.licensePlateCountry}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+					</div>
+					<div class="min-w-0">
+						<label for="licensePlate-{vehicle.id}" class="block text-sm font-medium text-ink"
+							>Kennzeichen <span class="text-error-fg">*</span></label
+						>
+						<input
+							id="licensePlate-{vehicle.id}"
+							bind:value={vehicle.licensePlate}
+							required
+							aria-required="true"
+							{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+						{#if errors?.licensePlate}<p
+								id="licensePlate-{vehicle.id}-error"
+								role="alert"
+								class="text-sm text-error-fg"
+							>
+								{errors.licensePlate}
+							</p>{/if}
+					</div>
+				</div>
+
+				<div class="mt-2">
+					<label for="vehicleType-{vehicle.id}" class="block text-sm font-medium text-ink"
+						>Fahrzeugart <span class="text-error-fg">*</span></label
+					>
+					<select
+						id="vehicleType-{vehicle.id}"
+						bind:value={vehicle.vehicleType}
+						required
+						aria-required="true"
+						{...ariaFieldProps(`vehicleType-${vehicle.id}`, errors?.vehicleType)}
+						class="mt-1 w-full rounded-control border border-border p-2"
+					>
+						<option value="" disabled>Bitte wählen</option>
+						{#each VEHICLE_TYPES as type (type)}<option value={type}>{type}</option>{/each}
+					</select>
+					{#if errors?.vehicleType}<p
+							id="vehicleType-{vehicle.id}-error"
+							role="alert"
+							class="text-sm text-error-fg"
+						>
+							{errors.vehicleType}
+						</p>{/if}
+				</div>
+
+				<div class="mt-2 grid grid-cols-2 gap-3">
+					<div class="min-w-0">
+						<label for="make-{vehicle.id}" class="block text-sm font-medium text-ink"
+							>Marke <span class="text-error-fg">*</span></label
+						>
+						<input
+							id="make-{vehicle.id}"
+							list="vehicle-makes-{vehicle.id}"
+							bind:value={vehicle.make}
+							required
+							aria-required="true"
+							{...ariaFieldProps(`make-${vehicle.id}`, errors?.make)}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+						<datalist id="vehicle-makes-{vehicle.id}">
+							{#each VEHICLE_MAKES as make (make)}<option value={make}></option>{/each}
+						</datalist>
+						{#if errors?.make}<p
+								id="make-{vehicle.id}-error"
+								role="alert"
+								class="text-sm text-error-fg"
+							>
+								{errors.make}
+							</p>{/if}
+					</div>
+					<div class="min-w-0">
+						<label for="color-{vehicle.id}" class="block text-sm font-medium text-ink"
+							>Farbe <span class="text-error-fg">*</span></label
+						>
+						<input
+							id="color-{vehicle.id}"
+							placeholder="z. B. Rot, hell, dunkel"
+							bind:value={vehicle.color}
+							required
+							aria-required="true"
+							{...ariaFieldProps(`color-${vehicle.id}`, errors?.color)}
+							class="mt-1 w-full rounded-control border border-border p-2"
+						/>
+						{#if errors?.color}<p
+								id="color-{vehicle.id}-error"
+								role="alert"
+								class="text-sm text-error-fg"
+							>
+								{errors.color}
+							</p>{/if}
+					</div>
+				</div>
+				<p class="mt-1 text-xs text-ink-muted">
+					Genaue Farbe unbekannt? Auch Beschreibungen wie „hell" oder „dunkel" reichen aus.
+				</p>
+			</fieldset>
+
+			<fieldset class="mt-3 rounded-control border border-border p-3">
+				<legend class="px-1 text-sm font-medium text-ink">Verstöße</legend>
+				<p class="text-xs text-ink-muted">
+					Art des Verstoßes (Mehrfachauswahl möglich) <span class="text-error-fg">*</span>
+				</p>
+				<div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+					{#each incidentTypes as type (type.id)}
+						{@const Icon = INCIDENT_TYPE_ICONS[type.id]}
+						<label class="flex cursor-pointer items-center gap-2 py-1 text-sm text-ink">
+							<input
+								type="checkbox"
+								checked={vehicle.incidentTypeIds.includes(type.id)}
+								onchange={(e) => toggleIncidentType(type.id, e.currentTarget.checked)}
+								class="size-4 rounded border-border"
+							/>
+							<span class="flex items-center gap-1.5">
+								{type.label}
+								{#if Icon}
+									<Icon class="size-5 shrink-0" />
+								{/if}
+							</span>
+						</label>
+					{/each}
+				</div>
+				{#if errors?.incidentTypeIds}<p role="alert" class="text-sm text-error-fg">
+						{errors.incidentTypeIds}
+					</p>{/if}
+			</fieldset>
+
+			<div class="mt-3">
+				<label for="notes-{vehicle.id}" class="block text-sm font-medium text-ink"
+					>Weitere Angaben (optional)</label
+				>
+				<textarea
+					id="notes-{vehicle.id}"
+					bind:value={vehicle.notes}
+					class="mt-1 w-full rounded-control border border-border p-2"></textarea>
+			</div>
 		</div>
 	{/if}
 
