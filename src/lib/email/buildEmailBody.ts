@@ -49,14 +49,14 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 
 	const introLine =
 		input.incidentTypes.length > 1
-			? 'hiermit zeige ich folgende Verkehrsverstöße an:'
-			: 'hiermit zeige ich folgenden Verkehrsverstoß an:';
+			? 'hiermit zeige ich folgende Verkehrsverstöße an.'
+			: 'hiermit zeige ich folgenden Verkehrsverstoß an.';
 
 	const body = `Sehr geehrte Damen und Herren,
 
 ${introLine}
 
-Angaben zur anzeigenden Person
+Angaben zu mir:
 Name: ${input.firstName} ${input.lastName}
 Anschrift: ${addressLine}${phoneLine}
 
