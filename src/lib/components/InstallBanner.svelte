@@ -23,7 +23,7 @@
 	<div
 		role="note"
 		transition:fly={{ y: 80, duration: transitionDuration(250) }}
-		class="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-primary-600/90 px-4 py-3 text-sm text-white shadow-card backdrop-blur-sm"
+		class="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-primary-button/90 px-4 py-3 text-base text-white shadow-card backdrop-blur-sm"
 	>
 		<p class="flex items-center gap-2">
 			<SquarePlus class="size-5 shrink-0" aria-hidden="true" />
@@ -33,7 +33,7 @@
 			<button
 				type="button"
 				onclick={install}
-				class="rounded-control bg-white px-3 py-1.5 font-medium text-primary-600"
+				class="rounded-control bg-surface px-3 py-3 font-medium text-primary-600"
 			>
 				Installieren
 			</button>
@@ -41,7 +41,7 @@
 				type="button"
 				onclick={dismiss}
 				aria-label="Hinweis schließen"
-				class="rounded p-2.5 text-white/80 hover:text-white"
+				class="flex size-11 shrink-0 items-center justify-center rounded text-white/80 hover:text-white"
 			>
 				✕
 			</button>

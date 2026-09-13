@@ -226,7 +226,7 @@
 				type="button"
 				onclick={onClose}
 				aria-label="Vorschau schließen"
-				class="absolute top-2 right-2 z-10 flex size-10 items-center justify-center rounded-full bg-surface text-ink shadow-card"
+				class="absolute top-2 right-2 z-10 flex size-11 items-center justify-center rounded-full bg-surface text-ink shadow-card"
 			>
 				×
 			</button>
@@ -236,7 +236,7 @@
 					onclick={() => zoomByStep(1 / ZOOM_STEP)}
 					disabled={scale <= MIN_SCALE}
 					aria-label="Verkleinern"
-					class="flex size-10 items-center justify-center rounded-full bg-surface text-ink shadow-card disabled:opacity-50"
+					class="flex size-11 items-center justify-center rounded-full bg-surface text-ink shadow-card disabled:opacity-50"
 				>
 					−
 				</button>
@@ -245,7 +245,7 @@
 					onclick={() => zoomByStep(ZOOM_STEP)}
 					disabled={scale >= MAX_SCALE}
 					aria-label="Vergrößern"
-					class="flex size-10 items-center justify-center rounded-full bg-surface text-ink shadow-card disabled:opacity-50"
+					class="flex size-11 items-center justify-center rounded-full bg-surface text-ink shadow-card disabled:opacity-50"
 				>
 					+
 				</button>

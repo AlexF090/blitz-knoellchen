@@ -14,9 +14,13 @@
 	linkIcon="back"
 />
 <main
-	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 text-sm text-ink sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
+	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 text-lg text-ink sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
 >
-	<div class="flex flex-col gap-4 leading-relaxed [&_h2]:mt-2 [&_h2]:font-semibold [&_h2]:text-ink">
+	<!-- max-w-prose begrenzt die Zeilenbreite auf eine lesbare Zeichenzahl (WCAG-AAA SC 1.4.8) —
+		unabhängig von der Breite von <main>, die dem restlichen Seiten-Layout folgt. -->
+	<div
+		class="flex max-w-prose flex-col gap-4 leading-relaxed [&_h2]:mt-2 [&_h2]:font-semibold [&_h2]:text-ink"
+	>
 		<section>
 			<h2>1. Verantwortlicher</h2>
 			<p>
