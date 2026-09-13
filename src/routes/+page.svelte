@@ -26,5 +26,5 @@
 <main
 	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
 >
-	<ReportForm recipientEmail={data.recipientEmail} />
+	<ReportForm recipientEmail={data.recipientEmail} senderEmail={data.senderEmail} />
 </main>
