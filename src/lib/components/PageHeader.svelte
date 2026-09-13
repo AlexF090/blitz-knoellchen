@@ -30,9 +30,9 @@
 			</h1>
 			{#if appMode.current !== null}
 				<span
-					class="rounded-full px-2 py-0.5 text-xs font-semibold {appMode.current === 'live'
-						? 'bg-error-bg text-error-fg'
-						: 'bg-border text-ink-muted'}"
+					class="rounded-full border px-2 py-0.5 text-xs font-semibold {appMode.current === 'live'
+						? 'border-error-fg bg-error-bg text-error-fg'
+						: 'border-border text-ink-muted'}"
 				>
 					{appMode.current === 'live' ? 'Live' : 'Demo'}
 				</span>
@@ -43,7 +43,7 @@
 			href={linkHref}
 			aria-label={linkLabel}
 			title={linkLabel}
-			class="flex size-9 items-center justify-center rounded-full text-primary-600 hover:bg-primary-500/10"
+			class="flex size-11 items-center justify-center rounded-full text-primary-600 hover:bg-primary-500/10"
 		>
 			{#if linkIcon === 'history'}
 				<History class="size-5" aria-hidden="true" />

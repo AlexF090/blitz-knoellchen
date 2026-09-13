@@ -30,14 +30,14 @@
 	<ul class="flex flex-col gap-3">
 		{#each entries as entry (entry.id)}
 			<li class="rounded-card bg-surface p-3 shadow-card">
-				<p class="font-medium text-ink">{entry.incidentTypeLabels.join(', ')}</p>
-				<p class="text-sm text-ink-muted">{entry.locationAddress}</p>
+				<p class="text-lg font-medium text-ink">{entry.incidentTypeLabels.join(', ')}</p>
+				<p class="text-lg text-ink-muted">{entry.locationAddress}</p>
 				{#if entry.licensePlate}
-					<p class="text-xs text-ink-muted">
+					<p class="text-base text-ink-muted">
 						{entry.licensePlate} · {entry.make} · {entry.color}
 					</p>
 				{/if}
-				<p class="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleString('de-DE')}</p>
+				<p class="text-base text-ink-muted">{new Date(entry.timestamp).toLocaleString('de-DE')}</p>
 			</li>
 		{/each}
 	</ul>
