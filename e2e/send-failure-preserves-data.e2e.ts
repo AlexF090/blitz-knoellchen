@@ -48,7 +48,8 @@ test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 	await expect(page.locator('[id^="locationPostcode-"]')).toHaveValue('50667');
 	await expect(page.locator('[id^="locationCity-"]')).toHaveValue('Köln');
 	await expect(page.getByLabel('Parken auf dem Gehweg')).toBeChecked();
-	await expect(page.getByLabel('Kennzeichen')).toHaveValue('K-AB 1234');
+	// Kennzeichen-Normalisierung passiert bereits bei Blur (gewollt), nicht erst beim Versand.
+	await expect(page.getByLabel('Kennzeichen')).toHaveValue('K-AB1234');
 	await expect(page.getByLabel('Fahrzeugart')).toHaveValue('PKW');
 	await expect(page.getByLabel('Farbe')).toHaveValue('Rot');
 });

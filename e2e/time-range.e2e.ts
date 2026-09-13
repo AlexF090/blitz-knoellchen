@@ -67,7 +67,12 @@ test('Zeitraum von mindestens 4 Minuten sendet erfolgreich', async ({ page }) =>
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
 
-	await expect(page.getByRole('dialog')).toContainText('Anzeige erfolgreich versendet');
+	// Namentlich scopen, nicht bloß page.getByRole('dialog'): der (geschlossene, aber wegen
+	// CSS-Exit-Animation kurz noch im A11y-Baum sichtbare) AppModeDialog würde sonst ebenfalls
+	// treffen (s. layout.css, "dialog { transition: ... display 300ms allow-discrete ... }").
+	await expect(page.getByRole('dialog', { name: 'Anzeige erfolgreich versendet' })).toContainText(
+		'Anzeige erfolgreich versendet'
+	);
 });
 
 test('Zurück zu Halteverstoß leert das Bis-Feld', async ({ page }) => {
