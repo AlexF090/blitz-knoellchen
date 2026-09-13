@@ -85,7 +85,9 @@ test('Adress-Autocomplete beim Tatort: Klick befüllt Straße, Hausnr., PLZ und 
 	const locationStreetInput = page.locator('[id^="locationStreet-"]');
 	await locationStreetInput.fill('Domkloster');
 
-	const options = page.getByRole('option');
+	// Auf die Listbox scopen statt page-weit: page.getByRole('option') träfe sonst auch die
+	// <option>-Kinder des nativen "Fahrzeugart"-<select>, das durch den Foto-Upload mitgerendert wird.
+	const options = page.getByRole('listbox').getByRole('option');
 	await expect(options).toHaveCount(2);
 	await options.first().click();
 

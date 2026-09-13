@@ -42,9 +42,13 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
 
-	await expect(page.getByRole('dialog')).toContainText('Anzeige erfolgreich versendet');
+	// Namentlich scopen, nicht bloß page.getByRole('dialog'): der (geschlossene, aber wegen
+	// CSS-Exit-Animation kurz noch im A11y-Baum sichtbare) AppModeDialog würde sonst ebenfalls
+	// treffen (s. layout.css, "dialog { transition: ... display 300ms allow-discrete ... }").
+	const successDialog = page.getByRole('dialog', { name: 'Anzeige erfolgreich versendet' });
+	await expect(successDialog).toContainText('Anzeige erfolgreich versendet');
 
-	await page.getByRole('dialog').getByRole('link', { name: 'Zur Historie' }).click();
+	await successDialog.getByRole('link', { name: 'Zur Historie' }).click();
 	await expect(page.getByText('Parken auf dem Gehweg, Parken im Halteverbot')).toBeVisible();
 	await expect(page.getByText('Domkloster 4, 50667 Köln')).toBeVisible();
 	// Kennzeichen-Normalisierung: "K AB 1234" (getippt) -> "K-AB1234" (kanonisches Köln-Format).

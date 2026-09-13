@@ -54,6 +54,12 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
 
-	await expect(page.getByRole('dialog')).toContainText('Alle 2 Anzeigen erfolgreich versendet');
-	expect(sentLicensePlates.sort()).toEqual(['K-AA 111', 'K-BB 222']);
+	// Namentlich scopen, nicht bloß page.getByRole('dialog'): der (geschlossene, aber wegen
+	// CSS-Exit-Animation kurz noch im A11y-Baum sichtbare) AppModeDialog würde sonst ebenfalls
+	// treffen (s. layout.css, "dialog { transition: ... display 300ms allow-discrete ... }").
+	await expect(
+		page.getByRole('dialog', { name: 'Alle 2 Anzeigen erfolgreich versendet' })
+	).toContainText('Alle 2 Anzeigen erfolgreich versendet');
+	// Kennzeichen-Normalisierung passiert bereits bei Blur (gewollt), nicht erst beim Versand.
+	expect(sentLicensePlates.sort()).toEqual(['K-AA111', 'K-BB222']);
 });
