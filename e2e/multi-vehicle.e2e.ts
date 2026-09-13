@@ -52,6 +52,6 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
 
-	await expect(page.getByRole('status')).toHaveText('Alle 2 Anzeigen erfolgreich versendet.');
+	await expect(page.getByRole('dialog')).toContainText('Alle 2 Anzeigen erfolgreich versendet');
 	expect(sentLicensePlates.sort()).toEqual(['K-AA 111', 'K-BB 222']);
 });

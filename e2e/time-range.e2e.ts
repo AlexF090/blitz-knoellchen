@@ -66,7 +66,7 @@ test('Zeitraum von mindestens 4 Minuten sendet erfolgreich', async ({ page }) =>
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
 
-	await expect(page.getByRole('status')).toHaveText('Anzeige erfolgreich versendet.');
+	await expect(page.getByRole('dialog')).toContainText('Anzeige erfolgreich versendet');
 });
 
 test('Zurück zu Halteverstoß leert das Bis-Feld', async ({ page }) => {
