@@ -3,6 +3,10 @@ import { BREVO_API_KEY, EMAIL_FROM } from '$env/static/private';
 import { CITIES } from '$lib/config/cities';
 import { getRecipientEmail } from '$lib/config/cities.server';
 import {
+	buildEmailTemplateInput,
+	resolveVehicleIncidentTypes
+} from '$lib/email/buildEmailTemplateInput';
+import {
 	validateReportForm,
 	isFormValid,
 	normalizeLicensePlate,
@@ -67,36 +71,21 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const city = CITIES.koeln;
-	const incidentTypes = city.incidentTypes.filter((t) => vehicle.incidentTypeIds.includes(t.id));
+	const incidentTypes = resolveVehicleIncidentTypes(city, vehicle);
 	if (incidentTypes.length !== vehicle.incidentTypeIds.length) {
 		return json({ error: 'Unbekannte Verstoßart.' }, { status: 400 });
 	}
 
-	const { subject, body } = city.buildEmailBody({
-		firstName: data.firstName,
-		lastName: data.lastName,
-		addressStreet: data.addressStreet,
-		addressPostcode: data.addressPostcode,
-		addressCity: data.addressCity,
-		phone: data.phone,
-		date: vehicle.date,
-		time: vehicle.time,
-		endTime: vehicle.endTime,
-		locationStreet: vehicle.locationStreet,
-		locationHouseNumber: vehicle.locationHouseNumber,
-		locationPostcode: vehicle.locationPostcode,
-		locationCity: vehicle.locationCity,
-		incidentTypes: incidentTypes.map((t) => ({ label: t.label, description: t.description })),
-		licensePlate: vehicle.licensePlate,
-		licensePlateCountry: vehicle.licensePlateCountry,
-		vehicleType: vehicle.vehicleType,
-		make: vehicle.make,
-		color: vehicle.color,
-		notes: vehicle.notes,
-		photoCount: photos.length,
-		vehicleIndex,
-		vehicleTotal
-	});
+	const { subject, body } = city.buildEmailBody(
+		buildEmailTemplateInput({
+			profile: data,
+			vehicle,
+			incidentTypes,
+			photoCount: photos.length,
+			vehicleIndex,
+			vehicleTotal
+		})
+	);
 
 	const attachment = await Promise.all(
 		photos.map(async (photo) => ({
