@@ -6,3 +6,9 @@ export const buttonSecondary =
 
 export const buttonDestructive =
 	'rounded-control bg-error-fg px-4 py-3 text-sm font-semibold text-white';
+
+// Gleiches Gewicht wie buttonSecondary (Outline, keine Füllfarbe) — nur für Trigger-Buttons
+// destruktiver Aktionen, deren eigentliche Bestätigung weiterhin über buttonDestructive im
+// Dialog läuft. Signalisiert "Vorsicht" ohne bereits wie die finale Bestätigung auszusehen.
+export const buttonDestructiveSecondary =
+	'rounded-control border border-error-fg px-4 py-2.5 text-sm font-semibold text-error-fg';

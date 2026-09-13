@@ -11,7 +11,12 @@
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
-	import { buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
+	import {
+		buttonDestructive,
+		buttonDestructiveSecondary,
+		buttonPrimary,
+		buttonSecondary
+	} from '$lib/ui/buttonStyles';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import {
 		getMaxPoolPhotos,
@@ -28,6 +33,7 @@
 	import { tick } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 	import PhotoPool from './PhotoPool.svelte';
 	import VehicleBlock from './VehicleBlock.svelte';
 
@@ -74,6 +80,7 @@
 	let submitting = $state(false);
 	let isEditingProfile = $state(true);
 	let formReady = $state(false);
+	let resetDialog = $state<HTMLDialogElement | undefined>(undefined);
 
 	// Profil und Entwurf werden gemeinsam geladen, bevor überhaupt etwas vom Formular gerendert
 	// wird (s. formReady-Gate im Markup) — verhindert, dass "Deine Angaben" erst leer im
@@ -282,10 +289,9 @@
 		);
 	};
 
-	// Vom Header aus per 5x-Tap auf den Titel erreichbar (siehe PageHeader.svelte) — setzt das
-	// komplette Formular inkl. "Deine Angaben" zurück, lässt das gespeicherte Profil aber
-	// unangetastet (bleibt für die nächste Anzeige als Autofill erhalten).
-	export const resetAll = async () => {
+	// Setzt das komplette Formular inkl. "Deine Angaben" zurück, lässt das gespeicherte Profil
+	// aber unangetastet (bleibt für die nächste Anzeige als Autofill erhalten).
+	const resetAll = async () => {
 		form = {
 			firstName: '',
 			lastName: '',
@@ -304,6 +310,18 @@
 		photoProcessingError = null;
 		isEditingProfile = true;
 		await clearDraft();
+	};
+
+	const openResetDialog = () => resetDialog?.showModal();
+
+	const confirmReset = async () => {
+		resetDialog?.close();
+		triggerHaptic('warning');
+		await resetAll();
+	};
+
+	const handleResetBackdropClick = (event: MouseEvent) => {
+		if (event.target === resetDialog) resetDialog.close();
 	};
 
 	// Reihenfolge bestimmt, welches Feld bei mehreren gleichzeitigen Fehlern fokussiert wird —
@@ -750,12 +768,42 @@
 	{/if}
 
 	<div class="mt-4 border-t border-border pt-4">
-		<button
-			type="submit"
-			disabled={!formReady || submitting || photoProcessing}
-			class="mx-auto block w-full max-w-md lg:max-w-5xl {buttonPrimary}"
-		>
-			{submitting ? 'Wird gesendet…' : 'Absenden'}
-		</button>
+		<div class="mx-auto flex max-w-md items-center gap-6 lg:max-w-5xl">
+			<button
+				type="button"
+				onclick={openResetDialog}
+				disabled={!formReady}
+				class="flex-1 {buttonDestructiveSecondary} disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				Zurücksetzen
+			</button>
+			<button
+				type="submit"
+				disabled={!formReady || submitting || photoProcessing}
+				class="flex-1 {buttonPrimary}"
+			>
+				{submitting ? 'Wird gesendet…' : 'Absenden'}
+			</button>
+		</div>
 	</div>
 </form>
+
+<ConfirmDialog
+	bind:dialog={resetDialog}
+	onBackdropClick={handleResetBackdropClick}
+	titleId="reset-form-dialog-title"
+	title="Formular komplett zurücksetzen?"
+>
+	<p class="mt-1 text-sm text-ink-muted">
+		„Deine Angaben“, alle Fotos und Fahrzeuge/Vorgänge werden unwiderruflich gelöscht. Dein
+		gespeichertes Profil bleibt für die nächste Anzeige erhalten.
+	</p>
+	{#snippet actions()}
+		<button type="button" onclick={() => resetDialog?.close()} class="flex-1 {buttonSecondary}">
+			Abbrechen
+		</button>
+		<button type="button" onclick={confirmReset} class="flex-1 {buttonDestructive}">
+			Zurücksetzen
+		</button>
+	{/snippet}
+</ConfirmDialog>
