@@ -12,7 +12,10 @@
 
 	/* Neutrals — wärmeres Grau statt Tailwind-Gray */
 	--color-ink: oklch(25.77% 0.0094 173.48);
-	--color-ink-muted: oklch(49.62% 0.0155 159.5);
+	/* L von 49.62% auf 44% gesenkt — bei 49.62% lag der Kontrast von ink-muted (Sekundärtext,
+	   z.B. Feld-Labels/dt) gegen Surface/Surface-sunken bei nur 6.05:1/5.63:1, WCAG-AAA (SC 1.4.6)
+	   verlangt 7:1 für Normaltext. */
+	--color-ink-muted: oklch(44% 0.0155 159.5);
 	--color-surface: oklch(100% 0 0);
 	--color-surface-sunken: oklch(97.48% 0.0028 128.49);
 	/* L auf 63% angehoben (statt 91,42%) — bei 91,42% lag der Kontrast von Eingabefeld-Rahmen
@@ -21,11 +24,24 @@
 
 	/* Status — gedeckter statt Tailwind-Default */
 	--color-success-bg: oklch(95.49% 0.0153 145.45);
-	--color-success-fg: oklch(42.89% 0.0856 147.46);
+	/* L von 42.89% auf 41% gesenkt — 42.89% ergab nur 6.90:1 gegen --color-success-bg, unter dem
+	   AAA-Zielwert 7:1 (SC 1.4.6). */
+	--color-success-fg: oklch(41% 0.0856 147.46);
 	--color-error-bg: oklch(95.47% 0.0164 22.08);
 	--color-error-fg: oklch(43.78% 0.126 28.85);
 	--color-warning-bg: oklch(96.61% 0.0188 83.06);
-	--color-warning-fg: oklch(50.95% 0.0963 67.57);
+	/* L von 50.95% auf 43% gesenkt — 50.95% ergab nur 5.34:1/5.89:1 gegen
+	   --color-warning-bg/--color-surface, unter dem AAA-Zielwert 7:1 (SC 1.4.6). */
+	--color-warning-fg: oklch(43% 0.0963 67.57);
+
+	/* Eigene Button-Hintergrund-Töne statt Wiederverwendung von --color-primary-600/--color-error-fg
+	   für Button-Backgrounds mit weißem Text — im Light Mode identisch zu den bisherigen Farben
+	   (dort bereits AAA-konform), im Dark Mode aber bewusst abweichend (s. Dark-Mode-Block unten):
+	   --color-primary-600 wurde im Dark Mode für Text-auf-Surface-Nutzung aufgehellt und ist als
+	   weißer Button-Hintergrund dadurch zu hell (nur 2.79:1 statt AA-Minimum 4.5:1). */
+	--color-primary-button: var(--color-primary-600);
+	--color-primary-button-hover: var(--color-primary-700);
+	--color-destructive-button: var(--color-error-fg);
 
 	/* Fahrzeug-Akzentfarben — zur visuellen Unterscheidung mehrerer Karten */
 	--color-vehicle-1: oklch(47.22% 0.0874 247.81);
@@ -44,13 +60,17 @@
 	--shadow-overlay: 0 8px 24px oklch(0% 0 0 / 0.12), 0 2px 8px oklch(0% 0 0 / 0.08);
 
 	--font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+	/* Zeilenabstand von text-xs/text-sm auf ≥1.5× angehoben (Tailwind-Default lag bei 1.33/1.43) —
+	   WCAG-AAA SC 1.4.8 verlangt für Blocktext mindestens das 1,5-fache der Schriftgröße. */
+	--text-xs--line-height: 1.5;
+	--text-sm--line-height: 1.55;
 }
 
 /* Dark Mode — dieselben Variablennamen wie oben, systemgesteuert. Da alle Komponenten
    ausschließlich die semantischen Tokens nutzen (nie rohe Farben), reicht diese
    Neudefinition, ohne dass eine Komponente angefasst werden muss. Kontrastwerte sind
-   gegen denselben WCAG-Maßstab wie --color-border oben geprüft (3:1 UI-Komponenten,
-   4.5:1 Fließtext). */
+   gegen WCAG AAA geprüft (SC 1.4.11: 3:1 UI-Komponenten, SC 1.4.6: 7:1 Normaltext). */
 @media (prefers-color-scheme: dark) {
 	:root {
 		--color-primary-50: oklch(24% 0.02 186.89);
@@ -66,14 +86,30 @@
 		/* "elevated", nicht reines Schwarz — iOS-typische Materials-Optik */
 		--color-surface: oklch(20% 0.004 173.48);
 		--color-surface-sunken: oklch(14% 0.004 128.49);
-		--color-border: oklch(38% 0.006 160.06);
+		/* L von 38% auf 52% angehoben — bei 38% lag der Kontrast gegen --color-surface bei nur
+		   1.81:1, verfehlte damit sogar die für Light Mode geltende 3:1-Anforderung (SC 1.4.11). */
+		--color-border: oklch(52% 0.006 160.06);
 
 		--color-success-bg: oklch(24% 0.03 145.45);
 		--color-success-fg: oklch(75% 0.09 147.46);
 		--color-error-bg: oklch(26% 0.035 22.08);
-		--color-error-fg: oklch(75% 0.12 28.85);
+		/* L von 75% auf 77% angehoben — vergrößert den Kontrast gegen --color-error-bg zusätzlich
+		   über die AAA-Schwelle 7:1 (vorher 6.74:1). */
+		--color-error-fg: oklch(77% 0.12 28.85);
 		--color-warning-bg: oklch(26% 0.03 83.06);
 		--color-warning-fg: oklch(78% 0.09 67.57);
+
+		/* primary-600 wird auch als Linktext auf --color-surface verwendet (z.B.
+		   AddressAutocomplete-Hover, aktive Radio-Toggle-Beschriftung) — bei 68% lag der Kontrast
+		   dagegen bei nur 6.47:1, unter der AAA-Schwelle 7:1. */
+		--color-primary-600: oklch(72% 0.065 185.34);
+
+		/* Eigene, dunklere Button-Hintergrundtöne für Dark Mode (s. Light-Mode-Kommentar zu
+		   --color-primary-button oben): weißer Text auf den hellen Light-Mode-Farbtönen
+		   (primary-600/error-fg) würde im Dark Mode AA (4.5:1) klar verfehlen. */
+		--color-primary-button: oklch(45% 0.0572 185.34);
+		--color-primary-button-hover: oklch(38% 0.0572 185.34);
+		--color-destructive-button: oklch(32% 0.12 28.85);
 
 		--color-vehicle-1: oklch(70% 0.09 247.81);
 		--color-vehicle-2: oklch(70% 0.11 301.77);
