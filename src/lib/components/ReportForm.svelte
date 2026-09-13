@@ -240,6 +240,7 @@
 		const exif = await parseExif(file);
 
 		photoProcessing = true;
+		let entry: PhotoEntry;
 		try {
 			let rawBlob: Blob = file;
 			if (isHeicFile(file)) {
@@ -255,7 +256,7 @@
 			const compressed = await compressImage(rawBlob, { maxDimension: 1600, quality: 0.8 });
 			const withExif = await embedExifMetadata(compressed, exif);
 
-			const entry: PhotoEntry = {
+			entry = {
 				id: crypto.randomUUID(),
 				blob: withExif,
 				fileName: file.name,
@@ -265,25 +266,28 @@
 			};
 			form.photos = [...form.photos, entry];
 			errors = { ...errors, photos: undefined };
-
-			// Erstes Foto: legt die erste Fahrzeug-Karte an, die bis dahin nicht existiert.
-			if (form.vehicles.length === 0) {
-				const vehicle = makeEmptyVehicle();
-				vehicle.photoIds = [entry.id];
-				form.vehicles = [vehicle];
-				// Nach der Zuweisung ist form.vehicles[0] die reaktive Proxy-Version — die lokale
-				// `vehicle`-Referenz bleibt roh, Mutationen darauf würden vom UI nicht bemerkt.
-				await applyPhotoExifToVehicle(form.vehicles[0], entry.id);
-			} else if (
-				// Bei genau einem Fahrzeug ist die Zuordnung eindeutig — direkt automatisch übernehmen.
-				form.vehicles.length === 1 &&
-				form.vehicles[0].photoIds.length < MAX_PHOTOS_PER_VEHICLE
-			) {
-				form.vehicles[0].photoIds = [...form.vehicles[0].photoIds, entry.id];
-				await applyPhotoExifToVehicle(form.vehicles[0], entry.id);
-			}
 		} finally {
+			// Das Bild selbst ist ab hier fertig prozessiert und im Grid sichtbar — die
+			// nachfolgende Adressauflösung (Netzwerk-Geocoding) darf das Add-Label nicht länger
+			// blockieren, sonst "hängt" der Spinner sichtbar an dessen Stelle weiter.
 			photoProcessing = false;
+		}
+
+		// Erstes Foto: legt die erste Fahrzeug-Karte an, die bis dahin nicht existiert.
+		if (form.vehicles.length === 0) {
+			const vehicle = makeEmptyVehicle();
+			vehicle.photoIds = [entry.id];
+			form.vehicles = [vehicle];
+			// Nach der Zuweisung ist form.vehicles[0] die reaktive Proxy-Version — die lokale
+			// `vehicle`-Referenz bleibt roh, Mutationen darauf würden vom UI nicht bemerkt.
+			await applyPhotoExifToVehicle(form.vehicles[0], entry.id);
+		} else if (
+			// Bei genau einem Fahrzeug ist die Zuordnung eindeutig — direkt automatisch übernehmen.
+			form.vehicles.length === 1 &&
+			form.vehicles[0].photoIds.length < MAX_PHOTOS_PER_VEHICLE
+		) {
+			form.vehicles[0].photoIds = [...form.vehicles[0].photoIds, entry.id];
+			await applyPhotoExifToVehicle(form.vehicles[0], entry.id);
 		}
 	};
 
