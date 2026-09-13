@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { appMode } from '$lib/appMode.svelte';
 	import { CITIES } from '$lib/config/cities';
 	import { parseExif } from '$lib/exif/parseExif';
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
@@ -39,11 +40,16 @@
 	import VehicleBlock from './VehicleBlock.svelte';
 
 	interface Props {
-		recipientEmail: string;
+		demoRecipientEmail: string;
+		liveRecipientEmail: string;
 		senderEmail: string;
 	}
 
-	let { recipientEmail, senderEmail }: Props = $props();
+	let { demoRecipientEmail, liveRecipientEmail, senderEmail }: Props = $props();
+
+	const recipientEmail = $derived(
+		appMode.current === 'live' ? liveRecipientEmail : demoRecipientEmail
+	);
 
 	const city = CITIES.koeln;
 	const profileStore = createProfileStore();
@@ -456,6 +462,7 @@
 				body.set('color', vehicle.color);
 				for (const id of vehicle.incidentTypeIds) body.append('incidentTypeIds', id);
 				body.set('notes', vehicle.notes ?? '');
+				body.set('mode', appMode.current ?? 'demo');
 				vehiclePhotos.forEach((photo, pIdx) =>
 					body.append('photos', photo.blob, `beweisfoto-${pIdx + 1}.jpg`)
 				);
