@@ -40,9 +40,10 @@
 
 	interface Props {
 		recipientEmail: string;
+		senderEmail: string;
 	}
 
-	let { recipientEmail }: Props = $props();
+	let { recipientEmail, senderEmail }: Props = $props();
 
 	const city = CITIES.koeln;
 	const profileStore = createProfileStore();
@@ -847,10 +848,13 @@
 	title={successCount > 1
 		? `Alle ${successCount} Anzeigen erfolgreich versendet`
 		: 'Anzeige erfolgreich versendet'}
+	desktopMaxWidthClass="sm:max-w-lg"
 >
 	<p class="mt-1 text-sm text-ink-muted">
-		Du erhältst eine Kopie per E-Mail — prüfe bei Bedarf auch deinen Spam-Ordner, falls sie nicht im
-		Posteingang ankommt. Die Anzeige liegt außerdem in deiner Historie.
+		Du erhältst eine Kopie per E-Mail von <strong class="font-semibold text-ink"
+			>{senderEmail}</strong
+		>. Falls sie nicht im Posteingang ankommt, prüfe bei Bedarf auch deinen Spam-Ordner. Die Anzeige
+		liegt außerdem in deiner Historie.
 	</p>
 	{#snippet actions()}
 		<button type="button" onclick={closeSuccessDialog} class="flex-1 {buttonSecondary}">
