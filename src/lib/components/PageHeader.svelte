@@ -20,7 +20,7 @@
 	<div
 		class="mx-auto flex max-w-md items-center justify-between px-4 py-3 sm:px-6 md:max-w-3xl lg:max-w-5xl"
 	>
-		<div class="flex items-center gap-2">
+		<div class="flex items-center gap-3">
 			<h1 class="text-xl font-semibold tracking-tight text-ink md:text-2xl">
 				{#if logo}
 					<LogoLockup />
@@ -29,13 +29,17 @@
 				{/if}
 			</h1>
 			{#if appMode.current !== null}
-				<span
-					class="rounded-full border px-2 py-0.5 text-xs font-semibold {appMode.current === 'live'
+				<button
+					type="button"
+					onclick={() => appMode.requestChange()}
+					aria-label="Modus wechseln (aktuell {appMode.current === 'live' ? 'Live' : 'Demo'})"
+					class="rounded-full border px-3 py-1 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 {appMode.current ===
+					'live'
 						? 'border-error-fg bg-error-bg text-error-fg'
 						: 'border-border text-ink-muted'}"
 				>
 					{appMode.current === 'live' ? 'Live' : 'Demo'}
-				</span>
+				</button>
 			{/if}
 		</div>
 		<!-- eslint-disable svelte/no-navigation-without-resolve -- linkHref wird vom Aufrufer bereits per resolve() übergeben -->

@@ -5,11 +5,23 @@
 
 	let dialog = $state<HTMLDialogElement | undefined>(undefined);
 
-	// Erzwingt eine aktive Entscheidung bei jedem Reload — kein Persistieren der Wahl (Absicht,
-	// nicht Bug), daher kein Schließen ohne Klick auf einen der beiden Buttons. `browser` ist hier
-	// nicht nötig: der Effekt läuft ohnehin nur clientseitig nach dem Mount.
+	// Kein `$state`, nur ein Einmal-Schalter innerhalb des Effekts: verhindert, dass ein späteres
+	// appMode.requestChange() (Klick auf das Modus-Badge im Header) den zuletzt gewählten Wert
+	// sofort wieder aus sessionStorage nachlädt, statt den Dialog tatsächlich erneut zu öffnen.
+	let restoredFromStorage = false;
+
+	// Die Wahl gilt pro sessionStorage-Session (überlebt Reload, verschwindet mit dem Tab) statt
+	// bei jedem Reload neu erzwungen zu werden — kein Schließen ohne Klick auf einen der beiden
+	// Buttons. `browser` ist hier nicht nötig: der Effekt läuft ohnehin nur clientseitig nach dem
+	// Mount.
 	$effect(() => {
-		if (appMode.current === null) dialog?.showModal();
+		if (appMode.current === null) {
+			if (!restoredFromStorage) {
+				restoredFromStorage = true;
+				appMode.restore();
+			}
+			if (appMode.current === null) dialog?.showModal();
+		}
 	});
 
 	const choose = (value: 'demo' | 'live') => {
