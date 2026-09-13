@@ -624,10 +624,10 @@
 			</fieldset>
 
 			<fieldset class="mt-3 rounded-control border border-border p-3">
-				<legend class="px-1 text-lg font-medium text-ink">Verstöße</legend>
-				<p class="text-base text-ink-muted">
-					Art des Verstoßes (Mehrfachauswahl möglich) <span class="text-error-fg">*</span>
-				</p>
+				<legend class="px-1 text-lg font-medium text-ink">
+					Verstöße <span class="text-error-fg">*</span>
+				</legend>
+				<p class="text-base text-ink-muted">Art des Verstoßes (Mehrfachauswahl möglich)</p>
 				<div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
 					{#each incidentTypes as type (type.id)}
 						{@const Icon = INCIDENT_TYPE_ICONS[type.id]}
