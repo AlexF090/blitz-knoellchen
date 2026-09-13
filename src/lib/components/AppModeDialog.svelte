@@ -24,8 +24,9 @@
 	onBackdropClick={() => {}}
 	titleId="app-mode-dialog-title"
 	title="Demo- oder Live-Modus?"
+	desktopMaxWidthClass="sm:max-w-lg"
 >
-	<p class="mt-1 text-sm text-ink-muted">
+	<p class="mt-1 text-lg text-ink-muted">
 		Blitz-Knöllchen befindet sich noch in der Entwicklung und ist nicht vollständig getestet. Im
 		<strong class="text-ink">Demo-Modus</strong> geht jede Anzeige nur an eine interne Test-Adresse.
 		Im <strong class="text-ink">Live-Modus</strong> wird die Anzeige tatsächlich an die Bußgeldstelle

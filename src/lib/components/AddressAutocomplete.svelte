@@ -94,7 +94,7 @@
 <svelte:window onclick={onDocumentClick} />
 
 <div class="relative min-w-0" bind:this={containerElement}>
-	<label for={id} class="block text-sm font-medium text-ink"
+	<label for={id} class="block text-lg font-medium text-ink"
 		>{label}
 		{#if required}<span class="text-error-fg">*</span>{/if}</label
 	>
@@ -115,9 +115,9 @@
 		oninput={scheduleSearch}
 		onkeydown={onKeydown}
 		onblur={handleBlur}
-		class="mt-1 w-full rounded-control border border-border p-2"
+		class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 	/>
-	{#if error}<p id="{id}-error" role="alert" class="text-sm text-error-fg">{error}</p>{/if}
+	{#if error}<p id="{id}-error" role="alert" class="mt-1 text-lg text-error-fg">{error}</p>{/if}
 
 	{#if open}
 		<ul
@@ -131,7 +131,7 @@
 					id={optionId(index)}
 					role="option"
 					aria-selected={index === activeIndex}
-					class={`cursor-pointer p-2 text-sm ${index === activeIndex ? 'bg-primary-50 text-primary-600' : 'text-ink'}`}
+					class={`flex min-h-11 cursor-pointer items-center p-2 text-lg ${index === activeIndex ? 'bg-primary-50 text-primary-600' : 'text-ink'}`}
 					onmousedown={(event) => {
 						event.preventDefault();
 						selectSuggestion(suggestion);

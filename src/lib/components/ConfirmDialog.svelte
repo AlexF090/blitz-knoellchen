@@ -44,7 +44,7 @@
 		backdrop-blur-2xl backdrop:bg-ink/40 backdrop:backdrop-blur-sm sm:inset-0 sm:m-auto
 		sm:max-h-[85vh] sm:w-[90vw] {desktopMaxWidthClass} sm:rounded-card sm:border sm:p-6"
 >
-	<h3 id={titleId} class="text-sm font-semibold text-ink">{title}</h3>
+	<h3 id={titleId} class="text-lg font-semibold text-ink md:text-xl">{title}</h3>
 	{@render children()}
 	<div class="mt-4 flex gap-2">{@render actions()}</div>
 </dialog>
