@@ -30,6 +30,7 @@
 		type VehicleEntry,
 		type VehicleErrors
 	} from '$lib/validation/formSchema';
+	import { resolve } from '$app/paths';
 	import { tick } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
@@ -87,6 +88,8 @@
 	let isEditingProfile = $state(true);
 	let formReady = $state(false);
 	let resetDialog = $state<HTMLDialogElement | undefined>(undefined);
+	let successDialog = $state<HTMLDialogElement | undefined>(undefined);
+	let successCount = $state(0);
 
 	// Profil und Entwurf werden gemeinsam geladen, bevor überhaupt etwas vom Formular gerendert
 	// wird (s. formReady-Gate im Markup) — verhindert, dass "Deine Angaben" erst leer im
@@ -339,6 +342,12 @@
 		if (event.target === resetDialog) resetDialog.close();
 	};
 
+	const closeSuccessDialog = () => successDialog?.close();
+
+	const handleSuccessBackdropClick = (event: MouseEvent) => {
+		if (event.target === successDialog) successDialog.close();
+	};
+
 	// Reihenfolge bestimmt, welches Feld bei mehreren gleichzeitigen Fehlern fokussiert wird —
 	// folgt der visuellen Reihenfolge des Formulars von oben nach unten.
 	const PROFILE_FIELD_ORDER: (keyof typeof errors)[] = [
@@ -496,6 +505,10 @@
 			}
 
 			triggerHaptic('success');
+			if (failedCount === 0) {
+				successCount = results.length;
+				successDialog?.showModal();
+			}
 			const succeededIds = new Set(results.filter((r) => r.ok).map((r) => r.vehicle.id));
 			form.vehicles = form.vehicles.filter((vehicle) => !succeededIds.has(vehicle.id));
 
@@ -524,33 +537,19 @@
 		>
 			{sendError}
 		</p>
-	{:else if sendResults.length > 0}
-		{#if sendResults.every((r) => r.ok)}
-			<p
-				role="status"
-				transition:fly={{ y: -8, duration: transitionDuration(200) }}
-				class="rounded-card bg-success-bg p-3 text-success-fg"
-			>
-				{sendResults.length > 1
-					? `Alle ${sendResults.length} Anzeigen erfolgreich versendet.`
-					: 'Anzeige erfolgreich versendet.'}
-				Du erhältst eine Kopie per E-Mail — prüfe bei Bedarf auch deinen Spam-Ordner, falls sie nicht
-				im Posteingang ankommt.
-			</p>
-		{:else}
-			<p
-				role="alert"
-				transition:fly={{ y: -8, duration: transitionDuration(200) }}
-				class="rounded-card bg-warning-bg p-3 text-warning-fg"
-			>
-				{sendResults.filter((r) => r.ok).length} von {sendResults.length} Anzeigen erfolgreich versendet.
-				Fehlgeschlagen: {sendResults
-					.filter((r) => !r.ok)
-					.map((r) => r.licensePlate)
-					.join(', ')}. Bitte erneut auf „Absenden" klicken, um es für die verbleibenden Fahrzeuge
-				erneut zu versuchen.
-			</p>
-		{/if}
+	{:else if sendResults.length > 0 && !sendResults.every((r) => r.ok)}
+		<p
+			role="alert"
+			transition:fly={{ y: -8, duration: transitionDuration(200) }}
+			class="rounded-card bg-warning-bg p-3 text-warning-fg"
+		>
+			{sendResults.filter((r) => r.ok).length} von {sendResults.length} Anzeigen erfolgreich versendet.
+			Fehlgeschlagen: {sendResults
+				.filter((r) => !r.ok)
+				.map((r) => r.licensePlate)
+				.join(', ')}. Bitte erneut auf „Absenden" klicken, um es für die verbleibenden Fahrzeuge
+			erneut zu versuchen.
+		</p>
 	{/if}
 
 	{#if !formReady}
@@ -838,5 +837,25 @@
 		<button type="button" onclick={confirmReset} class="flex-1 {buttonDestructive}">
 			Zurücksetzen
 		</button>
+	{/snippet}
+</ConfirmDialog>
+
+<ConfirmDialog
+	bind:dialog={successDialog}
+	onBackdropClick={handleSuccessBackdropClick}
+	titleId="success-dialog-title"
+	title={successCount > 1
+		? `Alle ${successCount} Anzeigen erfolgreich versendet`
+		: 'Anzeige erfolgreich versendet'}
+>
+	<p class="mt-1 text-sm text-ink-muted">
+		Du erhältst eine Kopie per E-Mail — prüfe bei Bedarf auch deinen Spam-Ordner, falls sie nicht im
+		Posteingang ankommt. Die Anzeige liegt außerdem in deiner Historie.
+	</p>
+	{#snippet actions()}
+		<button type="button" onclick={closeSuccessDialog} class="flex-1 {buttonSecondary}">
+			Schließen
+		</button>
+		<a href={resolve('/historie')} class="flex-1 text-center {buttonPrimary}">Zur Historie</a>
 	{/snippet}
 </ConfirmDialog>
