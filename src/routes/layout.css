@@ -170,6 +170,18 @@ dialog {
 		overlay 300ms allow-discrete;
 }
 
+/* ConfirmDialog.svelte setzt `flex` als Tailwind-Utility direkt auf das <dialog>-Element
+   (nicht auf `[open]` beschränkt) — ohne diese Regel gewinnt die Utility-Klasse gegen den
+   UA-Stylesheet-Default (`dialog:not([open]) { display: none }` ist User-Agent-Origin, verliert
+   immer gegen Author-CSS, unabhängig von Spezifität), wodurch `display` nach dem Schließen nie
+   auf `none` zurückfällt und der optisch unsichtbare Dialog dauerhaft Klicks an seiner
+   Bildschirmposition abfängt. `dialog:not([open])` ist spezifischer als `.flex` und schlägt sie
+   deshalb, ohne `!important`.
+*/
+dialog:not([open]) {
+	display: none;
+}
+
 dialog[open] {
 	opacity: 1;
 	translate: 0 0;
@@ -205,6 +217,13 @@ dialog[open] {
 dialog::backdrop {
 	opacity: 0;
 	transition: opacity 300ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	dialog,
+	dialog::backdrop {
+		transition-duration: 0.001ms;
+	}
 }
 
 dialog[open]::backdrop {
