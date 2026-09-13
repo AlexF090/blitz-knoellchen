@@ -54,8 +54,8 @@
 	class:border-2={error}
 	class:border-error-fg={error}
 >
-	<h2 class="text-sm font-medium text-ink">Beweisfotos *</h2>
-	<p class="text-sm text-ink-muted">
+	<h2 class="text-lg font-semibold text-ink md:text-xl">Beweisfotos *</h2>
+	<p class="text-lg text-ink-muted">
 		Mindestens ein Foto ist erforderlich. Pro Fahrzeug können maximal {maxPhotosPerVehicle} Fotos ausgewählt
 		werden.
 	</p>
@@ -93,7 +93,7 @@
 				{#if usageCounts[photo.id] > 1}
 					<span
 						aria-label="Verwendet bei {usageCounts[photo.id]} Fahrzeugen"
-						class="absolute top-1 left-1 rounded-full bg-primary-600 px-1.5 py-0.5 text-xs text-white"
+						class="absolute top-1 left-1 rounded-full bg-primary-button px-1.5 py-0.5 text-xs text-white"
 					>
 						<span aria-hidden="true">{usageCounts[photo.id]}×</span>
 					</span>
@@ -102,7 +102,7 @@
 					type="button"
 					onclick={() => onRemove(photo.id)}
 					aria-label="Foto {photo.fileName} entfernen"
-					class="absolute -top-1 -right-1 flex size-9 items-center justify-center rounded-full bg-surface text-ink shadow-card"
+					class="absolute -top-1 -right-1 flex size-11 items-center justify-center rounded-full bg-surface text-ink shadow-card"
 				>
 					×
 				</button>
@@ -135,7 +135,7 @@
 		{#if photos.length < maxPhotos && !processing}
 			<label
 				for="photo-pool-input"
-				class="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-control border-2 border-dashed border-border text-xs text-ink-muted"
+				class="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-control border-2 border-dashed border-border text-base text-ink-muted"
 			>
 				<span class="text-xl">+</span>
 				Foto
@@ -153,9 +153,11 @@
 		class="sr-only"
 	/>
 
-	{#if batchError}<p role="alert" class="mt-2 text-sm text-error-fg">{batchError}</p>{/if}
-	{#if processingError}<p role="alert" class="mt-2 text-sm text-error-fg">{processingError}</p>{/if}
-	{#if error}<p role="alert" class="mt-2 text-sm text-error-fg">{error}</p>{/if}
+	{#if batchError}<p role="alert" class="mt-2 text-lg text-error-fg">{batchError}</p>{/if}
+	{#if processingError}<p role="alert" class="mt-2 text-lg text-error-fg">
+			{processingError}
+		</p>{/if}
+	{#if error}<p role="alert" class="mt-2 text-lg text-error-fg">{error}</p>{/if}
 </div>
 
 <PhotoLightbox photo={lightboxPhoto} onClose={() => (lightboxPhoto = null)} />

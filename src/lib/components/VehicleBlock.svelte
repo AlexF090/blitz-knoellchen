@@ -199,17 +199,17 @@
 >
 	<div class="flex items-center justify-between gap-2">
 		<div>
-			<h3 class="text-sm font-semibold text-ink">
+			<h3 class="text-lg font-semibold text-ink md:text-xl">
 				{total > 1 ? `Vorfall ${index + 1}` : 'Vorfall'}
 			</h3>
-			<p class="text-xs text-ink-muted">Betrifft ein Fahrzeug</p>
+			<p class="text-base text-ink-muted">Betrifft ein Fahrzeug</p>
 		</div>
 		<button
 			type="button"
 			onclick={openResetDialog}
 			aria-label={total > 1 ? 'Vorfall entfernen' : 'Vorfall zurücksetzen'}
 			title={total > 1 ? 'Entfernen' : 'Zurücksetzen'}
-			class="flex size-10 items-center justify-center rounded-full text-error-fg hover:bg-error-fg/10"
+			class="flex size-11 items-center justify-center rounded-full text-error-fg hover:bg-error-fg/10"
 		>
 			{#if total > 1}
 				<Trash2 class="size-5" aria-hidden="true" />
@@ -222,10 +222,10 @@
 	{#if !open}
 		<dl
 			transition:fade={{ duration: transitionDuration(150) }}
-			class="mt-3 flex flex-col gap-3 text-sm"
+			class="mt-3 flex flex-col gap-3 text-lg"
 		>
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Fotos</dt>
+				<dt class="text-base font-medium text-ink-muted">Fotos</dt>
 				{#if vehicle.photoIds.length > 0}
 					<dd class="mt-1 flex flex-wrap gap-2">
 						{#each vehicle.photoIds as photoId, photoIndex (photoId)}
@@ -244,21 +244,21 @@
 				{/if}
 			</div>
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Kennzeichen</dt>
+				<dt class="text-base font-medium text-ink-muted">Kennzeichen</dt>
 				<dd class="text-ink">{vehicle.licensePlate || '—'}</dd>
 			</div>
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Fahrzeug</dt>
+				<dt class="text-base font-medium text-ink-muted">Fahrzeug</dt>
 				<dd class="text-ink">
 					{vehicle.vehicleType || '—'} · {vehicle.make} · {vehicle.color || '—'}
 				</dd>
 			</div>
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Tatort</dt>
+				<dt class="text-base font-medium text-ink-muted">Tatort</dt>
 				<dd class="text-ink">{summaryAddress() || '—'}</dd>
 			</div>
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Datum / Uhrzeit</dt>
+				<dt class="text-base font-medium text-ink-muted">Datum / Uhrzeit</dt>
 				<dd class="text-ink">
 					{vehicle.date && vehicle.time
 						? `${formatDateDMY(vehicle.date)}, ${formatTimeRange(vehicle)} Uhr`
@@ -266,18 +266,18 @@
 				</dd>
 			</div>
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Art des Verstoßes</dt>
+				<dt class="text-base font-medium text-ink-muted">Art des Verstoßes</dt>
 				<dd class="text-ink">{summaryIncidentTypes() || '—'}</dd>
 			</div>
 			{#if vehicle.notes}
 				<div>
-					<dt class="text-xs font-medium text-ink-muted">Weitere Angaben</dt>
+					<dt class="text-base font-medium text-ink-muted">Weitere Angaben</dt>
 					<dd class="text-ink">{vehicle.notes}</dd>
 				</div>
 			{/if}
 		</dl>
 		{#if errors}
-			<p role="alert" class="mt-2 text-sm text-error-fg">Angaben unvollständig</p>
+			<p role="alert" class="mt-1 text-lg text-error-fg">Angaben unvollständig</p>
 		{/if}
 	{/if}
 
@@ -285,14 +285,14 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div onkeydown={onVehicleFieldKeydown}>
 			<div class="mt-3">
-				<p class="text-sm font-medium text-ink">
+				<p class="text-lg font-medium text-ink">
 					Fotos mit diesem Fahrzeug
 					<span class="whitespace-nowrap">
 						(max. {maxPhotos}) <span class="text-error-fg">*</span>
 					</span>
 				</p>
 				{#if pool.length === 0}
-					<p class="mt-1 text-sm text-ink-muted">Zuerst oben ein Foto hinzufügen.</p>
+					<p class="mt-1 text-lg text-ink-muted">Zuerst oben ein Foto hinzufügen.</p>
 				{:else}
 					<div class="mt-1 grid grid-cols-4 gap-2 sm:grid-cols-6 sm:gap-3">
 						{#each pool as photo (photo.id)}
@@ -321,20 +321,20 @@
 						{/each}
 					</div>
 				{/if}
-				{#if errors?.photoIds}<p role="alert" class="mt-1 text-sm text-error-fg">
+				{#if errors?.photoIds}<p role="alert" class="mt-1 text-lg text-error-fg">
 						{errors.photoIds}
 					</p>{/if}
 			</div>
 
 			<fieldset class="mt-3 rounded-control border border-border p-3">
-				<legend class="px-1 text-sm font-medium text-ink">Tatort</legend>
+				<legend class="px-1 text-lg font-medium text-ink">Tatort</legend>
 
 				<fieldset class="mt-2">
-					<legend class="text-sm font-medium text-ink">Art der Zeitangabe</legend>
+					<legend class="text-lg font-medium text-ink">Art der Zeitangabe</legend>
 					<div class="mt-1 inline-flex w-full rounded-control bg-surface-sunken p-1">
 						<label
 							class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
-							py-1.5 text-center text-sm font-medium text-ink-muted transition-colors
+							py-3 text-center text-lg font-medium text-ink-muted transition-colors
 							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
 						>
 							<input
@@ -349,7 +349,7 @@
 						</label>
 						<label
 							class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
-							py-1.5 text-center text-sm font-medium text-ink-muted transition-colors
+							py-3 text-center text-lg font-medium text-ink-muted transition-colors
 							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
 						>
 							<input
@@ -364,7 +364,7 @@
 						</label>
 					</div>
 					{#if vehicle.timeMode === 'parkverstoss'}
-						<p class="mt-1 text-xs text-ink-muted">
+						<p class="mt-1 text-base text-ink-muted">
 							Für die Ahndung eines Parkverstoßes muss das Fahrzeug mindestens 4 Minuten durchgängig
 							geparkt gewesen sein.
 						</p>
@@ -375,7 +375,7 @@
 					class={`mt-2 grid grid-cols-1 gap-3 ${vehicle.timeMode === 'parkverstoss' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
 				>
 					<div class="min-w-0">
-						<label for="date-{vehicle.id}" class="block text-sm font-medium text-ink"
+						<label for="date-{vehicle.id}" class="block text-lg font-medium text-ink"
 							>Datum <span class="text-error-fg">*</span></label
 						>
 						<input
@@ -385,18 +385,18 @@
 							required
 							aria-required="true"
 							{...ariaFieldProps(`date-${vehicle.id}`, errors?.date)}
-							class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
+							class="mt-1 w-full min-w-0 rounded-control border border-border p-2 text-lg"
 						/>
 						{#if errors?.date}<p
 								id="date-{vehicle.id}-error"
 								role="alert"
-								class="text-sm text-error-fg"
+								class="mt-1 text-lg text-error-fg"
 							>
 								{errors.date}
 							</p>{/if}
 					</div>
 					<div class="min-w-0">
-						<label for="time-{vehicle.id}" class="block text-sm font-medium text-ink"
+						<label for="time-{vehicle.id}" class="block text-lg font-medium text-ink"
 							>{vehicle.timeMode === 'parkverstoss' ? 'Von' : 'Uhrzeit'}
 							<span class="text-error-fg">*</span></label
 						>
@@ -407,19 +407,19 @@
 							required
 							aria-required="true"
 							{...ariaFieldProps(`time-${vehicle.id}`, errors?.time)}
-							class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
+							class="mt-1 w-full min-w-0 rounded-control border border-border p-2 text-lg"
 						/>
 						{#if errors?.time}<p
 								id="time-{vehicle.id}-error"
 								role="alert"
-								class="text-sm text-error-fg"
+								class="mt-1 text-lg text-error-fg"
 							>
 								{errors.time}
 							</p>{/if}
 					</div>
 					{#if vehicle.timeMode === 'parkverstoss'}
 						<div class="min-w-0">
-							<label for="endTime-{vehicle.id}" class="block text-sm font-medium text-ink"
+							<label for="endTime-{vehicle.id}" class="block text-lg font-medium text-ink"
 								>Bis <span class="text-error-fg">*</span></label
 							>
 							<input
@@ -429,12 +429,12 @@
 								required
 								aria-required="true"
 								{...ariaFieldProps(`endTime-${vehicle.id}`, errors?.endTime)}
-								class="mt-1 w-full min-w-0 rounded-control border border-border p-2"
+								class="mt-1 w-full min-w-0 rounded-control border border-border p-2 text-lg"
 							/>
 							{#if errors?.endTime}<p
 									id="endTime-{vehicle.id}-error"
 									role="alert"
-									class="text-sm text-error-fg"
+									class="mt-1 text-lg text-error-fg"
 								>
 									{errors.endTime}
 								</p>{/if}
@@ -451,22 +451,22 @@
 						onSelect={(suggestion) => applyAddressSuggestion(vehicle, suggestion, true)}
 					/>
 					<div class="min-w-0">
-						<label for="locationHouseNumber-{vehicle.id}" class="block text-sm font-medium text-ink"
+						<label for="locationHouseNumber-{vehicle.id}" class="block text-lg font-medium text-ink"
 							>Hausnr.</label
 						>
 						<input
 							id="locationHouseNumber-{vehicle.id}"
 							bind:value={vehicle.locationHouseNumber}
-							class="mt-1 w-full rounded-control border border-border p-2"
+							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 						/>
 					</div>
 				</div>
-				{#if geocodeWarning}<p role="status" class="mt-1 text-sm text-warning-fg">
+				{#if geocodeWarning}<p role="status" class="mt-1 text-lg text-warning-fg">
 						{geocodeWarning}
 					</p>{/if}
 				<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
 					<div class="min-w-0">
-						<label for="locationPostcode-{vehicle.id}" class="block text-sm font-medium text-ink"
+						<label for="locationPostcode-{vehicle.id}" class="block text-lg font-medium text-ink"
 							>PLZ <span class="text-error-fg">*</span></label
 						>
 						<input
@@ -475,18 +475,18 @@
 							required
 							aria-required="true"
 							{...ariaFieldProps(`locationPostcode-${vehicle.id}`, errors?.locationPostcode)}
-							class="mt-1 w-full rounded-control border border-border p-2"
+							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 						/>
 						{#if errors?.locationPostcode}<p
 								id="locationPostcode-{vehicle.id}-error"
 								role="alert"
-								class="text-sm text-error-fg"
+								class="mt-1 text-lg text-error-fg"
 							>
 								{errors.locationPostcode}
 							</p>{/if}
 					</div>
 					<div class="min-w-0">
-						<label for="locationCity-{vehicle.id}" class="block text-sm font-medium text-ink"
+						<label for="locationCity-{vehicle.id}" class="block text-lg font-medium text-ink"
 							>Ort <span class="text-error-fg">*</span></label
 						>
 						<input
@@ -495,12 +495,12 @@
 							required
 							aria-required="true"
 							{...ariaFieldProps(`locationCity-${vehicle.id}`, errors?.locationCity)}
-							class="mt-1 w-full rounded-control border border-border p-2"
+							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 						/>
 						{#if errors?.locationCity}<p
 								id="locationCity-{vehicle.id}-error"
 								role="alert"
-								class="text-sm text-error-fg"
+								class="mt-1 text-lg text-error-fg"
 							>
 								{errors.locationCity}
 							</p>{/if}
@@ -509,21 +509,21 @@
 			</fieldset>
 
 			<fieldset class="mt-3 rounded-control border border-border p-3">
-				<legend class="px-1 text-sm font-medium text-ink">Fahrzeug</legend>
+				<legend class="px-1 text-lg font-medium text-ink">Fahrzeug</legend>
 
 				<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
 					<div class="min-w-0">
-						<label for="licensePlateCountry-{vehicle.id}" class="block text-sm font-medium text-ink"
+						<label for="licensePlateCountry-{vehicle.id}" class="block text-lg font-medium text-ink"
 							>Länderkennz.</label
 						>
 						<input
 							id="licensePlateCountry-{vehicle.id}"
 							bind:value={vehicle.licensePlateCountry}
-							class="mt-1 w-full rounded-control border border-border p-2"
+							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 						/>
 					</div>
 					<div class="min-w-0">
-						<label for="licensePlate-{vehicle.id}" class="block text-sm font-medium text-ink"
+						<label for="licensePlate-{vehicle.id}" class="block text-lg font-medium text-ink"
 							>Kennzeichen <span class="text-error-fg">*</span></label
 						>
 						<input
@@ -535,12 +535,12 @@
 							aria-required="true"
 							autocapitalize="characters"
 							{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
-							class="mt-1 w-full rounded-control border border-border p-2"
+							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 						/>
 						{#if errors?.licensePlate}<p
 								id="licensePlate-{vehicle.id}-error"
 								role="alert"
-								class="text-sm text-error-fg"
+								class="mt-1 text-lg text-error-fg"
 							>
 								{errors.licensePlate}
 							</p>{/if}
@@ -548,7 +548,7 @@
 				</div>
 
 				<div class="mt-2">
-					<label for="vehicleType-{vehicle.id}" class="block text-sm font-medium text-ink"
+					<label for="vehicleType-{vehicle.id}" class="block text-lg font-medium text-ink"
 						>Fahrzeugart <span class="text-error-fg">*</span></label
 					>
 					<select
@@ -557,7 +557,7 @@
 						required
 						aria-required="true"
 						{...ariaFieldProps(`vehicleType-${vehicle.id}`, errors?.vehicleType)}
-						class="mt-1 w-full rounded-control border border-border p-2"
+						class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 					>
 						<option value="" disabled>Bitte wählen</option>
 						{#each VEHICLE_TYPES as type (type)}<option value={type}>{type}</option>{/each}
@@ -565,7 +565,7 @@
 					{#if errors?.vehicleType}<p
 							id="vehicleType-{vehicle.id}-error"
 							role="alert"
-							class="text-sm text-error-fg"
+							class="mt-1 text-lg text-error-fg"
 						>
 							{errors.vehicleType}
 						</p>{/if}
@@ -573,7 +573,7 @@
 
 				<div class="mt-2 grid grid-cols-2 gap-3">
 					<div class="min-w-0">
-						<label for="make-{vehicle.id}" class="block text-sm font-medium text-ink"
+						<label for="make-{vehicle.id}" class="block text-lg font-medium text-ink"
 							>Marke <span class="text-error-fg">*</span></label
 						>
 						<input
@@ -583,7 +583,7 @@
 							required
 							aria-required="true"
 							{...ariaFieldProps(`make-${vehicle.id}`, errors?.make)}
-							class="mt-1 w-full rounded-control border border-border p-2"
+							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 						/>
 						<datalist id="vehicle-makes-{vehicle.id}">
 							{#each VEHICLE_MAKES as make (make)}<option value={make}></option>{/each}
@@ -591,13 +591,13 @@
 						{#if errors?.make}<p
 								id="make-{vehicle.id}-error"
 								role="alert"
-								class="text-sm text-error-fg"
+								class="mt-1 text-lg text-error-fg"
 							>
 								{errors.make}
 							</p>{/if}
 					</div>
 					<div class="min-w-0">
-						<label for="color-{vehicle.id}" class="block text-sm font-medium text-ink"
+						<label for="color-{vehicle.id}" class="block text-lg font-medium text-ink"
 							>Farbe <span class="text-error-fg">*</span></label
 						>
 						<input
@@ -607,31 +607,31 @@
 							required
 							aria-required="true"
 							{...ariaFieldProps(`color-${vehicle.id}`, errors?.color)}
-							class="mt-1 w-full rounded-control border border-border p-2"
+							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 						/>
 						{#if errors?.color}<p
 								id="color-{vehicle.id}-error"
 								role="alert"
-								class="text-sm text-error-fg"
+								class="mt-1 text-lg text-error-fg"
 							>
 								{errors.color}
 							</p>{/if}
 					</div>
 				</div>
-				<p class="mt-1 text-xs text-ink-muted">
+				<p class="mt-1 text-base text-ink-muted">
 					Genaue Farbe unbekannt? Auch Beschreibungen wie „hell" oder „dunkel" reichen aus.
 				</p>
 			</fieldset>
 
 			<fieldset class="mt-3 rounded-control border border-border p-3">
-				<legend class="px-1 text-sm font-medium text-ink">Verstöße</legend>
-				<p class="text-xs text-ink-muted">
+				<legend class="px-1 text-lg font-medium text-ink">Verstöße</legend>
+				<p class="text-base text-ink-muted">
 					Art des Verstoßes (Mehrfachauswahl möglich) <span class="text-error-fg">*</span>
 				</p>
-				<div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+				<div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
 					{#each incidentTypes as type (type.id)}
 						{@const Icon = INCIDENT_TYPE_ICONS[type.id]}
-						<label class="flex cursor-pointer items-center gap-2 py-1 text-sm text-ink">
+						<label class="flex cursor-pointer items-center gap-2 py-2.5 text-lg text-ink">
 							<input
 								type="checkbox"
 								checked={vehicle.incidentTypeIds.includes(type.id)}
@@ -647,19 +647,19 @@
 						</label>
 					{/each}
 				</div>
-				{#if errors?.incidentTypeIds}<p role="alert" class="text-sm text-error-fg">
+				{#if errors?.incidentTypeIds}<p role="alert" class="mt-1 text-lg text-error-fg">
 						{errors.incidentTypeIds}
 					</p>{/if}
 			</fieldset>
 
 			<div class="mt-3">
-				<label for="notes-{vehicle.id}" class="block text-sm font-medium text-ink"
+				<label for="notes-{vehicle.id}" class="block text-lg font-medium text-ink"
 					>Weitere Angaben (optional)</label
 				>
 				<textarea
 					id="notes-{vehicle.id}"
 					bind:value={vehicle.notes}
-					class="mt-1 w-full rounded-control border border-border p-2"></textarea>
+					class="mt-1 w-full rounded-control border border-border p-2 text-lg"></textarea>
 			</div>
 		</div>
 	{/if}
@@ -676,7 +676,7 @@
 				class="flex flex-1 items-center justify-center gap-1 {buttonSecondary} disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				<Eye class="size-4" aria-hidden="true" />
-				E-Mail-Vorschau
+				Vorschau
 			</button>
 			{#if open}
 				<button
@@ -703,7 +703,7 @@
 			<div
 				role="status"
 				transition:fade={{ duration: transitionDuration(150) }}
-				class="mt-1 text-xs text-ink-muted"
+				class="mt-1 text-lg text-ink-muted"
 			>
 				<p>Noch nicht einklappbar, bitte prüfen:</p>
 				<ul class="mt-1 list-disc pl-5">
@@ -722,28 +722,28 @@
 	titleId="reset-dialog-title-{vehicle.id}"
 	title={total > 1 ? 'Fahrzeug/Vorgang entfernen?' : 'Fahrzeug/Vorgang zurücksetzen?'}
 >
-	<p class="mt-1 text-sm text-ink-muted">
+	<p class="mt-1 text-lg text-ink-muted">
 		{total > 1
 			? 'Dieser Datensatz wird unwiderruflich aus der Anzeige entfernt.'
 			: 'Die bereits eingetragenen Daten werden unwiderruflich gelöscht.'}
 	</p>
 
-	<dl class="mt-3 flex flex-col gap-3 text-sm">
+	<dl class="mt-3 flex flex-col gap-3 text-lg">
 		{#if vehicle.photoIds.length > 0}
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Foto Auswahl</dt>
+				<dt class="text-base font-medium text-ink-muted">Foto Auswahl</dt>
 				<dd class="text-ink">{vehicle.photoIds.length}</dd>
 			</div>
 		{/if}
 		{#if vehicle.licensePlate}
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Kennzeichen</dt>
+				<dt class="text-base font-medium text-ink-muted">Kennzeichen</dt>
 				<dd class="text-ink">{vehicle.licensePlate}</dd>
 			</div>
 		{/if}
 		{#if vehicle.color}
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Fahrzeug</dt>
+				<dt class="text-base font-medium text-ink-muted">Fahrzeug</dt>
 				<dd class="text-ink">
 					{vehicle.vehicleType ? `${vehicle.vehicleType} · ` : ''}{vehicle.make} ·
 					{vehicle.color}
@@ -752,25 +752,25 @@
 		{/if}
 		{#if summaryAddress()}
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Tatort</dt>
+				<dt class="text-base font-medium text-ink-muted">Tatort</dt>
 				<dd class="text-ink">{summaryAddress()}</dd>
 			</div>
 		{/if}
 		{#if vehicle.date && vehicle.time}
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Datum / Uhrzeit</dt>
+				<dt class="text-base font-medium text-ink-muted">Datum / Uhrzeit</dt>
 				<dd class="text-ink">{formatDateDMY(vehicle.date)}, {formatTimeRange(vehicle)} Uhr</dd>
 			</div>
 		{/if}
 		{#if summaryIncidentTypes()}
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Art des Verstoßes</dt>
+				<dt class="text-base font-medium text-ink-muted">Art des Verstoßes</dt>
 				<dd class="text-ink">{summaryIncidentTypes()}</dd>
 			</div>
 		{/if}
 		{#if vehicle.notes}
 			<div>
-				<dt class="text-xs font-medium text-ink-muted">Weitere Angaben</dt>
+				<dt class="text-base font-medium text-ink-muted">Weitere Angaben</dt>
 				<dd class="text-ink">{vehicle.notes}</dd>
 			</div>
 		{/if}
@@ -789,38 +789,38 @@
 	bind:dialog={previewDialog}
 	onBackdropClick={handlePreviewBackdropClick}
 	titleId="preview-dialog-title-{vehicle.id}"
-	title={total > 1 ? `Vorschau: Fahrzeug ${index + 1} von ${total}` : 'Vorschau der E-Mail'}
+	title={total > 1 ? `Vorschau: Fahrzeug ${index + 1} von ${total}` : 'Vorschau'}
 	desktopMaxWidthClass="sm:max-w-2xl"
 >
 	{#if !previewEmail}
-		<p class="mt-1 text-sm text-ink-muted">Noch nicht einklappbar, bitte prüfen:</p>
-		<ul class="mt-1 list-disc pl-5 text-sm text-ink-muted">
+		<p class="mt-1 text-lg text-ink-muted">Noch nicht einklappbar, bitte prüfen:</p>
+		<ul class="mt-1 list-disc pl-5 text-lg text-ink-muted">
 			{#each missingFieldMessages() as message (message)}
 				<li>{message}</li>
 			{/each}
 		</ul>
 	{:else}
-		<div class="mt-3 flex flex-col gap-3 text-sm">
+		<div class="mt-3 flex flex-col gap-3 text-lg">
 			<div>
-				<p class="text-xs font-medium text-ink-muted">An</p>
+				<p class="text-base font-medium text-ink-muted">An</p>
 				<p class="text-ink">{recipientEmail}</p>
 			</div>
-			<p class="text-xs text-ink-muted">
+			<p class="text-base text-ink-muted">
 				Eine Kopie geht zusätzlich an deine eigene Adresse ({profile.email}) — als Antwort-Adresse
 				und BCC.
 			</p>
 			<div>
-				<p class="text-xs font-medium text-ink-muted">Betreff</p>
+				<p class="text-base font-medium text-ink-muted">Betreff</p>
 				<p class="text-ink">{previewEmail.subject}</p>
 			</div>
 			<div>
-				<p class="text-xs font-medium text-ink-muted">Nachricht</p>
+				<p class="text-base font-medium text-ink-muted">Nachricht</p>
 				<pre
-					class="mt-1 max-h-64 overflow-y-auto rounded-control border border-border bg-surface-sunken p-2 text-xs whitespace-pre-wrap text-ink">{previewEmail.body}</pre>
+					class="mt-1 max-h-64 overflow-y-auto rounded-control border border-border bg-surface-sunken p-2 text-base whitespace-pre-wrap text-ink">{previewEmail.body}</pre>
 			</div>
 			{#if previewPhotos.length > 0}
 				<div>
-					<p class="text-xs font-medium text-ink-muted">Anhang</p>
+					<p class="text-base font-medium text-ink-muted">Anhang</p>
 					<div class="mt-1 flex flex-wrap gap-2">
 						{#each previewPhotos as photo, photoIndex (photo.id)}
 							<img

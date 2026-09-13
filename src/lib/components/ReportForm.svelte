@@ -575,18 +575,18 @@
 		</div>
 	{:else}
 		<div class="rounded-card bg-surface p-4 shadow-card sm:p-6">
-			<h2 class="text-sm font-semibold tracking-wide text-ink-muted uppercase">Deine Angaben</h2>
+			<h2 class="text-lg font-semibold text-ink md:text-xl">Deine Angaben</h2>
 
 			{#if isEditingProfile}
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div onkeydown={onProfileFieldKeydown}>
-					<p class="mt-1 text-xs text-ink-muted">
+					<p class="mt-1 text-lg text-ink-muted">
 						Mit <span class="text-error-fg">*</span> markierte Felder sind Pflichtfelder.
 					</p>
 
 					<div class="mt-3 grid grid-cols-2 gap-3">
 						<div class="min-w-0">
-							<label for="firstName" class="block text-sm font-medium text-ink"
+							<label for="firstName" class="block text-lg font-medium text-ink"
 								>Vorname <span class="text-error-fg">*</span></label
 							>
 							<input
@@ -597,18 +597,18 @@
 								{...ariaFieldProps('firstName', errors.firstName)}
 								bind:value={form.firstName}
 								onblur={saveProfileFields}
-								class="mt-1 w-full rounded-control border border-border p-2"
+								class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 							/>
 							{#if errors.firstName}<p
 									id="firstName-error"
 									role="alert"
-									class="text-sm text-error-fg"
+									class="mt-1 text-lg text-error-fg"
 								>
 									{errors.firstName}
 								</p>{/if}
 						</div>
 						<div class="min-w-0">
-							<label for="lastName" class="block text-sm font-medium text-ink"
+							<label for="lastName" class="block text-lg font-medium text-ink"
 								>Nachname <span class="text-error-fg">*</span></label
 							>
 							<input
@@ -619,12 +619,12 @@
 								{...ariaFieldProps('lastName', errors.lastName)}
 								bind:value={form.lastName}
 								onblur={saveProfileFields}
-								class="mt-1 w-full rounded-control border border-border p-2"
+								class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 							/>
 							{#if errors.lastName}<p
 									id="lastName-error"
 									role="alert"
-									class="text-sm text-error-fg"
+									class="mt-1 text-lg text-error-fg"
 								>
 									{errors.lastName}
 								</p>{/if}
@@ -653,7 +653,7 @@
 
 					<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
 						<div class="min-w-0">
-							<label for="addressPostcode" class="block text-sm font-medium text-ink"
+							<label for="addressPostcode" class="block text-lg font-medium text-ink"
 								>PLZ <span class="text-error-fg">*</span></label
 							>
 							<input
@@ -664,18 +664,18 @@
 								{...ariaFieldProps('addressPostcode', errors.addressPostcode)}
 								bind:value={form.addressPostcode}
 								onblur={saveProfileFields}
-								class="mt-1 w-full rounded-control border border-border p-2"
+								class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 							/>
 							{#if errors.addressPostcode}<p
 									id="addressPostcode-error"
 									role="alert"
-									class="text-sm text-error-fg"
+									class="mt-1 text-lg text-error-fg"
 								>
 									{errors.addressPostcode}
 								</p>{/if}
 						</div>
 						<div class="min-w-0">
-							<label for="addressCity" class="block text-sm font-medium text-ink"
+							<label for="addressCity" class="block text-lg font-medium text-ink"
 								>Ort <span class="text-error-fg">*</span></label
 							>
 							<input
@@ -686,12 +686,12 @@
 								{...ariaFieldProps('addressCity', errors.addressCity)}
 								bind:value={form.addressCity}
 								onblur={saveProfileFields}
-								class="mt-1 w-full rounded-control border border-border p-2"
+								class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 							/>
 							{#if errors.addressCity}<p
 									id="addressCity-error"
 									role="alert"
-									class="text-sm text-error-fg"
+									class="mt-1 text-lg text-error-fg"
 								>
 									{errors.addressCity}
 								</p>{/if}
@@ -699,7 +699,7 @@
 					</div>
 
 					<div class="mt-3">
-						<label for="email" class="block text-sm font-medium text-ink"
+						<label for="email" class="block text-lg font-medium text-ink"
 							>Deine E-Mail-Adresse <span class="text-error-fg">*</span></label
 						>
 						<input
@@ -712,15 +712,15 @@
 							{...ariaFieldProps('email', errors.email)}
 							bind:value={form.email}
 							onblur={saveProfileFields}
-							class="mt-1 w-full rounded-control border border-border p-2"
+							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 						/>
-						{#if errors.email}<p id="email-error" role="alert" class="text-sm text-error-fg">
+						{#if errors.email}<p id="email-error" role="alert" class="mt-1 text-lg text-error-fg">
 								{errors.email}
 							</p>{/if}
 					</div>
 
 					<div class="mt-3">
-						<label for="phone" class="block text-sm font-medium text-ink">Telefonnummer</label>
+						<label for="phone" class="block text-lg font-medium text-ink">Telefonnummer</label>
 						<input
 							id="phone"
 							type="tel"
@@ -728,7 +728,7 @@
 							placeholder="z. B. 0221 12345678"
 							bind:value={form.phone}
 							onblur={saveProfileFields}
-							class="mt-1 w-full rounded-control border border-border p-2"
+							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 						/>
 					</div>
 
@@ -737,7 +737,7 @@
 					</button>
 				</div>
 			{:else}
-				<div class="mt-3 text-sm text-ink">
+				<div class="mt-3 text-lg text-ink">
 					<p>{form.firstName} {form.lastName}</p>
 					<p>{form.addressStreet}</p>
 					<p>{form.addressPostcode} {form.addressCity}</p>
@@ -834,7 +834,7 @@
 	titleId="reset-form-dialog-title"
 	title="Formular komplett zurücksetzen?"
 >
-	<p class="mt-1 text-sm text-ink-muted">
+	<p class="mt-1 text-lg text-ink-muted">
 		„Deine Angaben“, alle Fotos und Fahrzeuge/Vorgänge werden unwiderruflich gelöscht. Dein
 		gespeichertes Profil bleibt für die nächste Anzeige erhalten.
 	</p>
@@ -857,7 +857,7 @@
 		: 'Anzeige erfolgreich versendet'}
 	desktopMaxWidthClass="sm:max-w-lg"
 >
-	<p class="mt-1 text-sm text-ink-muted">
+	<p class="mt-1 text-lg text-ink-muted">
 		Du erhältst eine Kopie per E-Mail von <strong class="font-semibold text-ink"
 			>{senderEmail}</strong
 		>. Falls sie nicht im Posteingang ankommt, prüfe bei Bedarf auch deinen Spam-Ordner. Die Anzeige
