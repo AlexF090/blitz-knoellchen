@@ -29,7 +29,9 @@ const baseInput: EmailTemplateInput = {
 describe('buildEmailBody', () => {
 	it('erzeugt Betreff und Text im Normalfall', () => {
 		const result = buildEmailBody(baseInput);
-		expect(result.subject).toBe('Anzeige einer Verkehrsordnungswidrigkeit (Falschparken)');
+		expect(result.subject).toBe(
+			'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken) – K-AB 1234, 01.03.2026'
+		);
 		expect(result.body).toContain('Name: Max Mustermann');
 		expect(result.body).toContain('Anschrift: Musterstraße 1, 50667 Köln');
 		expect(result.body).toContain('Datum: 01.03.2026');
@@ -107,15 +109,24 @@ describe('buildEmailBody', () => {
 		expect(result.body).toContain('3 Beweisfotos sind dieser E-Mail beigefügt.');
 	});
 
-	it('behält den normalen Betreff bei nur einem Fahrzeug', () => {
+	it('behält den Betreff ohne Fahrzeug-Suffix bei nur einem Fahrzeug', () => {
 		const result = buildEmailBody({ ...baseInput, vehicleIndex: 1, vehicleTotal: 1 });
-		expect(result.subject).toBe('Anzeige einer Verkehrsordnungswidrigkeit (Falschparken)');
+		expect(result.subject).toBe(
+			'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken) – K-AB 1234, 01.03.2026'
+		);
 	});
 
 	it('ergänzt den Betreff um Fahrzeug-Index bei mehreren Fahrzeugen', () => {
 		const result = buildEmailBody({ ...baseInput, vehicleIndex: 2, vehicleTotal: 3 });
 		expect(result.subject).toBe(
-			'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken) – Fahrzeug 2/3'
+			'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken) – K-AB 1234, 01.03.2026 (Fahrzeug 2/3)'
+		);
+	});
+
+	it('nutzt "nicht erfasst" im Betreff, wenn das Kennzeichen fehlt', () => {
+		const result = buildEmailBody({ ...baseInput, licensePlate: undefined });
+		expect(result.subject).toBe(
+			'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken) – nicht erfasst, 01.03.2026'
 		);
 	});
 

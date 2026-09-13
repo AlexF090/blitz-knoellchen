@@ -14,11 +14,16 @@ const formatGermanDate = (isoDate: string): string => {
 };
 
 export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
-	const subject =
-		input.vehicleTotal && input.vehicleTotal > 1
-			? `${SUBJECT_BASE} – Fahrzeug ${input.vehicleIndex}/${input.vehicleTotal}`
-			: SUBJECT_BASE;
 	const licensePlateLine = input.licensePlate?.trim() ? input.licensePlate.trim() : 'nicht erfasst';
+	// Kennzeichen + Datum im Betreff, statt eines immer identischen Basistexts: hilft sowohl der
+	// Bußgeldstelle beim Zuordnen eingehender Mails als auch dem Melder selbst, mehrere Anzeigen
+	// in der eigenen bcc-Kopie auseinanderzuhalten. Tatort/Uhrzeit bewusst weggelassen, um den
+	// Betreff nicht unübersichtlich lang zu machen.
+	const vehicleSuffix =
+		input.vehicleTotal && input.vehicleTotal > 1
+			? ` (Fahrzeug ${input.vehicleIndex}/${input.vehicleTotal})`
+			: '';
+	const subject = `${SUBJECT_BASE} – ${licensePlateLine}, ${formatGermanDate(input.date)}${vehicleSuffix}`;
 	const vehicleDescriptionLine = `${input.make?.trim() || 'unbekannt'} (Farbe: ${input.color?.trim() || 'nicht angegeben'})`;
 	const notes = input.notes?.trim();
 	const incidentLabels = input.incidentTypes.map((t) => t.label).join(', ');
