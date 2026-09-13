@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chooseAppMode } from './helpers/appMode';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(__dirname, 'fixtures/photo-with-gps.jpg');
@@ -30,12 +31,14 @@ test.beforeEach(async ({ page }) => {
 			}
 		})
 	);
+	await page.route('**/api/send', (route) => route.fulfill({ json: { ok: true } }));
 });
 
 test('Adress-Autocomplete bei "Deine Angaben": Tippen zeigt Vorschläge, Klick befüllt Feld', async ({
 	page
 }) => {
 	await page.goto('/');
+	await chooseAppMode(page);
 
 	await page.locator('#addressStreet').fill('Domkloster');
 
@@ -52,6 +55,7 @@ test('Adress-Autocomplete bei "Deine Angaben": Tastatur-Navigation (ArrowDown+En
 	page
 }) => {
 	await page.goto('/');
+	await chooseAppMode(page);
 
 	await page.locator('#addressStreet').fill('Domkloster');
 	await expect(page.getByRole('option')).toHaveCount(2);
@@ -71,6 +75,7 @@ test('Adress-Autocomplete beim Tatort: Klick befüllt Straße, Hausnr., PLZ und 
 	await page.route('**/api/geocode?lat=**', (route) => route.fulfill({ json: { error: 'n/a' } }));
 
 	await page.goto('/');
+	await chooseAppMode(page);
 
 	await page.locator('#addressStreet').fill('Musterstraße 1');
 	await page.locator('#addressPostcode').fill('50667');

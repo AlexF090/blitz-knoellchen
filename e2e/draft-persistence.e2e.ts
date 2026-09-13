@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chooseAppMode } from './helpers/appMode';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(__dirname, 'fixtures/photo-with-gps.jpg');
@@ -15,8 +16,10 @@ test('Fahrzeugdaten überleben einen Reload als Entwurf', async ({ page }) => {
 			}
 		})
 	);
+	await page.route('**/api/send', (route) => route.fulfill({ json: { ok: true } }));
 
 	await page.goto('/');
+	await chooseAppMode(page);
 
 	await page.locator('#firstName').fill('Max');
 	await page.locator('#lastName').fill('Mustermann');
@@ -39,6 +42,7 @@ test('Fahrzeugdaten überleben einen Reload als Entwurf', async ({ page }) => {
 	await page.waitForTimeout(1200);
 
 	await page.reload();
+	await chooseAppMode(page);
 
 	// Kein Flash: "Deine Angaben" soll sofort im gelesenen Zustand stehen, nie leer im
 	// Bearbeiten-Modus aufblitzen.
