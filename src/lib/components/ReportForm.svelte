@@ -37,6 +37,12 @@
 	import PhotoPool from './PhotoPool.svelte';
 	import VehicleBlock from './VehicleBlock.svelte';
 
+	interface Props {
+		recipientEmail: string;
+	}
+
+	let { recipientEmail }: Props = $props();
+
 	const city = CITIES.koeln;
 	const profileStore = createProfileStore();
 
@@ -751,6 +757,17 @@
 							incidentTypes={city.incidentTypes}
 							maxPhotos={MAX_PHOTOS_PER_VEHICLE}
 							geocodeWarning={vehicleGeocodeWarnings[vehicle.id]}
+							profile={{
+								firstName: form.firstName,
+								lastName: form.lastName,
+								addressStreet: form.addressStreet,
+								addressPostcode: form.addressPostcode,
+								addressCity: form.addressCity,
+								email: form.email,
+								phone: form.phone
+							}}
+							{city}
+							{recipientEmail}
 							onRemove={() => removeVehicle(vehicle.id)}
 							onReset={() => resetVehicle(vehicle.id)}
 							onPhotoToggled={(photoId, selected) => {

@@ -1,13 +1,22 @@
 <script lang="ts">
-	import { RotateCcw, Trash2 } from '@lucide/svelte';
-	import type { IncidentType } from '$lib/config/cities';
+	import { Eye, RotateCcw, Trash2 } from '@lucide/svelte';
+	import type { City, IncidentType } from '$lib/config/cities';
+	import {
+		buildEmailTemplateInput,
+		resolveVehicleIncidentTypes
+	} from '$lib/email/buildEmailTemplateInput';
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { fade } from 'svelte/transition';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import { validateVehicle } from '$lib/validation/formSchema';
-	import type { PhotoEntry, VehicleEntry, VehicleErrors } from '$lib/validation/formSchema';
+	import type {
+		PhotoEntry,
+		ProfileFields,
+		VehicleEntry,
+		VehicleErrors
+	} from '$lib/validation/formSchema';
 	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
 	import { VEHICLE_MAKES } from '$lib/config/vehicleMakes';
 	import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
@@ -25,6 +34,9 @@
 		incidentTypes: IncidentType[];
 		maxPhotos: number;
 		geocodeWarning?: string;
+		profile: ProfileFields;
+		city: City;
+		recipientEmail: string;
 		onRemove: () => void;
 		onReset: () => void;
 		onPhotoToggled?: (photoId: string, selected: boolean) => void;
@@ -39,6 +51,9 @@
 		incidentTypes,
 		maxPhotos,
 		geocodeWarning,
+		profile,
+		city,
+		recipientEmail,
 		onRemove,
 		onReset,
 		onPhotoToggled
@@ -46,8 +61,34 @@
 
 	let open = $state(true);
 	let resetDialog = $state<HTMLDialogElement | undefined>(undefined);
+	let previewDialog = $state<HTMLDialogElement | undefined>(undefined);
 
 	const openResetDialog = () => resetDialog?.showModal();
+	const openPreviewDialog = () => isComplete() && previewDialog?.showModal();
+
+	const handlePreviewBackdropClick = (event: MouseEvent) => {
+		if (event.target === previewDialog) previewDialog.close();
+	};
+
+	const previewPhotos = $derived(
+		vehicle.photoIds
+			.map((id) => pool.find((p) => p.id === id))
+			.filter((photo): photo is PhotoEntry => photo !== undefined)
+	);
+
+	const previewEmail = $derived.by(() => {
+		if (!isComplete()) return null;
+		return city.buildEmailBody(
+			buildEmailTemplateInput({
+				profile,
+				vehicle,
+				incidentTypes: resolveVehicleIncidentTypes(city, vehicle),
+				photoCount: vehicle.photoIds.length,
+				vehicleIndex: index + 1,
+				vehicleTotal: total
+			})
+		);
+	});
 
 	const confirmReset = () => {
 		resetDialog?.close();
@@ -574,39 +615,53 @@
 	{/if}
 
 	<div class="mt-4">
-		{#if open}
+		<div class="flex items-center gap-6">
 			<button
 				type="button"
-				onclick={() => isComplete() && (open = false)}
+				onclick={openPreviewDialog}
 				disabled={!isComplete()}
-				class="flex w-full items-center justify-center gap-1 {buttonPrimary} disabled:cursor-not-allowed disabled:bg-border disabled:text-ink-muted"
-				aria-expanded={open}
+				title={isComplete()
+					? undefined
+					: 'Erst verfügbar, wenn alle Pflichtfelder ausgefüllt sind.'}
+				class="flex flex-1 items-center justify-center gap-1 {buttonSecondary} disabled:cursor-not-allowed disabled:opacity-50"
 			>
-				Fertig
+				<Eye class="size-4" aria-hidden="true" />
+				E-Mail-Vorschau
 			</button>
-			{#if !isComplete()}
-				<div
-					role="status"
-					transition:fade={{ duration: transitionDuration(150) }}
-					class="mt-1 text-xs text-ink-muted"
+			{#if open}
+				<button
+					type="button"
+					onclick={() => isComplete() && (open = false)}
+					disabled={!isComplete()}
+					class="flex flex-1 items-center justify-center gap-1 {buttonPrimary} disabled:cursor-not-allowed disabled:bg-border disabled:text-ink-muted"
+					aria-expanded={open}
 				>
-					<p>Noch nicht einklappbar, bitte prüfen:</p>
-					<ul class="mt-1 list-disc pl-5">
-						{#each missingFieldMessages() as message (message)}
-							<li>{message}</li>
-						{/each}
-					</ul>
-				</div>
+					Fertig
+				</button>
+			{:else}
+				<button
+					type="button"
+					onclick={() => (open = true)}
+					class="flex flex-1 items-center justify-center gap-1 {buttonSecondary}"
+					aria-expanded={open}
+				>
+					Bearbeiten
+				</button>
 			{/if}
-		{:else}
-			<button
-				type="button"
-				onclick={() => (open = true)}
-				class="flex w-full items-center justify-center gap-1 {buttonSecondary}"
-				aria-expanded={open}
+		</div>
+		{#if open && !isComplete()}
+			<div
+				role="status"
+				transition:fade={{ duration: transitionDuration(150) }}
+				class="mt-1 text-xs text-ink-muted"
 			>
-				Bearbeiten
-			</button>
+				<p>Noch nicht einklappbar, bitte prüfen:</p>
+				<ul class="mt-1 list-disc pl-5">
+					{#each missingFieldMessages() as message (message)}
+						<li>{message}</li>
+					{/each}
+				</ul>
+			</div>
 		{/if}
 	</div>
 </div>
@@ -676,6 +731,62 @@
 		</button>
 		<button type="button" onclick={confirmReset} class="flex-1 {buttonDestructive}">
 			Entfernen
+		</button>
+	{/snippet}
+</ConfirmDialog>
+
+<ConfirmDialog
+	bind:dialog={previewDialog}
+	onBackdropClick={handlePreviewBackdropClick}
+	titleId="preview-dialog-title-{vehicle.id}"
+	title={total > 1 ? `Vorschau: Fahrzeug ${index + 1} von ${total}` : 'Vorschau der E-Mail'}
+	desktopMaxWidthClass="sm:max-w-2xl"
+>
+	{#if !previewEmail}
+		<p class="mt-1 text-sm text-ink-muted">Noch nicht einklappbar, bitte prüfen:</p>
+		<ul class="mt-1 list-disc pl-5 text-sm text-ink-muted">
+			{#each missingFieldMessages() as message (message)}
+				<li>{message}</li>
+			{/each}
+		</ul>
+	{:else}
+		<div class="mt-3 flex flex-col gap-3 text-sm">
+			<div>
+				<p class="text-xs font-medium text-ink-muted">An</p>
+				<p class="text-ink">{recipientEmail}</p>
+			</div>
+			<p class="text-xs text-ink-muted">
+				Eine Kopie geht zusätzlich an deine eigene Adresse ({profile.email}) — als Antwort-Adresse
+				und BCC.
+			</p>
+			<div>
+				<p class="text-xs font-medium text-ink-muted">Betreff</p>
+				<p class="text-ink">{previewEmail.subject}</p>
+			</div>
+			<div>
+				<p class="text-xs font-medium text-ink-muted">Nachricht</p>
+				<pre
+					class="mt-1 max-h-64 overflow-y-auto rounded-control border border-border bg-surface-sunken p-2 text-xs whitespace-pre-wrap text-ink">{previewEmail.body}</pre>
+			</div>
+			{#if previewPhotos.length > 0}
+				<div>
+					<p class="text-xs font-medium text-ink-muted">Anhang</p>
+					<div class="mt-1 flex flex-wrap gap-2">
+						{#each previewPhotos as photo, photoIndex (photo.id)}
+							<img
+								src={objectUrl(photo.blob)}
+								alt="Beweisfoto {photoIndex + 1} von {previewPhotos.length}"
+								class="max-h-48 w-auto max-w-full rounded-control border border-border object-contain"
+							/>
+						{/each}
+					</div>
+				</div>
+			{/if}
+		</div>
+	{/if}
+	{#snippet actions()}
+		<button type="button" onclick={() => previewDialog?.close()} class="flex-1 {buttonSecondary}">
+			Schließen
 		</button>
 	{/snippet}
 </ConfirmDialog>
