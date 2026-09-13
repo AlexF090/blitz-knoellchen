@@ -128,15 +128,26 @@ const toMinutes = (time: string): number => {
 	return hours * 60 + minutes;
 };
 
+// Das von der Stadt Köln geforderte kanonische Format gilt nur für deutsche Kennzeichen (s.
+// normalizeLicensePlate) — andere Länder haben keine vergleichbare Formatvorgabe der
+// Bußgeldstelle. Deckt sowohl das im Formular verwendete Nationalitätszeichen ("D") als auch
+// den ISO-Code ("DE") ab.
+const isGermanLicensePlateCountry = (country: string): boolean =>
+	['D', 'DE'].includes(country.trim().toUpperCase());
+
 // Formt eine flexibel getippte Eingabe ("K AB 1234", "KAB1234", "k-ab 1234") in das von der
 // Stadt Köln für die maschinelle Verarbeitung geforderte kanonische Format um (z. B.
 // "H-VA1234"): ein Bindestrich zwischen Kreis-Kürzel und Buchstabenkombination, kein Zeichen
-// zwischen Buchstaben- und Ziffernkombination. Nicht-parsbare Eingaben werden unverändert
-// (nur getrimmt) zurückgegeben — fail-safe statt zu werfen.
-export const normalizeLicensePlate = (value: string): string => {
+// zwischen Buchstaben- und Ziffernkombination. Nicht-parsbare Eingaben werden nur getrimmt und
+// großgeschrieben zurückgegeben — fail-safe statt zu werfen. Für Kennzeichen aus anderen
+// Ländern gibt es keine vergleichbare Formatvorgabe; dort wird nur getrimmt/großgeschrieben,
+// ohne die Zeichen umzustrukturieren (Kennzeichen bestehen international nur aus
+// Großbuchstaben).
+export const normalizeLicensePlate = (value: string, country: string): string => {
 	const trimmed = value.trim();
+	if (!isGermanLicensePlateCountry(country)) return trimmed.toUpperCase();
 	const match = LICENSE_PLATE_PATTERN.exec(trimmed);
-	if (!match) return trimmed;
+	if (!match) return trimmed.toUpperCase();
 	const [, district, letters, digits, suffix] = match;
 	return `${district.toUpperCase()}-${letters.toUpperCase()}${digits}${(suffix ?? '').toUpperCase()}`;
 };
@@ -146,7 +157,10 @@ export const validateVehicle = (vehicle: VehicleEntry, photos: PhotoEntry[]): Ve
 
 	if (!vehicle.licensePlate.trim()) {
 		errors.licensePlate = 'Bitte Kennzeichen angeben.';
-	} else if (!LICENSE_PLATE_PATTERN.test(vehicle.licensePlate.trim())) {
+	} else if (
+		isGermanLicensePlateCountry(vehicle.licensePlateCountry) &&
+		!LICENSE_PLATE_PATTERN.test(vehicle.licensePlate.trim())
+	) {
 		errors.licensePlate = 'Kennzeichen wirkt ungültig (z.B. K-AB 1234).';
 	}
 	if (

@@ -200,6 +200,14 @@ describe('validateReportForm', () => {
 		expect(errors.vehicles?.[0].licensePlate).toBeDefined();
 	});
 
+	it('erzwingt kein deutsches Kennzeichenformat bei ausländischem Länderkennzeichen', () => {
+		const data = makeValidData();
+		data.vehicles[0].licensePlate = 'XX-99-ZZ';
+		data.vehicles[0].licensePlateCountry = 'NL';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].licensePlate).toBeUndefined();
+	});
+
 	it.each(['K-AB 1234', 'K AB 1234', 'KAB1234', 'M-XY 1', 'K-E 123E', 'HH-AB 12H'])(
 		'akzeptiert gültiges Kennzeichenformat "%s"',
 		(licensePlate) => {
@@ -339,13 +347,27 @@ describe('normalizeLicensePlate', () => {
 		['k-ab 1234', 'K-AB1234'],
 		['H-VA1234', 'H-VA1234'],
 		['HH-AB 12H', 'HH-AB12H']
-	])('normalisiert "%s" zu "%s"', (input, expected) => {
-		expect(normalizeLicensePlate(input)).toBe(expected);
+	])('normalisiert deutsches Kennzeichen "%s" zu "%s"', (input, expected) => {
+		expect(normalizeLicensePlate(input, 'D')).toBe(expected);
 	});
 
-	it('gibt nicht-parsbare Eingaben getrimmt unverändert zurück', () => {
-		expect(normalizeLicensePlate('  nur text  ')).toBe('nur text');
-	});
+	it.each(['D', 'DE'])(
+		'gibt nicht-parsbare deutsche Eingaben getrimmt und großgeschrieben zurück (Land "%s")',
+		(country) => {
+			expect(normalizeLicensePlate('  nur text  ', country)).toBe('NUR TEXT');
+		}
+	);
+
+	it.each([
+		['NL', ' xx-99-zz ', 'XX-99-ZZ'],
+		['GB', 'ab12 cde', 'AB12 CDE'],
+		['', 'k-ab 1234', 'K-AB 1234']
+	])(
+		'formt ausländische Kennzeichen nur um (kein deutsches Schema): Land "%s"',
+		(country, input, expected) => {
+			expect(normalizeLicensePlate(input, country)).toBe(expected);
+		}
+	);
 });
 
 describe('validateProfileFields', () => {
