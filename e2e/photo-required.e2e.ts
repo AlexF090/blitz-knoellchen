@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { chooseAppMode } from './helpers/appMode';
 
 test('Absenden ohne Foto zeigt Fehlermeldung', async ({ page }) => {
+	await page.route('**/api/send', (route) => route.fulfill({ json: { ok: true } }));
+
 	await page.goto('/');
+	await chooseAppMode(page);
 
 	await page.locator('#firstName').fill('Max');
 	await page.locator('#lastName').fill('Mustermann');

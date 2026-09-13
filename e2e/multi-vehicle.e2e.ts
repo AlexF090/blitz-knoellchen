@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chooseAppMode } from './helpers/appMode';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(__dirname, 'fixtures/photo-with-gps.jpg');
@@ -23,6 +24,7 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 	});
 
 	await page.goto('/');
+	await chooseAppMode(page);
 
 	await page.locator('#firstName').fill('Max');
 	await page.locator('#lastName').fill('Mustermann');
