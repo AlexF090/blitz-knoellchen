@@ -55,7 +55,7 @@ describe('buildEmailBody', () => {
 				}
 			]
 		});
-		expect(result.body).toContain('hiermit zeige ich folgende Verkehrsverstöße an:');
+		expect(result.body).toContain('hiermit zeige ich folgende Verkehrsverstöße an.');
 		expect(result.body).toContain(
 			'Art des Verstoßes: Parken auf dem Gehweg, Parken im Halteverbot'
 		);
@@ -79,7 +79,7 @@ describe('buildEmailBody', () => {
 
 	it('formuliert den Einleitungssatz bei nur einer Verstoßart im Singular', () => {
 		const result = buildEmailBody(baseInput);
-		expect(result.body).toContain('hiermit zeige ich folgenden Verkehrsverstoß an:');
+		expect(result.body).toContain('hiermit zeige ich folgenden Verkehrsverstoß an.');
 	});
 
 	it('markiert fehlendes Kennzeichen als "nicht erfasst"', () => {
