@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { appMode } from '$lib/appMode.svelte';
 	import { CITIES } from '$lib/config/cities';
 	import { parseExif } from '$lib/exif/parseExif';
@@ -31,7 +32,6 @@
 		type VehicleEntry,
 		type VehicleErrors
 	} from '$lib/validation/formSchema';
-	import { resolve } from '$app/paths';
 	import { tick } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
@@ -337,8 +337,14 @@
 		sendError = null;
 		sendResults = [];
 		photoProcessingError = null;
+		photoProcessing = false;
+		submitting = false;
 		isEditingProfile = true;
-		await clearDraft();
+		try {
+			await clearDraft();
+		} catch (error) {
+			console.error('Fehler beim Löschen des Entwurfs:', error);
+		}
 	};
 
 	const openResetDialog = () => resetDialog?.showModal();
@@ -427,12 +433,13 @@
 		submitting = true;
 		sendError = null;
 		sendResults = [];
-		await saveProfileFields();
-
-		const photoById = new Map(form.photos.map((photo) => [photo.id, photo]));
-		const results: { vehicle: VehicleEntry; ok: boolean }[] = [];
 
 		try {
+			await saveProfileFields();
+
+			const photoById = new Map(form.photos.map((photo) => [photo.id, photo]));
+			const results: { vehicle: VehicleEntry; ok: boolean }[] = [];
+
 			for (const [index, vehicle] of form.vehicles.entries()) {
 				const incidentTypes = city.incidentTypes.filter((t) =>
 					vehicle.incidentTypeIds.includes(t.id)
