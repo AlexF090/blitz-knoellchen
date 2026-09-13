@@ -48,6 +48,16 @@ const KOELN_INCIDENT_TYPES: IncidentType[] = [
 		description: 'Das Fahrzeug parkte auf dem Gehweg und behinderte Fußgänger.'
 	},
 	{
+		id: 'halteverbot',
+		label: 'Parken im Halteverbot',
+		description: 'Das Fahrzeug parkte in einem durch Verkehrszeichen ausgewiesenen Halteverbot.'
+	},
+	{
+		id: 'parkverbot',
+		label: 'Parken im Parkverbot',
+		description: 'Das Fahrzeug parkte in einem durch Verkehrszeichen ausgewiesenen Parkverbot.'
+	},
+	{
 		id: 'zweite-reihe',
 		label: 'Parken in zweiter Reihe',
 		description: 'Das Fahrzeug parkte in zweiter Reihe und behinderte den fließenden Verkehr.'
@@ -57,11 +67,6 @@ const KOELN_INCIDENT_TYPES: IncidentType[] = [
 		label: 'Parken auf Schwerbehinderten-Parkplatz',
 		description:
 			'Das Fahrzeug parkte auf einem gekennzeichneten Schwerbehinderten-Parkplatz, ohne dass ein gültiger Schwerbehindertenausweis sichtbar war.'
-	},
-	{
-		id: 'halteverbot',
-		label: 'Parken im Halteverbot',
-		description: 'Das Fahrzeug parkte in einem durch Verkehrszeichen ausgewiesenen Halteverbot.'
 	},
 	{
 		id: 'feuerwehrzufahrt',
