@@ -2,7 +2,7 @@
 	"name": "blitz-knoellchen",
 	"description": "Progressive Web App zur Meldung von Falschparkern an die Bußgeldstelle Köln per E-Mail.",
 	"private": true,
-	"version": "1.0.86",
+	"version": "1.0.87",
 	"type": "module",
 	"engines": {
 		"node": ">=20"
@@ -47,7 +47,7 @@
 		"eslint-plugin-svelte": "^3.19.0",
 		"globals": "^17.6.0",
 		"husky": "^9.1.7",
-		"lint-staged": "^17.5.1",
+		"lint-staged": "17.5.1",
 		"playwright": "^1.60.0",
 		"prettier": "^3.8.3",
 		"prettier-plugin-svelte": "^4.1.0",
