@@ -16,16 +16,11 @@
 	{/if}
 </svelte:head>
 
-<PageHeader
-	logo
-	title="Blitz-Knöllchen"
-	linkHref={resolve('/historie')}
-	linkLabel="Historie"
-	linkIcon="history"
-/>
+<PageHeader linkHref={resolve('/historie')} linkLabel="Historie" linkIcon="history" />
 <main
 	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
 >
+	<h1 class="sr-only">Blitz-Knöllchen – Falschparker melden</h1>
 	<ReportForm
 		demoRecipientEmail={data.demoRecipientEmail}
 		liveRecipientEmail={data.liveRecipientEmail}

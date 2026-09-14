@@ -51,10 +51,12 @@
 	<title>Historie – Blitz-Knöllchen</title>
 </svelte:head>
 
-<PageHeader title="Historie" linkHref={resolve('/')} linkLabel="Zurück" linkIcon="back" />
+<PageHeader linkHref={resolve('/')} linkLabel="Zurück" linkIcon="back" />
 <main
 	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
 >
+	<h1 class="text-xl font-semibold tracking-tight text-ink md:text-2xl">Historie</h1>
+
 	{#if !loaded}
 		<p role="status" class="text-ink-muted">Historie wird geladen…</p>
 	{:else if entries.length === 0}
@@ -64,7 +66,7 @@
 	<ul class="flex flex-col gap-3">
 		{#each entries as entry (entry.id)}
 			<li class="rounded-card bg-surface p-3 shadow-card">
-				<p class="text-lg font-medium text-ink">{entry.incidentTypeLabels.join(', ')}</p>
+				<h2 class="text-lg font-medium text-ink">{entry.incidentTypeLabels.join(', ')}</h2>
 				<p class="text-lg text-ink-muted">{entry.locationAddress}</p>
 				{#if entry.licensePlate}
 					<p class="text-base text-ink-muted">
