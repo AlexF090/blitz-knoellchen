@@ -252,7 +252,7 @@
 			</div>
 			<div
 				bind:this={container}
-				class="h-full w-full touch-none overflow-hidden"
+				class="size-full touch-none overflow-hidden"
 				role="presentation"
 				onwheel={handleWheel}
 				ondblclick={handleDoubleClick}
@@ -266,7 +266,7 @@
 					bind:this={imgEl}
 					src={objectUrl}
 					alt="Beweisfoto"
-					class="h-full w-full object-contain will-change-transform"
+					class="size-full object-contain will-change-transform"
 					style="transform: translate({translateX}px, {translateY}px) scale({scale}); transition: {snapping
 						? `transform ${SNAP_DURATION_MS}ms ease-out`
 						: 'none'};"
