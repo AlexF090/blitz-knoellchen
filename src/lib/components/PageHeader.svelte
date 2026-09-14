@@ -4,14 +4,12 @@
 	import LogoLockup from '$lib/components/branding/LogoLockup.svelte';
 
 	interface Props {
-		title: string;
 		linkHref: string;
 		linkLabel: string;
 		linkIcon: 'history' | 'back';
-		logo?: boolean;
 	}
 
-	let { title, linkHref, linkLabel, linkIcon, logo = false }: Props = $props();
+	let { linkHref, linkLabel, linkIcon }: Props = $props();
 </script>
 
 <div
@@ -21,13 +19,7 @@
 		class="mx-auto flex max-w-md items-center justify-between px-4 py-3 sm:px-6 md:max-w-3xl lg:max-w-5xl"
 	>
 		<div class="flex items-center gap-3">
-			<h1 class="text-xl font-semibold tracking-tight text-ink md:text-2xl">
-				{#if logo}
-					<LogoLockup />
-				{:else}
-					{title}
-				{/if}
-			</h1>
+			<LogoLockup />
 			{#if appMode.current !== null}
 				<button
 					type="button"

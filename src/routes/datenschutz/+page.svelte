@@ -7,15 +7,12 @@
 	<title>Datenschutzerklärung – Blitz-Knöllchen</title>
 </svelte:head>
 
-<PageHeader
-	title="Datenschutzerklärung"
-	linkHref={resolve('/')}
-	linkLabel="Zurück"
-	linkIcon="back"
-/>
+<PageHeader linkHref={resolve('/')} linkLabel="Zurück" linkIcon="back" />
 <main
 	class="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 py-4 text-lg text-ink sm:p-6 md:max-w-3xl md:py-8 lg:max-w-5xl"
 >
+	<h1 class="text-xl font-semibold tracking-tight text-ink md:text-2xl">Datenschutzerklärung</h1>
+
 	<!-- max-w-prose begrenzt die Zeilenbreite auf eine lesbare Zeichenzahl (WCAG-AAA SC 1.4.8) —
 		unabhängig von der Breite von <main>, die dem restlichen Seiten-Layout folgt. -->
 	<div
