@@ -5,7 +5,7 @@ import { shouldThrottle } from '$lib/geocode/rateLimiter';
 import type { RequestHandler } from './$types';
 
 // Non-blocking Soft-Limit — anders als der blockierende Reverse-Geocode-Proxy, siehe
-// rateLimiter.ts und die ADR in CLAUDE.md. Gilt gemeinsam mit /api/geocode.
+// rateLimiter.ts und die ADR in docs/architektur.md. Gilt gemeinsam mit /api/geocode.
 const MIN_INTERVAL_MS = 1000;
 
 export const GET: RequestHandler = async ({ url, fetch }) => {

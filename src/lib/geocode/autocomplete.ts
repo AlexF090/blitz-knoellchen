@@ -41,7 +41,7 @@ const buildSuggestionLabel = (item: {
 	return cityLine ? `${streetLine}, ${cityLine}` : streetLine;
 };
 
-// Die App deckt aktuell nur Köln ab (s. CLAUDE.md, "Weitere Stadt hinzufügen") — die Suche wird
+// Die App deckt aktuell nur Köln ab (s. docs/architektur.md, "Weitere Stadt hinzufügen") — die Suche wird
 // deshalb hart auf eine Köln-Bounding-Box begrenzt (`bounded=1`), statt eine ungenutzte
 // Multi-City-Parametrisierung vorzubereiten. Format laut LocationIQ-Doku: viewbox=left,top,right,bottom
 // (min_lon,max_lat,max_lon,min_lat).
