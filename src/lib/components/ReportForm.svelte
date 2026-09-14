@@ -4,14 +4,16 @@
 	import { CITIES } from '$lib/config/cities';
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
 	import { fetchAddress } from '$lib/geocode/client';
-	import { formatAddress } from '$lib/geocode/formatAddress';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
+	import { buildHistoryEntry } from '$lib/history/buildHistoryEntry';
 	import { addEntry, clearDraft, getDraft, saveDraft } from '$lib/history/db';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { createPhotoEntry, HeicConversionError } from '$lib/photo/createPhotoEntry';
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
 	import { PHOTO_WARNINGS, pruneWarnings } from '$lib/report/photoWarnings';
+	import { sendVehicleReport } from '$lib/report/sendClient';
 	import { buildSendFormData } from '$lib/report/sendFormData';
+	import type { VehicleSendResult } from '$lib/report/sendResults';
 	import {
 		buttonDestructive,
 		buttonDestructiveSecondary,
@@ -62,7 +64,7 @@
 	let photoProcessingError = $state<string | null>(null);
 	let vehicleGeocodeWarnings = $state<Record<string, string>>({});
 	let sendError = $state<string | null>(null);
-	let sendResults = $state<{ licensePlate: string; ok: boolean }[]>([]);
+	let sendResults = $state<VehicleSendResult[]>([]);
 	let submitting = $state(false);
 	let isEditingProfile = $state(true);
 	let formReady = $state(false);
@@ -370,7 +372,7 @@
 			await saveProfileFields();
 
 			const photoById = new Map(form.photos.map((photo) => [photo.id, photo]));
-			const results: { vehicle: VehicleEntry; ok: boolean }[] = [];
+			const results: VehicleSendResult[] = [];
 
 			for (const [index, vehicle] of form.vehicles.entries()) {
 				const incidentTypes = city.incidentTypes.filter((t) =>
@@ -392,43 +394,29 @@
 					}))
 				});
 
-				let ok: boolean;
-				try {
-					const response = await fetch('/api/send', { method: 'POST', body });
-					ok = response.ok;
-				} catch {
-					ok = false;
-				}
-				results.push({ vehicle, ok });
+				const ok = await sendVehicleReport(body);
+				results.push({
+					vehicleId: vehicle.id,
+					licensePlate: normalizeLicensePlate(vehicle.licensePlate, vehicle.licensePlateCountry),
+					ok
+				});
 
 				if (ok) {
-					await addEntry({
-						id: crypto.randomUUID(),
-						timestamp: Date.now(),
-						firstName: form.firstName,
-						lastName: form.lastName,
-						locationAddress: formatAddress({
-							street: vehicle.locationStreet,
-							houseNumber: vehicle.locationHouseNumber,
-							postcode: vehicle.locationPostcode,
-							city: vehicle.locationCity
-						}),
-						incidentTypeLabels: incidentTypes.map((t) => t.label),
-						licensePlate: normalizeLicensePlate(vehicle.licensePlate, vehicle.licensePlateCountry),
-						licensePlateCountry: vehicle.licensePlateCountry,
-						vehicleType: vehicle.vehicleType,
-						make: vehicle.make,
-						color: vehicle.color,
-						notes: vehicle.notes,
-						thumbnails: vehiclePhotos.map((photo) => photo.blob)
-					});
+					await addEntry(
+						buildHistoryEntry({
+							id: crypto.randomUUID(),
+							timestamp: Date.now(),
+							firstName: form.firstName,
+							lastName: form.lastName,
+							vehicle,
+							incidentTypes,
+							photos: vehiclePhotos
+						})
+					);
 				}
 			}
 
-			sendResults = results.map((r) => ({
-				licensePlate: normalizeLicensePlate(r.vehicle.licensePlate, r.vehicle.licensePlateCountry),
-				ok: r.ok
-			}));
+			sendResults = results;
 
 			const failedCount = results.filter((r) => !r.ok).length;
 			if (failedCount === results.length) {
@@ -442,7 +430,7 @@
 				successCount = results.length;
 				successDialog?.showModal();
 			}
-			const succeededIds = new Set(results.filter((r) => r.ok).map((r) => r.vehicle.id));
+			const succeededIds = new Set(results.filter((r) => r.ok).map((r) => r.vehicleId));
 			form.vehicles = form.vehicles.filter((vehicle) => !succeededIds.has(vehicle.id));
 
 			if (form.vehicles.length === 0) {
