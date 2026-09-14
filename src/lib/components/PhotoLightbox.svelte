@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import type { PhotoEntry } from '$lib/validation/formSchema';
+
+	export interface LightboxPhoto {
+		blob: Blob;
+		alt?: string;
+	}
 
 	interface Props {
-		photo: PhotoEntry | null;
+		photo: LightboxPhoto | null;
 		onClose: () => void;
 	}
 
@@ -265,7 +269,7 @@
 				<img
 					bind:this={imgEl}
 					src={objectUrl}
-					alt="Beweisfoto"
+					alt={photo.alt ?? 'Beweisfoto'}
 					class="size-full object-contain will-change-transform"
 					style="transform: translate({translateX}px, {translateY}px) scale({scale}); transition: {snapping
 						? `transform ${SNAP_DURATION_MS}ms ease-out`

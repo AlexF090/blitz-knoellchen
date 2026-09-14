@@ -1,15 +1,49 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import PhotoLightbox, { type LightboxPhoto } from '$lib/components/PhotoLightbox.svelte';
 	import { listEntries, type HistoryEntry } from '$lib/history/db';
 
 	let entries = $state<HistoryEntry[]>([]);
 	let loaded = $state(false);
+	let lightboxTarget = $state<{ entryId: string; index: number } | null>(null);
+
+	// Object-URLs werden einmalig beim Laden erzeugt (die Liste ändert sich danach nicht mehr)
+	// und müssen daher explizit freigegeben werden, statt reaktiv wie in PhotoLightbox selbst.
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity
+	const objectUrlsByEntry = new Map<string, string[]>();
 
 	onMount(async () => {
 		entries = await listEntries();
+		for (const entry of entries) {
+			objectUrlsByEntry.set(
+				entry.id,
+				entry.thumbnails.map((blob) => URL.createObjectURL(blob))
+			);
+		}
 		loaded = true;
+	});
+
+	onDestroy(() => {
+		for (const urls of objectUrlsByEntry.values()) {
+			for (const url of urls) URL.revokeObjectURL(url);
+		}
+	});
+
+	const lightboxPhoto = $derived.by((): LightboxPhoto | null => {
+		const target = lightboxTarget;
+		if (!target) return null;
+		const entry = entries.find((candidate) => candidate.id === target.entryId);
+		const blob = entry?.thumbnails[target.index];
+		if (!entry || !blob) return null;
+		const position = `${target.index + 1} von ${entry.thumbnails.length}`;
+		return {
+			blob,
+			alt: entry.licensePlate
+				? `Beweisfoto ${position} zu Kennzeichen ${entry.licensePlate}`
+				: `Beweisfoto ${position}`
+		};
 	});
 </script>
 
@@ -38,7 +72,24 @@
 					</p>
 				{/if}
 				<p class="text-base text-ink-muted">{new Date(entry.timestamp).toLocaleString('de-DE')}</p>
+
+				{#if entry.thumbnails.length > 0}
+					<div class="mt-2 grid grid-cols-4 gap-2">
+						{#each objectUrlsByEntry.get(entry.id) ?? [] as url, index (url)}
+							<button
+								type="button"
+								onclick={() => (lightboxTarget = { entryId: entry.id, index })}
+								aria-label="Beweisfoto {index + 1} von {entry.thumbnails.length} vergrößern"
+								class="block aspect-square overflow-hidden rounded-control border border-border"
+							>
+								<img src={url} alt="" class="size-full object-cover" />
+							</button>
+						{/each}
+					</div>
+				{/if}
 			</li>
 		{/each}
 	</ul>
 </main>
+
+<PhotoLightbox photo={lightboxPhoto} onClose={() => (lightboxTarget = null)} />
