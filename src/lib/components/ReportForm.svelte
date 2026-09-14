@@ -13,6 +13,7 @@
 	import { embedExifMetadata } from '$lib/image/embedExif';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
+	import { PHOTO_WARNINGS, pruneWarnings } from '$lib/report/photoWarnings';
 	import {
 		buttonDestructive,
 		buttonDestructiveSecondary,
@@ -185,7 +186,7 @@
 		if (!photo.gps) {
 			vehicleGeocodeWarnings = {
 				...vehicleGeocodeWarnings,
-				[vehicle.id]: 'Keine Standortdaten im Foto gefunden — bitte Adresse manuell eingeben.'
+				[vehicle.id]: PHOTO_WARNINGS.noGps
 			};
 			return;
 		}
@@ -196,8 +197,7 @@
 		if (!address?.street || !address?.city) {
 			vehicleGeocodeWarnings = {
 				...vehicleGeocodeWarnings,
-				[vehicle.id]:
-					'Adresse konnte nicht vollständig automatisch ermittelt werden — bitte prüfen/ergänzen.'
+				[vehicle.id]: PHOTO_WARNINGS.incompleteAddress
 			};
 			const coordsNote = `GPS-Koordinaten des Fotos: ${photo.gps.lat}, ${photo.gps.lon}`;
 			vehicle.notes = vehicle.notes ? `${vehicle.notes}\n${coordsNote}` : coordsNote;
@@ -279,12 +279,14 @@
 	const removeVehicle = (id: string) => {
 		if (form.vehicles.length <= 1) return;
 		form.vehicles = form.vehicles.filter((vehicle) => vehicle.id !== id);
+		vehicleGeocodeWarnings = pruneWarnings(vehicleGeocodeWarnings, form.vehicles);
 	};
 
 	const resetVehicle = (id: string) => {
 		form.vehicles = form.vehicles.map((vehicle) =>
 			vehicle.id === id ? createEmptyVehicle() : vehicle
 		);
+		vehicleGeocodeWarnings = pruneWarnings(vehicleGeocodeWarnings, form.vehicles);
 	};
 
 	// Setzt das komplette Formular inkl. "Deine Angaben" zurück, lässt das gespeicherte Profil
