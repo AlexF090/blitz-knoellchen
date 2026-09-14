@@ -84,8 +84,10 @@
 	};
 
 	const handleBlur = () => {
-		// Tastatur-Tab ohne Auswahl schließt die Liste — Maus-Klick auf eine Option ist davon
-		// unberührt, da dort onmousedown preventDefault() das Blur-Event verhindert.
+		// Tastatur-Tab ohne Auswahl schließt die Liste — ein Tap/Klick auf eine Option ist davon
+		// unberührt, da dort onpointerdown preventDefault() das Blur-Event verhindert. pointerdown
+		// statt mousedown, weil iOS Safari bei Touch sonst blur vor dem synthetisierten mousedown
+		// auslösen kann — die Liste schließt sich dann, bevor die Auswahl verarbeitet wird.
 		closeList();
 		onBlur?.();
 	};
@@ -132,7 +134,7 @@
 					role="option"
 					aria-selected={index === activeIndex}
 					class={`flex min-h-11 cursor-pointer items-center p-2 text-lg ${index === activeIndex ? 'bg-primary-50 text-primary-600' : 'text-ink'}`}
-					onmousedown={(event) => {
+					onpointerdown={(event) => {
 						event.preventDefault();
 						selectSuggestion(suggestion);
 					}}
