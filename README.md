@@ -30,8 +30,7 @@ zusammenzusuchen. Ablauf in der App:
 Die App ist als installierbare PWA gebaut (Android: automatisches Install-Banner; iOS: Hinweis
 zu „Zum Home-Bildschirm“ über Safaris Teilen-Menü) und funktioniert dadurch wie eine native App
 auf dem Homescreen. Details zu Architekturentscheidungen (Brevo, Geocoding-Fallback-Kette,
-HEIC-Handling etc.) stehen in [`docs/architektur.md`](./docs/architektur.md), der ursprüngliche
-Auftrag mit allen Anforderungen in [`PROMPT.md`](./PROMPT.md).
+HEIC-Handling etc.) stehen in [`docs/architektur.md`](./docs/architektur.md).
 
 ### Demo- und Live-Modus
 
