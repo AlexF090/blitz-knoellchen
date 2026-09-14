@@ -9,9 +9,9 @@
 		resolveVehicleIncidentTypes
 	} from '$lib/email/buildEmailTemplateInput';
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
-	import { formatAddress } from '$lib/geocode/formatAddress';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
+	import { buildVehicleSummaryRows } from '$lib/report/vehicleSummary';
 	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
 	import { onEnterKey } from '$lib/ui/onEnterKey';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
@@ -26,6 +26,7 @@
 	import { fade } from 'svelte/transition';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import SummaryList from './SummaryList.svelte';
 
 	interface Props {
 		vehicle: VehicleEntry;
@@ -66,7 +67,7 @@
 	let previewDialog = $state<HTMLDialogElement | undefined>(undefined);
 
 	const openResetDialog = () => resetDialog?.showModal();
-	const openPreviewDialog = () => isComplete() && previewDialog?.showModal();
+	const openPreviewDialog = () => isComplete && previewDialog?.showModal();
 
 	const previewPhotos = $derived(
 		vehicle.photoIds
@@ -75,7 +76,7 @@
 	);
 
 	const previewEmail = $derived.by(() => {
-		if (!isComplete()) return null;
+		if (!isComplete) return null;
 		return city.buildEmailBody(
 			buildEmailTemplateInput({
 				profile,
@@ -117,23 +118,6 @@
 
 	const objectUrl = (blob: Blob) => URL.createObjectURL(blob);
 
-	const summaryAddress = () =>
-		vehicle.locationStreet
-			? formatAddress({
-					street: vehicle.locationStreet,
-					houseNumber: vehicle.locationHouseNumber,
-					postcode: vehicle.locationPostcode,
-					city: vehicle.locationCity
-				})
-			: '';
-
-	const formatDateDMY = (isoDate: string) => {
-		const [year, month, day] = isoDate.split('-');
-		return `${day}.${month}.${year}`;
-	};
-
-	const formatTimeRange = (v: VehicleEntry) => (v.endTime ? `${v.time}–${v.endTime}` : v.time);
-
 	const selectHalteverstoss = () => {
 		vehicle.timeMode = 'halteverstoss';
 		vehicle.endTime = '';
@@ -144,21 +128,15 @@
 		triggerHaptic('selection');
 	};
 
-	const summaryIncidentTypes = () =>
-		incidentTypes
-			.filter((type) => vehicle.incidentTypeIds.includes(type.id))
-			.map((type) => type.label)
-			.join(', ');
+	const missingFieldMessages = $derived(Object.values(validateVehicle(vehicle, pool)));
 
-	const missingFieldMessages = () => Object.values(validateVehicle(vehicle, pool));
-
-	const isComplete = () => missingFieldMessages().length === 0;
+	const isComplete = $derived(missingFieldMessages.length === 0);
 
 	// Falls sich Angaben nachträglich als unvollständig herausstellen (z.B. ein Foto wird
 	// andernorts aus dem Pool entfernt), zwingt das die zugeklappte Karte wieder auf, statt
 	// unvollständige Angaben unsichtbar zu lassen.
 	$effect(() => {
-		if (!isComplete() && !open) open = true;
+		if (!isComplete && !open) open = true;
 	});
 
 	const togglePhoto = (photoId: string) => {
@@ -181,7 +159,7 @@
 	// ohne diesen Handler würde Enter in einem Feld das gesamte Formular abschicken statt nur
 	// diese Karte in den Lese-Modus zu klappen (analog zu "Fertig" oben).
 	const onVehicleFieldKeydown = onEnterKey(() => {
-		if (isComplete()) open = false;
+		if (isComplete) open = false;
 	});
 </script>
 
@@ -211,62 +189,31 @@
 	</div>
 
 	{#if !open}
-		<dl
-			transition:fade={{ duration: transitionDuration(150) }}
-			class="mt-3 flex flex-col gap-3 text-lg"
-		>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Fotos</dt>
-				{#if vehicle.photoIds.length > 0}
-					<dd class="mt-1 flex flex-wrap gap-2">
-						{#each vehicle.photoIds as photoId, photoIndex (photoId)}
-							{@const photo = pool.find((p) => p.id === photoId)}
-							{#if photo}
-								<img
-									src={objectUrl(photo.blob)}
-									alt="Beweisfoto {photoIndex + 1} von {vehicle.photoIds.length}"
-									class="size-14 rounded-control border border-border object-cover"
-								/>
-							{/if}
-						{/each}
-					</dd>
-				{:else}
-					<dd class="text-ink">—</dd>
-				{/if}
-			</div>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Kennzeichen</dt>
-				<dd class="text-ink">{vehicle.licensePlate || '—'}</dd>
-			</div>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Fahrzeug</dt>
-				<dd class="text-ink">
-					{vehicle.vehicleType || '—'} · {vehicle.make} · {vehicle.color || '—'}
-				</dd>
-			</div>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Tatort</dt>
-				<dd class="text-ink">{summaryAddress() || '—'}</dd>
-			</div>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Datum / Uhrzeit</dt>
-				<dd class="text-ink">
-					{vehicle.date && vehicle.time
-						? `${formatDateDMY(vehicle.date)}, ${formatTimeRange(vehicle)} Uhr`
-						: '—'}
-				</dd>
-			</div>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Art des Verstoßes</dt>
-				<dd class="text-ink">{summaryIncidentTypes() || '—'}</dd>
-			</div>
-			{#if vehicle.notes}
-				<div>
-					<dt class="text-base font-medium text-ink-muted">Weitere Angaben</dt>
-					<dd class="text-ink">{vehicle.notes}</dd>
-				</div>
-			{/if}
-		</dl>
+		<div transition:fade={{ duration: transitionDuration(150) }}>
+			<SummaryList rows={buildVehicleSummaryRows(vehicle, incidentTypes, { includeEmpty: true })}>
+				{#snippet leading()}
+					<div>
+						<dt class="text-base font-medium text-ink-muted">Fotos</dt>
+						{#if vehicle.photoIds.length > 0}
+							<dd class="mt-1 flex flex-wrap gap-2">
+								{#each vehicle.photoIds as photoId, photoIndex (photoId)}
+									{@const photo = pool.find((p) => p.id === photoId)}
+									{#if photo}
+										<img
+											src={objectUrl(photo.blob)}
+											alt="Beweisfoto {photoIndex + 1} von {vehicle.photoIds.length}"
+											class="size-14 rounded-control border border-border object-cover"
+										/>
+									{/if}
+								{/each}
+							</dd>
+						{:else}
+							<dd class="text-ink">—</dd>
+						{/if}
+					</div>
+				{/snippet}
+			</SummaryList>
+		</div>
 		{#if errors}
 			<p role="alert" class="mt-1 text-lg text-error-fg">Angaben unvollständig</p>
 		{/if}
@@ -660,10 +607,8 @@
 			<button
 				type="button"
 				onclick={openPreviewDialog}
-				disabled={!isComplete()}
-				title={isComplete()
-					? undefined
-					: 'Erst verfügbar, wenn alle Pflichtfelder ausgefüllt sind.'}
+				disabled={!isComplete}
+				title={isComplete ? undefined : 'Erst verfügbar, wenn alle Pflichtfelder ausgefüllt sind.'}
 				class="flex flex-1 items-center justify-center gap-1 {buttonSecondary} disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				<Eye class="size-4" aria-hidden="true" />
@@ -672,8 +617,8 @@
 			{#if open}
 				<button
 					type="button"
-					onclick={() => isComplete() && (open = false)}
-					disabled={!isComplete()}
+					onclick={() => isComplete && (open = false)}
+					disabled={!isComplete}
 					class="flex flex-1 items-center justify-center gap-1 {buttonPrimary} disabled:cursor-not-allowed disabled:bg-border disabled:text-ink-muted"
 					aria-expanded={open}
 				>
@@ -690,7 +635,7 @@
 				</button>
 			{/if}
 		</div>
-		{#if open && !isComplete()}
+		{#if open && !isComplete}
 			<div
 				role="status"
 				transition:fade={{ duration: transitionDuration(150) }}
@@ -698,7 +643,7 @@
 			>
 				<p>Noch nicht einklappbar, bitte prüfen:</p>
 				<ul class="mt-1 list-disc pl-5">
-					{#each missingFieldMessages() as message (message)}
+					{#each missingFieldMessages as message (message)}
 						<li>{message}</li>
 					{/each}
 				</ul>
@@ -718,53 +663,16 @@
 			: 'Die bereits eingetragenen Daten werden unwiderruflich gelöscht.'}
 	</p>
 
-	<dl class="mt-3 flex flex-col gap-3 text-lg">
-		{#if vehicle.photoIds.length > 0}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Foto Auswahl</dt>
-				<dd class="text-ink">{vehicle.photoIds.length}</dd>
-			</div>
-		{/if}
-		{#if vehicle.licensePlate}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Kennzeichen</dt>
-				<dd class="text-ink">{vehicle.licensePlate}</dd>
-			</div>
-		{/if}
-		{#if vehicle.color}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Fahrzeug</dt>
-				<dd class="text-ink">
-					{vehicle.vehicleType ? `${vehicle.vehicleType} · ` : ''}{vehicle.make} ·
-					{vehicle.color}
-				</dd>
-			</div>
-		{/if}
-		{#if summaryAddress()}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Tatort</dt>
-				<dd class="text-ink">{summaryAddress()}</dd>
-			</div>
-		{/if}
-		{#if vehicle.date && vehicle.time}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Datum / Uhrzeit</dt>
-				<dd class="text-ink">{formatDateDMY(vehicle.date)}, {formatTimeRange(vehicle)} Uhr</dd>
-			</div>
-		{/if}
-		{#if summaryIncidentTypes()}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Art des Verstoßes</dt>
-				<dd class="text-ink">{summaryIncidentTypes()}</dd>
-			</div>
-		{/if}
-		{#if vehicle.notes}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Weitere Angaben</dt>
-				<dd class="text-ink">{vehicle.notes}</dd>
-			</div>
-		{/if}
-	</dl>
+	<SummaryList rows={buildVehicleSummaryRows(vehicle, incidentTypes, { includeEmpty: false })}>
+		{#snippet leading()}
+			{#if vehicle.photoIds.length > 0}
+				<div>
+					<dt class="text-base font-medium text-ink-muted">Foto Auswahl</dt>
+					<dd class="text-ink">{vehicle.photoIds.length}</dd>
+				</div>
+			{/if}
+		{/snippet}
+	</SummaryList>
 	{#snippet actions()}
 		<button type="button" onclick={() => resetDialog?.close()} class="flex-1 {buttonSecondary}">
 			Abbrechen
@@ -784,7 +692,7 @@
 	{#if !previewEmail}
 		<p class="mt-1 text-lg text-ink-muted">Noch nicht einklappbar, bitte prüfen:</p>
 		<ul class="mt-1 list-disc pl-5 text-lg text-ink-muted">
-			{#each missingFieldMessages() as message (message)}
+			{#each missingFieldMessages as message (message)}
 				<li>{message}</li>
 			{/each}
 		</ul>

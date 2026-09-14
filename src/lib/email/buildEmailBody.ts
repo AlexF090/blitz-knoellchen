@@ -1,4 +1,5 @@
 import type { EmailTemplateInput } from '$lib/config/cities';
+import { formatIsoDateDMY } from '$lib/format/germanDate';
 import { formatAddress } from '$lib/geocode/formatAddress';
 
 export interface EmailContent {
@@ -7,11 +8,6 @@ export interface EmailContent {
 }
 
 const SUBJECT_BASE = 'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken)';
-
-const formatGermanDate = (isoDate: string): string => {
-	const [year, month, day] = isoDate.split('-');
-	return year && month && day ? `${day}.${month}.${year}` : isoDate;
-};
 
 export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 	const licensePlateLine = input.licensePlate?.trim() ? input.licensePlate.trim() : 'nicht erfasst';
@@ -23,7 +19,7 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 		input.vehicleTotal && input.vehicleTotal > 1
 			? ` (Fahrzeug ${input.vehicleIndex}/${input.vehicleTotal})`
 			: '';
-	const subject = `${SUBJECT_BASE} – ${licensePlateLine}, ${formatGermanDate(input.date)}${vehicleSuffix}`;
+	const subject = `${SUBJECT_BASE} – ${licensePlateLine}, ${formatIsoDateDMY(input.date)}${vehicleSuffix}`;
 	const vehicleDescriptionLine = `${input.make?.trim() || 'unbekannt'} (Farbe: ${input.color?.trim() || 'nicht angegeben'})`;
 	const notes = input.notes?.trim();
 	const incidentLabels = input.incidentTypes.map((t) => t.label).join(', ');
@@ -66,7 +62,7 @@ Name: ${input.firstName} ${input.lastName}
 Anschrift: ${addressLine}${phoneLine}
 
 Tatzeit und Tatort
-Datum: ${formatGermanDate(input.date)}
+Datum: ${formatIsoDateDMY(input.date)}
 Uhrzeit: ${timeLine}
 Tatort: ${locationLine}
 
