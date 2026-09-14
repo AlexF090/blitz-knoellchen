@@ -31,9 +31,6 @@ jobs:
       - name: Type-Check
         run: npm run check
 
-      - name: Unit-Tests
-        run: npm run test:unit -- --run
-
       - name: Playwright-Browser-Version ermitteln
         id: playwright-version
         run: echo "version=$(npm ls @playwright/test --json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).dependencies["@playwright/test"].version')" >> "$GITHUB_OUTPUT"
@@ -52,6 +49,9 @@ jobs:
       - name: Playwright-System-Dependencies installieren
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
+
+      - name: Unit-Tests
+        run: npm run test:unit -- --run
 
       - name: E2E-Tests
         run: npx playwright test

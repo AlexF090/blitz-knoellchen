@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { reloadWithLatestVersion } from './reloadLatest';
 
+if (typeof navigator === 'undefined') {
+	Object.defineProperty(globalThis, 'navigator', { value: {}, configurable: true, writable: true });
+}
+
 const originalServiceWorker = Object.getOwnPropertyDescriptor(navigator, 'serviceWorker');
 
 afterEach(() => {
