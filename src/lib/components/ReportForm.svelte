@@ -2,16 +2,13 @@
 	import { resolve } from '$app/paths';
 	import { appMode } from '$lib/appMode.svelte';
 	import { CITIES } from '$lib/config/cities';
-	import { parseExif } from '$lib/exif/parseExif';
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
 	import { fetchAddress } from '$lib/geocode/client';
 	import { formatAddress } from '$lib/geocode/formatAddress';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { addEntry, clearDraft, getDraft, saveDraft } from '$lib/history/db';
-	import { compressImage } from '$lib/image/compress';
-	import { convertHeicToJpeg, isHeicFile } from '$lib/image/convertHeic';
-	import { embedExifMetadata } from '$lib/image/embedExif';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
+	import { createPhotoEntry, HeicConversionError } from '$lib/photo/createPhotoEntry';
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
 	import { PHOTO_WARNINGS, pruneWarnings } from '$lib/report/photoWarnings';
 	import {
@@ -206,35 +203,16 @@
 
 	const onAddPhoto = async (file: File) => {
 		photoProcessingError = null;
-		const exif = await parseExif(file);
-
 		photoProcessing = true;
 		let entry: PhotoEntry;
 		try {
-			let rawBlob: Blob = file;
-			if (isHeicFile(file)) {
-				try {
-					rawBlob = await convertHeicToJpeg(file);
-				} catch {
-					photoProcessingError =
-						'Dieses HEIC-Foto konnte nicht verarbeitet werden. Bitte ein JPEG/PNG-Foto wählen oder in den Kameraeinstellungen "Am kompatibelsten" aktivieren.';
-					return;
-				}
-			}
-
-			const compressed = await compressImage(rawBlob, { maxDimension: 1600, quality: 0.8 });
-			const withExif = await embedExifMetadata(compressed, exif);
-
-			entry = {
-				id: crypto.randomUUID(),
-				blob: withExif,
-				fileName: file.name,
-				gps: exif.gps,
-				date: exif.date,
-				time: exif.time
-			};
+			entry = await createPhotoEntry(file);
 			form.photos = [...form.photos, entry];
 			errors = { ...errors, photos: undefined };
+		} catch (error) {
+			if (!(error instanceof HeicConversionError)) throw error;
+			photoProcessingError = error.message;
+			return;
 		} finally {
 			// Das Bild selbst ist ab hier fertig prozessiert und im Grid sichtbar — die
 			// nachfolgende Adressauflösung (Netzwerk-Geocoding) darf das Add-Label nicht länger
