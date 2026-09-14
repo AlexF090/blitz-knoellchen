@@ -12,7 +12,7 @@ Alltag ein falsch geparktes Auto sehen und es in unter 30 Sekunden vom Smartphon
 wollen, ohne eine native Mail-App zu öffnen. Ablauf: Foto machen → App liest Datum/GPS aus den
 EXIF-Daten aus und ermittelt per Reverse-Geocoding eine Adresse → Verstoßart wählen → Absenden
 verschickt eine fertig formulierte E-Mail; die Anzeige erscheint danach in einer lokalen
-Historie. Der vollständige Auftrag mit allen Details steht in `PROMPT.md`.
+Historie.
 
 ## Architekturentscheidungen (ADRs)
 
@@ -413,6 +413,6 @@ auf SvelteKit. Wichtige Entsprechungen für die Wartung ohne tiefe Svelte-Vorerf
 ## Bekannte Tooling-Einschränkung
 
 Lighthouse ≥ v12 hat die eigenständige PWA-Kategorie entfernt (kein Score mehr dafür). Die
-PWA-Anforderungen aus `PROMPT.md` Abschnitt 8 werden stattdessen manuell verifiziert: Manifest
+ursprünglich geforderten PWA-Anforderungen werden stattdessen manuell verifiziert: Manifest
 unter `/manifest.webmanifest` (Name, Icons 192/512/maskable, `display: standalone`) und
 Service-Worker-Generierung beim Build (`@vite-pwa/sveltekit`, siehe Build-Output).
