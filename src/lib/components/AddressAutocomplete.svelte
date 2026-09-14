@@ -100,6 +100,7 @@
 		{#snippet control()}
 			<input
 				{id}
+				name={id}
 				bind:this={inputElement}
 				autocomplete={autocompleteAttr as HTMLInputElement['autocomplete']}
 				{required}
