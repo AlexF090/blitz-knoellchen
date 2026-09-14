@@ -383,6 +383,7 @@
 						{#snippet control()}
 							<input
 								id="licensePlate-{vehicle.id}"
+								name="licensePlate-{vehicle.id}"
 								value={vehicle.licensePlate}
 								oninput={handleLicensePlateInput}
 								onblur={handleLicensePlateBlur}
@@ -408,6 +409,7 @@
 						{#snippet control()}
 							<select
 								id="vehicleType-{vehicle.id}"
+								name="vehicleType-{vehicle.id}"
 								bind:value={vehicle.vehicleType}
 								required
 								aria-required="true"
@@ -482,8 +484,11 @@
 			<div class="mt-3">
 				<FormField id="notes-{vehicle.id}" label="Weitere Angaben (optional)" wrapperClass="">
 					{#snippet control()}
-						<textarea id="notes-{vehicle.id}" bind:value={vehicle.notes} class={inputBase}
-						></textarea>
+						<textarea
+							id="notes-{vehicle.id}"
+							name="notes-{vehicle.id}"
+							bind:value={vehicle.notes}
+							class={inputBase}></textarea>
 					{/snippet}
 				</FormField>
 			</div>
