@@ -205,6 +205,8 @@
 										<img
 											src={objectUrl(photo.blob)}
 											alt="Beweisfoto {photoIndex + 1} von {vehicle.photoIds.length}"
+											width="56"
+											height="56"
 											class="size-14 rounded-control border border-border object-cover"
 										/>
 									{/if}
@@ -249,6 +251,8 @@
 								<img
 									src={objectUrl(photo.blob)}
 									alt="Foto {photo.fileName} auswählen"
+									width="96"
+									height="96"
 									class="size-full object-cover"
 								/>
 								{#if selected}
@@ -414,7 +418,7 @@
 								required
 								aria-required="true"
 								{...ariaFieldProps(`vehicleType-${vehicle.id}`, errors?.vehicleType)}
-								class={inputBase}
+								class="{inputBase} bg-surface text-ink"
 							>
 								<option value="" disabled>Bitte wählen</option>
 								{#each VEHICLE_TYPES as type (type)}<option value={type}>{type}</option>{/each}
@@ -470,7 +474,7 @@
 							<span class="flex items-center gap-1.5">
 								{type.label}
 								{#if Icon}
-									<Icon class="size-5 shrink-0" />
+									<Icon class="size-5 shrink-0" aria-hidden="true" />
 								{/if}
 							</span>
 						</label>

@@ -1,9 +1,10 @@
 <script lang="ts">
 	interface Props {
 		class?: string;
+		'aria-hidden'?: 'true' | 'false';
 	}
 
-	let { class: className = '' }: Props = $props();
+	let { class: className = '', 'aria-hidden': ariaHidden }: Props = $props();
 </script>
 
 <!-- StVO-Zeichen 283 (Halteverbot), Originaldatei von Wikimedia Commons (gemeinfrei/CC), lokal
@@ -11,5 +12,6 @@
 <img
 	src="/signs/zeichen-283-halteverbot.svg"
 	alt="Verkehrszeichen 283 (Halteverbot)"
+	aria-hidden={ariaHidden}
 	class={className}
 />
