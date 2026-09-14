@@ -20,7 +20,6 @@
 		buttonSecondary
 	} from '$lib/ui/buttonStyles';
 	import { onEnterKey } from '$lib/ui/onEnterKey';
-	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import {
 		getMaxPoolPhotos,
 		isFormValid,
@@ -37,6 +36,7 @@
 	import { fly } from 'svelte/transition';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import FormField from './FormField.svelte';
 	import PhotoPool from './PhotoPool.svelte';
 	import VehicleBlock from './VehicleBlock.svelte';
 
@@ -585,50 +585,24 @@
 					</p>
 
 					<div class="mt-3 grid grid-cols-2 gap-3">
-						<div class="min-w-0">
-							<label for="firstName" class="block text-lg font-medium text-ink"
-								>Vorname <span class="text-error-fg">*</span></label
-							>
-							<input
-								id="firstName"
-								autocomplete="given-name"
-								required
-								aria-required="true"
-								{...ariaFieldProps('firstName', errors.firstName)}
-								bind:value={form.firstName}
-								onblur={saveProfileFields}
-								class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-							/>
-							{#if errors.firstName}<p
-									id="firstName-error"
-									role="alert"
-									class="mt-1 text-lg text-error-fg"
-								>
-									{errors.firstName}
-								</p>{/if}
-						</div>
-						<div class="min-w-0">
-							<label for="lastName" class="block text-lg font-medium text-ink"
-								>Nachname <span class="text-error-fg">*</span></label
-							>
-							<input
-								id="lastName"
-								autocomplete="family-name"
-								required
-								aria-required="true"
-								{...ariaFieldProps('lastName', errors.lastName)}
-								bind:value={form.lastName}
-								onblur={saveProfileFields}
-								class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-							/>
-							{#if errors.lastName}<p
-									id="lastName-error"
-									role="alert"
-									class="mt-1 text-lg text-error-fg"
-								>
-									{errors.lastName}
-								</p>{/if}
-						</div>
+						<FormField
+							id="firstName"
+							label="Vorname"
+							required
+							autocompleteAttr="given-name"
+							error={errors.firstName}
+							bind:value={form.firstName}
+							onblur={saveProfileFields}
+						/>
+						<FormField
+							id="lastName"
+							label="Nachname"
+							required
+							autocompleteAttr="family-name"
+							error={errors.lastName}
+							bind:value={form.lastName}
+							onblur={saveProfileFields}
+						/>
 					</div>
 
 					<div class="mt-3">
@@ -652,83 +626,49 @@
 					</div>
 
 					<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
-						<div class="min-w-0">
-							<label for="addressPostcode" class="block text-lg font-medium text-ink"
-								>PLZ <span class="text-error-fg">*</span></label
-							>
-							<input
-								id="addressPostcode"
-								autocomplete="postal-code"
-								required
-								aria-required="true"
-								{...ariaFieldProps('addressPostcode', errors.addressPostcode)}
-								bind:value={form.addressPostcode}
-								onblur={saveProfileFields}
-								class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-							/>
-							{#if errors.addressPostcode}<p
-									id="addressPostcode-error"
-									role="alert"
-									class="mt-1 text-lg text-error-fg"
-								>
-									{errors.addressPostcode}
-								</p>{/if}
-						</div>
-						<div class="min-w-0">
-							<label for="addressCity" class="block text-lg font-medium text-ink"
-								>Ort <span class="text-error-fg">*</span></label
-							>
-							<input
-								id="addressCity"
-								autocomplete="address-level2"
-								required
-								aria-required="true"
-								{...ariaFieldProps('addressCity', errors.addressCity)}
-								bind:value={form.addressCity}
-								onblur={saveProfileFields}
-								class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-							/>
-							{#if errors.addressCity}<p
-									id="addressCity-error"
-									role="alert"
-									class="mt-1 text-lg text-error-fg"
-								>
-									{errors.addressCity}
-								</p>{/if}
-						</div>
+						<FormField
+							id="addressPostcode"
+							label="PLZ"
+							required
+							autocompleteAttr="postal-code"
+							error={errors.addressPostcode}
+							bind:value={form.addressPostcode}
+							onblur={saveProfileFields}
+						/>
+						<FormField
+							id="addressCity"
+							label="Ort"
+							required
+							autocompleteAttr="address-level2"
+							error={errors.addressCity}
+							bind:value={form.addressCity}
+							onblur={saveProfileFields}
+						/>
 					</div>
 
 					<div class="mt-3">
-						<label for="email" class="block text-lg font-medium text-ink"
-							>Deine E-Mail-Adresse <span class="text-error-fg">*</span></label
-						>
-						<input
+						<FormField
 							id="email"
+							label="Deine E-Mail-Adresse"
 							type="email"
-							autocomplete="email"
 							required
-							aria-required="true"
-							spellcheck="false"
-							{...ariaFieldProps('email', errors.email)}
+							autocompleteAttr="email"
+							spellcheck={false}
+							error={errors.email}
 							bind:value={form.email}
 							onblur={saveProfileFields}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 						/>
-						{#if errors.email}<p id="email-error" role="alert" class="mt-1 text-lg text-error-fg">
-								{errors.email}
-							</p>{/if}
 					</div>
 
 					<div class="mt-3">
-						<label for="phone" class="block text-lg font-medium text-ink">Telefonnummer</label>
-						<input
+						<FormField
 							id="phone"
+							label="Telefonnummer"
 							type="tel"
-							autocomplete="tel"
+							autocompleteAttr="tel"
 							placeholder="z. B. 0221 12345678"
 							bind:value={form.phone}
 							onblur={saveProfileFields}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
 						/>
 					</div>
 
