@@ -3,8 +3,9 @@
 	import { createAddressSuggestionsController } from '$lib/geocode/addressSuggestionsController';
 	import type { AddressSuggestion } from '$lib/geocode/autocomplete';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
-	import { fieldErrorBase, inputBase, labelBase, requiredMark } from '$lib/ui/inputStyles';
+	import { inputBase } from '$lib/ui/inputStyles';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
+	import FormField from './FormField.svelte';
 
 	interface Props {
 		id: string;
@@ -94,54 +95,54 @@
 
 <svelte:window onclick={onDocumentClick} />
 
-<div class="relative min-w-0" bind:this={containerElement}>
-	<label for={id} class={labelBase}
-		>{label}
-		{#if required}<span class={requiredMark}>*</span>{/if}</label
-	>
-	<input
-		{id}
-		bind:this={inputElement}
-		autocomplete={autocompleteAttr as HTMLInputElement['autocomplete']}
-		{required}
-		aria-required={required}
-		role="combobox"
-		aria-expanded={open}
-		aria-controls={listboxId}
-		aria-autocomplete="list"
-		aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
-		{placeholder}
-		{...ariaFieldProps(id, error)}
-		bind:value
-		oninput={scheduleSearch}
-		onkeydown={onKeydown}
-		onblur={handleBlur}
-		class={inputBase}
-	/>
-	{#if error}<p id="{id}-error" role="alert" class={fieldErrorBase}>{error}</p>{/if}
-
-	{#if open}
-		<ul
-			id={listboxId}
-			role="listbox"
-			in:fly={{ y: -4, duration: transitionDuration(150) }}
-			class="absolute z-10 mt-1 w-full rounded-control border border-border bg-surface shadow-card"
-		>
-			{#each suggestions as suggestion, index (suggestion.label + index)}
-				<li
-					id={optionId(index)}
-					role="option"
-					aria-selected={index === activeIndex}
-					class={`flex min-h-11 cursor-pointer items-center p-2 text-lg ${index === activeIndex ? 'bg-primary-50 text-primary-600' : 'text-ink'}`}
-					onmousedown={(event) => {
-						event.preventDefault();
-						selectSuggestion(suggestion);
-					}}
-					onmouseenter={() => (activeIndex = index)}
+<div bind:this={containerElement}>
+	<FormField {id} {label} {required} {error} wrapperClass="relative min-w-0">
+		{#snippet control()}
+			<input
+				{id}
+				bind:this={inputElement}
+				autocomplete={autocompleteAttr as HTMLInputElement['autocomplete']}
+				{required}
+				aria-required={required}
+				role="combobox"
+				aria-expanded={open}
+				aria-controls={listboxId}
+				aria-autocomplete="list"
+				aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
+				{placeholder}
+				{...ariaFieldProps(id, error)}
+				bind:value
+				oninput={scheduleSearch}
+				onkeydown={onKeydown}
+				onblur={handleBlur}
+				class={inputBase}
+			/>
+		{/snippet}
+		{#snippet after()}
+			{#if open}
+				<ul
+					id={listboxId}
+					role="listbox"
+					in:fly={{ y: -4, duration: transitionDuration(150) }}
+					class="absolute z-10 mt-1 w-full rounded-control border border-border bg-surface shadow-card"
 				>
-					{suggestion.label}
-				</li>
-			{/each}
-		</ul>
-	{/if}
+					{#each suggestions as suggestion, index (suggestion.label + index)}
+						<li
+							id={optionId(index)}
+							role="option"
+							aria-selected={index === activeIndex}
+							class={`flex min-h-11 cursor-pointer items-center p-2 text-lg ${index === activeIndex ? 'bg-primary-50 text-primary-600' : 'text-ink'}`}
+							onmousedown={(event) => {
+								event.preventDefault();
+								selectSuggestion(suggestion);
+							}}
+							onmouseenter={() => (activeIndex = index)}
+						>
+							{suggestion.label}
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		{/snippet}
+	</FormField>
 </div>
