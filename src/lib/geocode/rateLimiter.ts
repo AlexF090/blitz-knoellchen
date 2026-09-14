@@ -1,5 +1,8 @@
-// Modul-State: gilt pro Server-Prozess, gemeinsam für alle Aufrufer dieses Moduls — wichtig,
-// weil LocationIQs Rate-Limit prozessweit für Reverse-Geocode und Autocomplete zusammen gilt.
+// LocationIQs Rate-Limit gilt prozessweit für Reverse-Geocode und Autocomplete zusammen — beide
+// Endpunkte teilen sich deshalb sowohl diese Konstante als auch den Modul-Timestamp unten.
+export const LOCATIONIQ_MIN_INTERVAL_MS = 1000;
+
+// Modul-State: gilt pro Server-Prozess, gemeinsam für alle Aufrufer dieses Moduls.
 let lastRequestAt = 0;
 
 // Non-blocking Soft-Limit für Endpunkte, die bei Überschreitung lieber sofort ein leeres/

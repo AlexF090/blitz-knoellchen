@@ -13,6 +13,7 @@
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
+	import { onEnterKey } from '$lib/ui/onEnterKey';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import type {
 		PhotoEntry,
@@ -67,10 +68,6 @@
 	const openResetDialog = () => resetDialog?.showModal();
 	const openPreviewDialog = () => isComplete() && previewDialog?.showModal();
 
-	const handlePreviewBackdropClick = (event: MouseEvent) => {
-		if (event.target === previewDialog) previewDialog.close();
-	};
-
 	const previewPhotos = $derived(
 		vehicle.photoIds
 			.map((id) => pool.find((p) => p.id === id))
@@ -96,10 +93,6 @@
 		triggerHaptic('warning');
 		if (total > 1) onRemove();
 		else onReset();
-	};
-
-	const handleResetBackdropClick = (event: MouseEvent) => {
-		if (event.target === resetDialog) resetDialog.close();
 	};
 
 	// Kennzeichen bestehen international nur aus Großbuchstaben — kleingeschriebene Eingaben
@@ -187,11 +180,9 @@
 	// Die Fahrzeug-Felder liegen im selben <form> wie der eigentliche Absenden-Button —
 	// ohne diesen Handler würde Enter in einem Feld das gesamte Formular abschicken statt nur
 	// diese Karte in den Lese-Modus zu klappen (analog zu "Fertig" oben).
-	const onVehicleFieldKeydown = (event: KeyboardEvent) => {
-		if (event.key !== 'Enter') return;
-		event.preventDefault();
+	const onVehicleFieldKeydown = onEnterKey(() => {
 		if (isComplete()) open = false;
-	};
+	});
 </script>
 
 <div
@@ -718,7 +709,6 @@
 
 <ConfirmDialog
 	bind:dialog={resetDialog}
-	onBackdropClick={handleResetBackdropClick}
 	titleId="reset-dialog-title-{vehicle.id}"
 	title={total > 1 ? 'Fahrzeug/Vorgang entfernen?' : 'Fahrzeug/Vorgang zurücksetzen?'}
 >
@@ -787,7 +777,6 @@
 
 <ConfirmDialog
 	bind:dialog={previewDialog}
-	onBackdropClick={handlePreviewBackdropClick}
 	titleId="preview-dialog-title-{vehicle.id}"
 	title={total > 1 ? `Vorschau: Fahrzeug ${index + 1} von ${total}` : 'Vorschau'}
 	desktopMaxWidthClass="sm:max-w-2xl"

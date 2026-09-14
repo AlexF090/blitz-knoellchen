@@ -33,7 +33,6 @@
 <ConfirmDialog
 	bind:dialog
 	dismissable={false}
-	onBackdropClick={() => {}}
 	titleId="app-mode-dialog-title"
 	title="Demo- oder Live-Modus?"
 	desktopMaxWidthClass="sm:max-w-lg"
