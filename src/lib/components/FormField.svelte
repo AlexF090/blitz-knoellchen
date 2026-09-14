@@ -13,6 +13,7 @@
 		list?: string;
 		placeholder?: string;
 		autocompleteAttr?: string;
+		inputmode?: 'text' | 'numeric' | 'tel' | 'email' | 'url' | 'search' | 'decimal' | 'none';
 		spellcheck?: boolean;
 		onblur?: () => void;
 		wrapperClass?: string;
@@ -38,6 +39,7 @@
 		list,
 		placeholder,
 		autocompleteAttr,
+		inputmode,
 		spellcheck,
 		onblur,
 		wrapperClass = 'min-w-0',
@@ -56,11 +58,13 @@
 	{:else}
 		<input
 			{id}
+			name={id}
 			{type}
 			{required}
 			aria-required={required}
 			{list}
 			{placeholder}
+			{inputmode}
 			{spellcheck}
 			autocomplete={autocompleteAttr as HTMLInputElement['autocomplete']}
 			{...ariaFieldProps(id, error)}

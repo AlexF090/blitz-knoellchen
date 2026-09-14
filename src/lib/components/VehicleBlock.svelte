@@ -351,6 +351,7 @@
 						id="locationPostcode-{vehicle.id}"
 						label="PLZ"
 						required
+						inputmode="numeric"
 						error={errors?.locationPostcode}
 						bind:value={vehicle.locationPostcode}
 					/>
@@ -388,6 +389,7 @@
 								required
 								aria-required="true"
 								autocapitalize="characters"
+								spellcheck="false"
 								{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
 								class={inputBase}
 							/>

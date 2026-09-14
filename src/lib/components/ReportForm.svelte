@@ -514,6 +514,7 @@
 							id="addressPostcode"
 							label="PLZ"
 							required
+							inputmode="numeric"
 							autocompleteAttr="postal-code"
 							error={errors.addressPostcode}
 							bind:value={form.addressPostcode}
