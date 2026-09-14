@@ -1,8 +1,17 @@
 {
 	"name": "blitz-knoellchen",
+	"description": "Progressive Web App zur Meldung von Falschparkern an die Bußgeldstelle Köln per E-Mail.",
 	"private": true,
-	"version": "1.0.67",
+	"version": "1.0.68",
 	"type": "module",
+	"engines": {
+		"node": ">=20"
+	},
+	"author": "Alex F",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/AlexF090/blitz-knoellchen.git"
+	},
 	"scripts": {
 		"dev": "vite dev --host",
 		"build": "vite build",
