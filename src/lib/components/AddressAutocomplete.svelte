@@ -3,6 +3,7 @@
 	import { createAddressSuggestionsController } from '$lib/geocode/addressSuggestionsController';
 	import type { AddressSuggestion } from '$lib/geocode/autocomplete';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
+	import { fieldErrorBase, inputBase, labelBase, requiredMark } from '$lib/ui/inputStyles';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 
 	interface Props {
@@ -94,9 +95,9 @@
 <svelte:window onclick={onDocumentClick} />
 
 <div class="relative min-w-0" bind:this={containerElement}>
-	<label for={id} class="block text-lg font-medium text-ink"
+	<label for={id} class={labelBase}
 		>{label}
-		{#if required}<span class="text-error-fg">*</span>{/if}</label
+		{#if required}<span class={requiredMark}>*</span>{/if}</label
 	>
 	<input
 		{id}
@@ -115,9 +116,9 @@
 		oninput={scheduleSearch}
 		onkeydown={onKeydown}
 		onblur={handleBlur}
-		class="mt-1 w-full rounded-control border border-border p-2 text-lg"
+		class={inputBase}
 	/>
-	{#if error}<p id="{id}-error" role="alert" class="mt-1 text-lg text-error-fg">{error}</p>{/if}
+	{#if error}<p id="{id}-error" role="alert" class={fieldErrorBase}>{error}</p>{/if}
 
 	{#if open}
 		<ul

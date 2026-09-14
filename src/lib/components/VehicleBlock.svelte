@@ -28,6 +28,7 @@
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import FormField from './FormField.svelte';
+	import SegmentedControl from './SegmentedControl.svelte';
 	import SummaryList from './SummaryList.svelte';
 
 	interface Props {
@@ -271,38 +272,24 @@
 
 				<fieldset class="mt-2">
 					<legend class="text-lg font-medium text-ink">Art der Zeitangabe</legend>
-					<div class="mt-1 inline-flex w-full rounded-control bg-surface-sunken p-1">
-						<label
-							class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
-							py-3 text-center text-lg font-medium text-ink-muted transition-colors
-							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
-						>
-							<input
-								type="radio"
-								name="timeMode-{vehicle.id}"
-								aria-label="Halteverstoß (Einzelzeitpunkt)"
-								checked={vehicle.timeMode !== 'parkverstoss'}
-								onchange={selectHalteverstoss}
-								class="absolute inset-0 size-full cursor-pointer opacity-0"
-							/>
-							Halteverstoß
-						</label>
-						<label
-							class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
-							py-3 text-center text-lg font-medium text-ink-muted transition-colors
-							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
-						>
-							<input
-								type="radio"
-								name="timeMode-{vehicle.id}"
-								aria-label="Parkverstoß (Zeitraum, mind. 4 Min.)"
-								checked={vehicle.timeMode === 'parkverstoss'}
-								onchange={selectParkverstoss}
-								class="absolute inset-0 size-full cursor-pointer opacity-0"
-							/>
-							Parkverstoß
-						</label>
-					</div>
+					<SegmentedControl
+						name="timeMode-{vehicle.id}"
+						value={vehicle.timeMode}
+						onChange={(mode) =>
+							mode === 'parkverstoss' ? selectParkverstoss() : selectHalteverstoss()}
+						options={[
+							{
+								value: 'halteverstoss',
+								label: 'Halteverstoß',
+								ariaLabel: 'Halteverstoß (Einzelzeitpunkt)'
+							},
+							{
+								value: 'parkverstoss',
+								label: 'Parkverstoß',
+								ariaLabel: 'Parkverstoß (Zeitraum, mind. 4 Min.)'
+							}
+						]}
+					/>
 					{#if vehicle.timeMode === 'parkverstoss'}
 						<p class="mt-1 text-base text-ink-muted">
 							Für die Ahndung eines Parkverstoßes muss das Fahrzeug mindestens 4 Minuten durchgängig
