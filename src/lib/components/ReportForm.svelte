@@ -20,6 +20,7 @@
 		buttonSecondary
 	} from '$lib/ui/buttonStyles';
 	import { onEnterKey } from '$lib/ui/onEnterKey';
+	import { createEmptyForm, createEmptyVehicle } from '$lib/validation/emptyForm';
 	import {
 		getMaxPoolPhotos,
 		isFormValid,
@@ -55,36 +56,7 @@
 	const city = CITIES.koeln;
 	const profileStore = createProfileStore();
 
-	const makeEmptyVehicle = (): VehicleEntry => ({
-		id: crypto.randomUUID(),
-		photoIds: [],
-		licensePlate: '',
-		licensePlateCountry: 'D',
-		vehicleType: '',
-		make: 'Unbekannt',
-		color: '',
-		incidentTypeIds: [],
-		notes: '',
-		date: '',
-		time: '',
-		timeMode: 'halteverstoss',
-		locationStreet: '',
-		locationHouseNumber: '',
-		locationPostcode: '',
-		locationCity: ''
-	});
-
-	let form = $state<ReportFormData>({
-		firstName: '',
-		lastName: '',
-		addressStreet: '',
-		addressPostcode: '',
-		addressCity: '',
-		email: '',
-		phone: '',
-		photos: [],
-		vehicles: []
-	});
+	let form = $state<ReportFormData>(createEmptyForm());
 	let errors = $state<ReturnType<typeof validateReportForm>>({});
 	let photosCardElement = $state<HTMLDivElement | undefined>(undefined);
 	let photoProcessing = $state(false);
@@ -272,7 +244,7 @@
 
 		// Erstes Foto: legt die erste Fahrzeug-Karte an, die bis dahin nicht existiert.
 		if (form.vehicles.length === 0) {
-			const vehicle = makeEmptyVehicle();
+			const vehicle = createEmptyVehicle();
 			vehicle.photoIds = [entry.id];
 			form.vehicles = [vehicle];
 			// Nach der Zuweisung ist form.vehicles[0] die reaktive Proxy-Version — die lokale
@@ -296,7 +268,7 @@
 	};
 
 	const addVehicle = async () => {
-		const entry = makeEmptyVehicle();
+		const entry = createEmptyVehicle();
 		form.vehicles = [...form.vehicles, entry];
 		await tick();
 		document
@@ -311,24 +283,14 @@
 
 	const resetVehicle = (id: string) => {
 		form.vehicles = form.vehicles.map((vehicle) =>
-			vehicle.id === id ? makeEmptyVehicle() : vehicle
+			vehicle.id === id ? createEmptyVehicle() : vehicle
 		);
 	};
 
 	// Setzt das komplette Formular inkl. "Deine Angaben" zurück, lässt das gespeicherte Profil
 	// aber unangetastet (bleibt für die nächste Anzeige als Autofill erhalten).
 	const resetAll = async () => {
-		form = {
-			firstName: '',
-			lastName: '',
-			addressStreet: '',
-			addressPostcode: '',
-			addressCity: '',
-			email: '',
-			phone: '',
-			photos: [],
-			vehicles: []
-		};
+		form = createEmptyForm();
 		errors = {};
 		vehicleGeocodeWarnings = {};
 		sendError = null;
