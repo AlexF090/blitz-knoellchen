@@ -3,7 +3,7 @@
 	// Nutzer-IPs an Google übertragen, DSGVO-Abmahnrisiko (vgl. LG München I, 20.01.2022).
 	// Nur Gewicht 800 geladen, wie im Original-Design, und nur hier importiert statt global in
 	// layout.css, da Archivo ausschließlich für die Wortmarke genutzt wird (Rest der App bleibt
-	// bei der System-Font, s. CLAUDE.md "Apple Design beibehalten").
+	// bei der System-Font, s. docs/architektur.md "Apple Design beibehalten").
 	import '@fontsource/archivo/800.css';
 
 	interface Props {

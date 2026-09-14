@@ -30,8 +30,17 @@ zusammenzusuchen. Ablauf in der App:
 Die App ist als installierbare PWA gebaut (Android: automatisches Install-Banner; iOS: Hinweis
 zu „Zum Home-Bildschirm“ über Safaris Teilen-Menü) und funktioniert dadurch wie eine native App
 auf dem Homescreen. Details zu Architekturentscheidungen (Brevo, Geocoding-Fallback-Kette,
-HEIC-Handling etc.) stehen in [`CLAUDE.md`](./CLAUDE.md), der ursprüngliche Auftrag mit allen
-Anforderungen in [`PROMPT.md`](./PROMPT.md).
+HEIC-Handling etc.) stehen in [`docs/architektur.md`](./docs/architektur.md), der ursprüngliche
+Auftrag mit allen Anforderungen in [`PROMPT.md`](./PROMPT.md).
+
+### Demo- und Live-Modus
+
+Beim ersten Laden fragt ein blockierender Dialog, ob im **Demo-Modus** (die Anzeige geht an
+eine interne Test-Adresse) oder im **Live-Modus** (die Anzeige geht tatsächlich an die
+Bußgeldstelle Köln) gearbeitet werden soll. Die Wahl gilt pro Browser-Tab/-Session
+(`sessionStorage`, übersteht einen Reload, nicht aber einen neuen Tab) und lässt sich jederzeit
+über einen Klick auf das Modus-Badge im Header erneut ändern. Details: ADR „Demo/Live-Modus-
+Auswahl“ in [`docs/architektur.md`](./docs/architektur.md).
 
 ## Voraussetzungen
 
@@ -57,10 +66,11 @@ in `.gitignore` und darf nie committet werden.
    manchen anderen Anbietern gibt es keine kostenlose Sandbox-Absenderadresse ohne eigene
    Domain. Eine fremde Adresse (Gmail, GMX, iCloud, …) funktioniert nicht: ohne eigenen
    DNS-Zugriff scheitert die DMARC-Alignment-Prüfung bei strengen Empfängern (siehe ADR
-   „E-Mail-Versand über Brevo“ in [`CLAUDE.md`](./CLAUDE.md)).
-3. `RECIPIENT_EMAIL` während der Testphase auf die eigene E-Mail-Adresse setzen, um den
-   kompletten Versand zu prüfen, ohne echte Anzeigen zu verschicken. Für den Produktivbetrieb
-   auf die tatsächliche Bußgeldstelle-Adresse (z. B. `bussgeldstelle@stadt-koeln.de`) ändern.
+   „E-Mail-Versand über Brevo“ in [`docs/architektur.md`](./docs/architektur.md)).
+3. `RECIPIENT_EMAIL_DEMO` auf eine eigene Test-Adresse setzen, um den kompletten Versand im
+   Demo-Modus zu prüfen, ohne echte Anzeigen zu verschicken. `RECIPIENT_EMAIL_LIVE` auf die
+   tatsächliche Bußgeldstelle-Adresse (`bussgeldstelle@stadt-koeln.de`) setzen — die App fragt
+   pro Session, welcher der beiden Modi verwendet wird (siehe „Demo- und Live-Modus“ oben).
 
 ### LocationIQ einrichten
 
@@ -91,14 +101,35 @@ npm run preview              # Production-Build lokal ansehen
 
 ## Deployment auf Vercel
 
-Das Projekt nutzt `@sveltejs/adapter-auto`, der auf Vercel automatisch den passenden Adapter
-wählt.
+Das Projekt nutzt `@sveltejs/adapter-vercel` explizit statt `adapter-auto`.
 
 1. Repository mit Vercel verbinden (Vercel erkennt SvelteKit automatisch).
-2. In den Vercel-Projekteinstellungen unter „Environment Variables“ alle vier Variablen aus
-   `.env.example` eintragen (`BREVO_API_KEY`, `EMAIL_FROM`, `RECIPIENT_EMAIL`,
-   `LOCATIONIQ_API_KEY`).
+2. In den Vercel-Projekteinstellungen unter „Environment Variables“ alle fünf Variablen aus
+   `.env.example` eintragen (`BREVO_API_KEY`, `EMAIL_FROM`, `RECIPIENT_EMAIL_DEMO`,
+   `RECIPIENT_EMAIL_LIVE`, `LOCATIONIQ_API_KEY`).
 3. Deploy auslösen (Push auf den verbundenen Branch reicht).
+
+## Versionierung
+
+Ein Husky-Pre-Commit-Hook zählt die Patch-Version in `package.json` bei jedem Commit
+automatisch hoch (`npm version patch --no-git-tag-version`) und staged sie mit — kein
+manuelles Nachziehen nötig. Für Minor-/Major-Sprünge den Patch-Bump danach manuell per
+`npm version minor|major --no-git-tag-version` korrigieren.
+
+## Lizenz
+
+Dieses Repository steht ohne Lizenz zur Verfügung (kein `LICENSE`-File, kein `license`-Feld in
+`package.json`) — es werden damit keine Nutzungsrechte an Dritte eingeräumt. Der Quelltext
+dient der Nachvollziehbarkeit, nicht der freien Weiterverwendung.
+
+## Asset-Attribution
+
+- `static/signs/zeichen-283-halteverbot.svg`, `static/signs/zeichen-286-parkverbot.svg` —
+  amtliche StVO-Verkehrszeichen (Zeichen 283 „Haltverbot“, Zeichen 286 „Eingeschränktes
+  Haltverbot“).
+- Schriftart [Archivo](https://fonts.google.com/specimen/Archivo) über
+  [`@fontsource/archivo`](https://www.npmjs.com/package/@fontsource/archivo), lizenziert unter
+  der [SIL Open Font License 1.1](https://openfontlicense.org/).
 
 ## Installation auf dem Smartphone
 
@@ -112,11 +143,13 @@ iOS.
 
 ## Umgebungsvariablen
 
-| Variable             | Zweck                                                                                   |
-| -------------------- | --------------------------------------------------------------------------------------- |
-| `BREVO_API_KEY`      | API-Key für den E-Mail-Versand über Brevo.                                              |
-| `EMAIL_FROM`         | Feste Absenderadresse (in Brevo authentifizierte eigene Domain).                        |
-| `RECIPIENT_EMAIL`    | Empfänger der Anzeige-Mail (Testphase: eigene Adresse; Produktion: Bußgeldstelle Köln). |
-| `LOCATIONIQ_API_KEY` | Access-Token für die LocationIQ Reverse-Geocoding-/Autocomplete-API.                    |
+| Variable               | Zweck                                                                |
+| ---------------------- | -------------------------------------------------------------------- |
+| `BREVO_API_KEY`        | API-Key für den E-Mail-Versand über Brevo.                           |
+| `EMAIL_FROM`           | Feste Absenderadresse (in Brevo authentifizierte eigene Domain).     |
+| `RECIPIENT_EMAIL_DEMO` | Empfänger im Demo-Modus (interne Test-Adresse).                      |
+| `RECIPIENT_EMAIL_LIVE` | Empfänger im Live-Modus (Bußgeldstelle Köln).                        |
+| `LOCATIONIQ_API_KEY`   | Access-Token für die LocationIQ Reverse-Geocoding-/Autocomplete-API. |
 
-Details zu Architekturentscheidungen und Codebase-Konventionen: siehe [`CLAUDE.md`](./CLAUDE.md).
+Details zu Architekturentscheidungen und Codebase-Konventionen: siehe
+[`docs/architektur.md`](./docs/architektur.md).

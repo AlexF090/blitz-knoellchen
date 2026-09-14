@@ -1,17 +1,12 @@
 import { json } from '@sveltejs/kit';
 import { LOCATIONIQ_API_KEY } from '$env/static/private';
-import { waitForSlot } from '$lib/geocode/rateLimiter';
+import { LOCATIONIQ_MIN_INTERVAL_MS, waitForSlot } from '$lib/geocode/rateLimiter';
 import {
 	createBigDataCloudProvider,
 	createLocationIqProvider,
 	reverseGeocode
 } from '$lib/geocode/reverseGeocode';
 import type { RequestHandler } from './$types';
-
-// Konservative Drosselung für diesen Server-Prozess — liegt sicher unter LocationIQs
-// Free-Tier-Limit von 2 Requests/Sekunde. Gilt gemeinsam mit /api/geocode/autocomplete
-// (siehe rateLimiter.ts).
-const MIN_INTERVAL_MS = 1000;
 
 export const GET: RequestHandler = async ({ url, fetch }) => {
 	const lat = Number(url.searchParams.get('lat'));
@@ -20,7 +15,7 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 		return json({ error: 'lat/lon fehlen oder sind ungültig.' }, { status: 400 });
 	}
 
-	await waitForSlot(MIN_INTERVAL_MS);
+	await waitForSlot(LOCATIONIQ_MIN_INTERVAL_MS);
 
 	const providers = [
 		createLocationIqProvider(LOCATIONIQ_API_KEY, fetch),

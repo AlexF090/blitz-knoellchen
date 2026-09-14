@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Playwright-Browser-Version ermitteln
+        id: playwright-version
+        run: echo "version=$(npm ls @playwright/test --json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).dependencies["@playwright/test"].version')" >> "$GITHUB_OUTPUT"
+
+      - name: Playwright-Browser-Cache
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Playwright-Browser installieren
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright-System-Dependencies installieren
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Unit-Tests
+        run: npm run test:unit -- --run
+
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      BREVO_API_KEY: ci-dummy-key
+      EMAIL_FROM: ci@example.com
+      RECIPIENT_EMAIL_DEMO: ci-demo@example.com
+      RECIPIENT_EMAIL_LIVE: ci-live@example.com
+      LOCATIONIQ_API_KEY: ci-dummy-key
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Playwright-Browser-Version ermitteln
+        id: playwright-version
+        run: echo "version=$(npm ls @playwright/test --json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).dependencies["@playwright/test"].version')" >> "$GITHUB_OUTPUT"
+
+      - name: Playwright-Browser-Cache
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Playwright-Browser installieren
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright-System-Dependencies installieren
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: E2E-Tests
+        run: npx playwright test

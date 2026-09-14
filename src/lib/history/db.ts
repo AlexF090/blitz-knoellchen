@@ -153,11 +153,9 @@ const isValidPhoto = (value: unknown): value is PhotoEntry => {
 	);
 };
 
-// Ein Entwurf kann aus einer älteren App-Version stammen, deren Vehicle-/Photo-Schema nicht
-// mehr zum aktuellen passt (z.B. fehlendes photoIds/blob) — ungültig strukturierte Entwürfe
-// werden verworfen statt sie ungeprüft ins Formular zu übernehmen (führt sonst zu einer
-// TypeError beim Rendering, die formReady nie true werden lässt und die App dauerhaft im
-// Lade-Skeleton hängen lässt).
+// Ein Entwurf kann aus einer älteren App-Version mit abweichendem Schema stammen — ungültige
+// Entwürfe werden verworfen statt ungeprüft übernommen (sonst TypeError beim Rendering, App
+// hängt dauerhaft im Lade-Skeleton).
 const isValidDraft = (stored: StoredDraft): boolean =>
 	Number.isFinite(stored.savedAt) &&
 	Array.isArray(stored.vehicles) &&

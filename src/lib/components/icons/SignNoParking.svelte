@@ -1,9 +1,10 @@
 <script lang="ts">
 	interface Props {
 		class?: string;
+		'aria-hidden'?: 'true' | 'false';
 	}
 
-	let { class: className = '' }: Props = $props();
+	let { class: className = '', 'aria-hidden': ariaHidden }: Props = $props();
 </script>
 
 <!-- StVO-Zeichen 286 (Parkverbot), Originaldatei von Wikimedia Commons (gemeinfrei/CC), lokal
@@ -11,5 +12,6 @@
 <img
 	src="/signs/zeichen-286-parkverbot.svg"
 	alt="Verkehrszeichen 286 (Parkverbot)"
+	aria-hidden={ariaHidden}
 	class={className}
 />

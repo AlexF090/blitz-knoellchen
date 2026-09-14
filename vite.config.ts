@@ -4,7 +4,9 @@ import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-vercel';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
-import { version as appVersion } from './package.json' with { type: 'json' };
+import pkg from './package.json' with { type: 'json' };
+
+const appVersion = pkg.version;
 
 export default defineConfig({
 	define: {
@@ -19,11 +21,9 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			// Deployment-Ziel ist ausschließlich Vercel, daher fest @sveltejs/adapter-vercel statt
-			// adapter-auto — sonst installiert Vercel adapter-vercel bei jedem Build neu nach.
-			// runtime explizit gesetzt, da adapter-vercel die Node-Runtime sonst anhand der lokalen
-			// Node-Version rät und bei neueren, von Vercel noch nicht unterstützten Versionen
-			// (z.B. lokal per nvm installiert) den Build sonst hart abbricht.
+			// Fest @sveltejs/adapter-vercel statt adapter-auto (einziges Deployment-Ziel). runtime
+			// explizit gesetzt, sonst rät adapter-vercel anhand der lokalen (z.B. per nvm neueren,
+			// von Vercel noch nicht unterstützten) Node-Version und bricht den Build sonst ab.
 			adapter: adapter({ runtime: 'nodejs22.x' })
 		}),
 		SvelteKitPWA({
@@ -41,19 +41,14 @@ export default defineConfig({
 				// (overrideManifestIcons).
 			},
 			pwaAssets: {
-				// Muss direkt in `static/` liegen (SvelteKits Pendant zu Vites `publicDir`), nicht
-				// in einem Unterordner: die generierten Dateinamen (`pwa-*.png`, `favicon.ico`, …)
-				// werden root-relativ ins Manifest geschrieben, ein Unterordner hier würde zu
-				// einem Pfad-Mismatch zwischen erzeugter Datei und Manifest-Eintrag führen.
+				// Muss direkt in `static/` liegen (SvelteKits Pendant zu Vites `publicDir`) — die
+				// generierten Dateinamen werden root-relativ ins Manifest geschrieben.
 				image: 'static/app-icon.svg',
-				// theme-color-Meta wird bereits manuell (hell/dunkel-abhängig) in +layout.svelte
-				// gesetzt — kein zusätzliches, nur-helles theme-color aus dem Manifest injizieren.
+				// theme-color wird bereits hell/dunkel-abhängig in +layout.svelte gesetzt.
 				injectThemeColor: false,
 				overrideManifestIcons: true,
-				// Eigenes Preset statt 'minimal-2023' (Default): das Icon ist bereits ein
-				// randloses, quadratisches Vollbild-Motiv mit eigenem Innenabstand (Zettelform),
-				// das Standard-Padding (30 % + weißer Hintergrund für maskable/apple) würde es
-				// zusätzlich verkleinern und einen sichtbaren weißen Rand einfügen.
+				// Eigenes Preset statt 'minimal-2023': Icon ist bereits randlos/quadratisch mit
+				// eigenem Innenabstand, Standard-Padding würde es zusätzlich verkleinern.
 				preset: {
 					transparent: {
 						sizes: [64, 192, 512],
@@ -76,15 +71,11 @@ export default defineConfig({
 			workbox: {
 				// Nur die App-Shell vorcachen, kein komplexes Runtime-Caching.
 				globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
-				// heic-to (nur für HEIC-Fotos per dynamic import geladen, mehrere MB durch die
-				// gebündelte libheif-WASM) überschreitet Workbox' Standardlimit von 2 MiB, das
-				// vor manifestTransforms greift und den Build sonst hart abbricht — daher hier
-				// angehoben. Die Datei bleibt trotzdem außerhalb des Precache (s.u.).
+				// heic-to (dynamic import, mehrere MB durch die gebündelte libheif-WASM)
+				// überschreitet Workbox' Standardlimit von 2 MiB, das vor manifestTransforms
+				// greift und den Build sonst abbricht — daher angehoben, bleibt aber trotzdem
+				// außerhalb des Precache (s.u., kein stabiler Chunk-Dateiname für ein Glob).
 				maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-				// heic-to (wie zuvor heic2any) hat keinen stabilen Dateinamen (SvelteKit hasht
-				// Chunk-Dateinamen ohne Namensanteil), daher per Größe statt per Glob-Pattern vom
-				// Precache ausschließen — die App-Shell soll klein bleiben, die Datei wird bei
-				// Bedarf ganz normal per Netzwerk nachgeladen.
 				manifestTransforms: [
 					(entries) => ({ manifest: entries.filter((entry) => (entry.size ?? 0) < 512 * 1024) })
 				],
