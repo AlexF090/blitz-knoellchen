@@ -23,7 +23,7 @@
 	<div
 		role="note"
 		transition:fly={{ y: 80, duration: transitionDuration(250) }}
-		class="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-primary-button/90 px-4 py-3 text-base text-white shadow-card backdrop-blur-sm"
+		class="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-primary-button/90 px-4 py-3 text-base text-on-primary shadow-card backdrop-blur-sm"
 	>
 		<p class="flex items-center gap-2">
 			<SquarePlus class="size-5 shrink-0" aria-hidden="true" />
@@ -41,7 +41,7 @@
 				type="button"
 				onclick={dismiss}
 				aria-label="Hinweis schließen"
-				class="flex size-11 shrink-0 items-center justify-center rounded text-white/80 hover:text-white"
+				class="flex size-11 shrink-0 items-center justify-center rounded text-on-primary/80 hover:text-on-primary"
 			>
 				✕
 			</button>

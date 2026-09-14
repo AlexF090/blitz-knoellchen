@@ -308,12 +308,12 @@
 								<img
 									src={objectUrl(photo.blob)}
 									alt="Foto {photo.fileName} auswählen"
-									class="h-full w-full object-cover"
+									class="size-full object-cover"
 								/>
 								{#if selected}
 									<span
 										aria-hidden="true"
-										class="absolute inset-0 flex items-center justify-center bg-primary-600/40 text-white"
+										class="absolute inset-0 flex items-center justify-center bg-primary-600/40 text-on-primary"
 										>✓</span
 									>
 								{/if}
@@ -343,7 +343,7 @@
 								aria-label="Halteverstoß (Einzelzeitpunkt)"
 								checked={vehicle.timeMode !== 'parkverstoss'}
 								onchange={selectHalteverstoss}
-								class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+								class="absolute inset-0 size-full cursor-pointer opacity-0"
 							/>
 							Halteverstoß
 						</label>
@@ -358,7 +358,7 @@
 								aria-label="Parkverstoß (Zeitraum, mind. 4 Min.)"
 								checked={vehicle.timeMode === 'parkverstoss'}
 								onchange={selectParkverstoss}
-								class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+								class="absolute inset-0 size-full cursor-pointer opacity-0"
 							/>
 							Parkverstoß
 						</label>

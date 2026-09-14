@@ -42,6 +42,9 @@
 	--color-primary-button: var(--color-primary-600);
 	--color-primary-button-hover: var(--color-primary-700);
 	--color-destructive-button: var(--color-error-fg);
+	/* Textfarbe auf den *-button-Hintergründen/Install-Bannern oben — in beiden Farbmodi
+	   dunkel, kein Dark-Mode-Override nötig. */
+	--color-on-primary: oklch(100% 0 0);
 
 	/* Fahrzeug-Akzentfarben — zur visuellen Unterscheidung mehrerer Karten */
 	--color-vehicle-1: oklch(47.22% 0.0874 247.81);

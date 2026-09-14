@@ -67,9 +67,9 @@
 					type="button"
 					onclick={() => (lightboxPhoto = photo)}
 					aria-label="Foto {photo.fileName} vergrößern"
-					class="group block h-full w-full overflow-hidden rounded-control border border-border"
+					class="group block size-full overflow-hidden rounded-control border border-border"
 				>
-					<img src={objectUrl(photo.blob)} alt="" class="h-full w-full object-cover" />
+					<img src={objectUrl(photo.blob)} alt="" class="size-full object-cover" />
 					<span
 						class="absolute inset-0 flex items-center justify-center bg-ink/0 opacity-0 transition-opacity group-hover:bg-ink/20 group-hover:opacity-100 pointer-coarse:bg-ink/20 pointer-coarse:opacity-100"
 					>
@@ -78,7 +78,7 @@
 							fill="none"
 							stroke="currentColor"
 							stroke-width="2"
-							class="size-6 text-white"
+							class="size-6 text-on-primary"
 							aria-hidden="true"
 						>
 							<path
@@ -93,7 +93,7 @@
 				{#if usageCounts[photo.id] > 1}
 					<span
 						aria-label="Verwendet bei {usageCounts[photo.id]} Fahrzeugen"
-						class="absolute top-1 left-1 rounded-full bg-primary-button px-1.5 py-0.5 text-xs text-white"
+						class="absolute top-1 left-1 rounded-full bg-primary-button px-1.5 py-0.5 text-xs text-on-primary"
 					>
 						<span aria-hidden="true">{usageCounts[photo.id]}×</span>
 					</span>

@@ -28,11 +28,9 @@
 		startY = event.touches[0].clientY;
 	};
 
-	// touchmove muss non-passive registriert sein (siehe $effect unten) — nur so verhindert
-	// preventDefault() hier zuverlässig, dass Chrome die Geste selbst als natives Scrollen
-	// übernimmt und danach keine weiteren touchmove-Events mehr an JS liefert. Pointer-Events
-	// (onpointermove) reichen dafür nicht: deren preventDefault() greift nur, wenn der Browser die
-	// Geste noch nicht vorher schon fürs Scrollen "committed" hat.
+	// touchmove muss non-passive registriert sein (siehe $effect unten) — sonst übernimmt Chrome
+	// die Geste als natives Scrollen. Pointer-Events reichen nicht: deren preventDefault() greift
+	// nur, wenn der Browser die Geste noch nicht fürs Scrollen "committed" hat.
 	const onTouchMove = (event: TouchEvent) => {
 		if (!pulling || refreshing) return;
 		const delta = event.touches[0].clientY - startY;
