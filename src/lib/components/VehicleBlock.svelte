@@ -9,10 +9,12 @@
 		resolveVehicleIncidentTypes
 	} from '$lib/email/buildEmailTemplateInput';
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
-	import { formatAddress } from '$lib/geocode/formatAddress';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
+	import { buildVehicleSummaryRows } from '$lib/report/vehicleSummary';
 	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
+	import { inputBase } from '$lib/ui/inputStyles';
+	import { onEnterKey } from '$lib/ui/onEnterKey';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import type {
 		PhotoEntry,
@@ -25,6 +27,9 @@
 	import { fade } from 'svelte/transition';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import FormField from './FormField.svelte';
+	import SegmentedControl from './SegmentedControl.svelte';
+	import SummaryList from './SummaryList.svelte';
 
 	interface Props {
 		vehicle: VehicleEntry;
@@ -65,11 +70,7 @@
 	let previewDialog = $state<HTMLDialogElement | undefined>(undefined);
 
 	const openResetDialog = () => resetDialog?.showModal();
-	const openPreviewDialog = () => isComplete() && previewDialog?.showModal();
-
-	const handlePreviewBackdropClick = (event: MouseEvent) => {
-		if (event.target === previewDialog) previewDialog.close();
-	};
+	const openPreviewDialog = () => isComplete && previewDialog?.showModal();
 
 	const previewPhotos = $derived(
 		vehicle.photoIds
@@ -78,7 +79,7 @@
 	);
 
 	const previewEmail = $derived.by(() => {
-		if (!isComplete()) return null;
+		if (!isComplete) return null;
 		return city.buildEmailBody(
 			buildEmailTemplateInput({
 				profile,
@@ -96,10 +97,6 @@
 		triggerHaptic('warning');
 		if (total > 1) onRemove();
 		else onReset();
-	};
-
-	const handleResetBackdropClick = (event: MouseEvent) => {
-		if (event.target === resetDialog) resetDialog.close();
 	};
 
 	// Kennzeichen bestehen international nur aus Großbuchstaben — kleingeschriebene Eingaben
@@ -124,23 +121,6 @@
 
 	const objectUrl = (blob: Blob) => URL.createObjectURL(blob);
 
-	const summaryAddress = () =>
-		vehicle.locationStreet
-			? formatAddress({
-					street: vehicle.locationStreet,
-					houseNumber: vehicle.locationHouseNumber,
-					postcode: vehicle.locationPostcode,
-					city: vehicle.locationCity
-				})
-			: '';
-
-	const formatDateDMY = (isoDate: string) => {
-		const [year, month, day] = isoDate.split('-');
-		return `${day}.${month}.${year}`;
-	};
-
-	const formatTimeRange = (v: VehicleEntry) => (v.endTime ? `${v.time}–${v.endTime}` : v.time);
-
 	const selectHalteverstoss = () => {
 		vehicle.timeMode = 'halteverstoss';
 		vehicle.endTime = '';
@@ -151,21 +131,15 @@
 		triggerHaptic('selection');
 	};
 
-	const summaryIncidentTypes = () =>
-		incidentTypes
-			.filter((type) => vehicle.incidentTypeIds.includes(type.id))
-			.map((type) => type.label)
-			.join(', ');
+	const missingFieldMessages = $derived(Object.values(validateVehicle(vehicle, pool)));
 
-	const missingFieldMessages = () => Object.values(validateVehicle(vehicle, pool));
-
-	const isComplete = () => missingFieldMessages().length === 0;
+	const isComplete = $derived(missingFieldMessages.length === 0);
 
 	// Falls sich Angaben nachträglich als unvollständig herausstellen (z.B. ein Foto wird
 	// andernorts aus dem Pool entfernt), zwingt das die zugeklappte Karte wieder auf, statt
 	// unvollständige Angaben unsichtbar zu lassen.
 	$effect(() => {
-		if (!isComplete() && !open) open = true;
+		if (!isComplete && !open) open = true;
 	});
 
 	const togglePhoto = (photoId: string) => {
@@ -187,11 +161,9 @@
 	// Die Fahrzeug-Felder liegen im selben <form> wie der eigentliche Absenden-Button —
 	// ohne diesen Handler würde Enter in einem Feld das gesamte Formular abschicken statt nur
 	// diese Karte in den Lese-Modus zu klappen (analog zu "Fertig" oben).
-	const onVehicleFieldKeydown = (event: KeyboardEvent) => {
-		if (event.key !== 'Enter') return;
-		event.preventDefault();
-		if (isComplete()) open = false;
-	};
+	const onVehicleFieldKeydown = onEnterKey(() => {
+		if (isComplete) open = false;
+	});
 </script>
 
 <div
@@ -220,62 +192,33 @@
 	</div>
 
 	{#if !open}
-		<dl
-			transition:fade={{ duration: transitionDuration(150) }}
-			class="mt-3 flex flex-col gap-3 text-lg"
-		>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Fotos</dt>
-				{#if vehicle.photoIds.length > 0}
-					<dd class="mt-1 flex flex-wrap gap-2">
-						{#each vehicle.photoIds as photoId, photoIndex (photoId)}
-							{@const photo = pool.find((p) => p.id === photoId)}
-							{#if photo}
-								<img
-									src={objectUrl(photo.blob)}
-									alt="Beweisfoto {photoIndex + 1} von {vehicle.photoIds.length}"
-									class="size-14 rounded-control border border-border object-cover"
-								/>
-							{/if}
-						{/each}
-					</dd>
-				{:else}
-					<dd class="text-ink">—</dd>
-				{/if}
-			</div>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Kennzeichen</dt>
-				<dd class="text-ink">{vehicle.licensePlate || '—'}</dd>
-			</div>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Fahrzeug</dt>
-				<dd class="text-ink">
-					{vehicle.vehicleType || '—'} · {vehicle.make} · {vehicle.color || '—'}
-				</dd>
-			</div>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Tatort</dt>
-				<dd class="text-ink">{summaryAddress() || '—'}</dd>
-			</div>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Datum / Uhrzeit</dt>
-				<dd class="text-ink">
-					{vehicle.date && vehicle.time
-						? `${formatDateDMY(vehicle.date)}, ${formatTimeRange(vehicle)} Uhr`
-						: '—'}
-				</dd>
-			</div>
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Art des Verstoßes</dt>
-				<dd class="text-ink">{summaryIncidentTypes() || '—'}</dd>
-			</div>
-			{#if vehicle.notes}
-				<div>
-					<dt class="text-base font-medium text-ink-muted">Weitere Angaben</dt>
-					<dd class="text-ink">{vehicle.notes}</dd>
-				</div>
-			{/if}
-		</dl>
+		<div transition:fade={{ duration: transitionDuration(150) }}>
+			<SummaryList rows={buildVehicleSummaryRows(vehicle, incidentTypes, { includeEmpty: true })}>
+				{#snippet leading()}
+					<div>
+						<dt class="text-base font-medium text-ink-muted">Fotos</dt>
+						{#if vehicle.photoIds.length > 0}
+							<dd class="mt-1 flex flex-wrap gap-2">
+								{#each vehicle.photoIds as photoId, photoIndex (photoId)}
+									{@const photo = pool.find((p) => p.id === photoId)}
+									{#if photo}
+										<img
+											src={objectUrl(photo.blob)}
+											alt="Beweisfoto {photoIndex + 1} von {vehicle.photoIds.length}"
+											width="56"
+											height="56"
+											class="size-14 rounded-control border border-border object-cover"
+										/>
+									{/if}
+								{/each}
+							</dd>
+						{:else}
+							<dd class="text-ink">—</dd>
+						{/if}
+					</div>
+				{/snippet}
+			</SummaryList>
+		</div>
 		{#if errors}
 			<p role="alert" class="mt-1 text-lg text-error-fg">Angaben unvollständig</p>
 		{/if}
@@ -308,12 +251,14 @@
 								<img
 									src={objectUrl(photo.blob)}
 									alt="Foto {photo.fileName} auswählen"
-									class="h-full w-full object-cover"
+									width="96"
+									height="96"
+									class="size-full object-cover"
 								/>
 								{#if selected}
 									<span
 										aria-hidden="true"
-										class="absolute inset-0 flex items-center justify-center bg-primary-600/40 text-white"
+										class="absolute inset-0 flex items-center justify-center bg-primary-600/40 text-on-primary"
 										>✓</span
 									>
 								{/if}
@@ -331,38 +276,24 @@
 
 				<fieldset class="mt-2">
 					<legend class="text-lg font-medium text-ink">Art der Zeitangabe</legend>
-					<div class="mt-1 inline-flex w-full rounded-control bg-surface-sunken p-1">
-						<label
-							class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
-							py-3 text-center text-lg font-medium text-ink-muted transition-colors
-							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
-						>
-							<input
-								type="radio"
-								name="timeMode-{vehicle.id}"
-								aria-label="Halteverstoß (Einzelzeitpunkt)"
-								checked={vehicle.timeMode !== 'parkverstoss'}
-								onchange={selectHalteverstoss}
-								class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-							/>
-							Halteverstoß
-						</label>
-						<label
-							class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
-							py-3 text-center text-lg font-medium text-ink-muted transition-colors
-							has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
-						>
-							<input
-								type="radio"
-								name="timeMode-{vehicle.id}"
-								aria-label="Parkverstoß (Zeitraum, mind. 4 Min.)"
-								checked={vehicle.timeMode === 'parkverstoss'}
-								onchange={selectParkverstoss}
-								class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-							/>
-							Parkverstoß
-						</label>
-					</div>
+					<SegmentedControl
+						name="timeMode-{vehicle.id}"
+						value={vehicle.timeMode}
+						onChange={(mode) =>
+							mode === 'parkverstoss' ? selectParkverstoss() : selectHalteverstoss()}
+						options={[
+							{
+								value: 'halteverstoss',
+								label: 'Halteverstoß',
+								ariaLabel: 'Halteverstoß (Einzelzeitpunkt)'
+							},
+							{
+								value: 'parkverstoss',
+								label: 'Parkverstoß',
+								ariaLabel: 'Parkverstoß (Zeitraum, mind. 4 Min.)'
+							}
+						]}
+					/>
 					{#if vehicle.timeMode === 'parkverstoss'}
 						<p class="mt-1 text-base text-ink-muted">
 							Für die Ahndung eines Parkverstoßes muss das Fahrzeug mindestens 4 Minuten durchgängig
@@ -374,71 +305,31 @@
 				<div
 					class={`mt-2 grid grid-cols-1 gap-3 ${vehicle.timeMode === 'parkverstoss' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
 				>
-					<div class="min-w-0">
-						<label for="date-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Datum <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="date-{vehicle.id}"
-							type="date"
-							bind:value={vehicle.date}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`date-${vehicle.id}`, errors?.date)}
-							class="mt-1 w-full min-w-0 rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.date}<p
-								id="date-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.date}
-							</p>{/if}
-					</div>
-					<div class="min-w-0">
-						<label for="time-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>{vehicle.timeMode === 'parkverstoss' ? 'Von' : 'Uhrzeit'}
-							<span class="text-error-fg">*</span></label
-						>
-						<input
-							id="time-{vehicle.id}"
-							type="time"
-							bind:value={vehicle.time}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`time-${vehicle.id}`, errors?.time)}
-							class="mt-1 w-full min-w-0 rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.time}<p
-								id="time-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.time}
-							</p>{/if}
-					</div>
+					<FormField
+						id="date-{vehicle.id}"
+						label="Datum"
+						type="date"
+						required
+						error={errors?.date}
+						bind:value={vehicle.date}
+					/>
+					<FormField
+						id="time-{vehicle.id}"
+						label={vehicle.timeMode === 'parkverstoss' ? 'Von' : 'Uhrzeit'}
+						type="time"
+						required
+						error={errors?.time}
+						bind:value={vehicle.time}
+					/>
 					{#if vehicle.timeMode === 'parkverstoss'}
-						<div class="min-w-0">
-							<label for="endTime-{vehicle.id}" class="block text-lg font-medium text-ink"
-								>Bis <span class="text-error-fg">*</span></label
-							>
-							<input
-								id="endTime-{vehicle.id}"
-								type="time"
-								bind:value={vehicle.endTime}
-								required
-								aria-required="true"
-								{...ariaFieldProps(`endTime-${vehicle.id}`, errors?.endTime)}
-								class="mt-1 w-full min-w-0 rounded-control border border-border p-2 text-lg"
-							/>
-							{#if errors?.endTime}<p
-									id="endTime-{vehicle.id}-error"
-									role="alert"
-									class="mt-1 text-lg text-error-fg"
-								>
-									{errors.endTime}
-								</p>{/if}
-						</div>
+						<FormField
+							id="endTime-{vehicle.id}"
+							label="Bis"
+							type="time"
+							required
+							error={errors?.endTime}
+							bind:value={vehicle.endTime}
+						/>
 					{/if}
 				</div>
 				<div class="mt-2 grid grid-cols-[2fr_1fr] gap-3">
@@ -450,61 +341,31 @@
 						bind:value={vehicle.locationStreet}
 						onSelect={(suggestion) => applyAddressSuggestion(vehicle, suggestion, true)}
 					/>
-					<div class="min-w-0">
-						<label for="locationHouseNumber-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Hausnr.</label
-						>
-						<input
-							id="locationHouseNumber-{vehicle.id}"
-							bind:value={vehicle.locationHouseNumber}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-					</div>
+					<FormField
+						id="locationHouseNumber-{vehicle.id}"
+						label="Hausnr."
+						bind:value={vehicle.locationHouseNumber}
+					/>
 				</div>
 				{#if geocodeWarning}<p role="status" class="mt-1 text-lg text-warning-fg">
 						{geocodeWarning}
 					</p>{/if}
 				<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
-					<div class="min-w-0">
-						<label for="locationPostcode-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>PLZ <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="locationPostcode-{vehicle.id}"
-							bind:value={vehicle.locationPostcode}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`locationPostcode-${vehicle.id}`, errors?.locationPostcode)}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.locationPostcode}<p
-								id="locationPostcode-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.locationPostcode}
-							</p>{/if}
-					</div>
-					<div class="min-w-0">
-						<label for="locationCity-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Ort <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="locationCity-{vehicle.id}"
-							bind:value={vehicle.locationCity}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`locationCity-${vehicle.id}`, errors?.locationCity)}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.locationCity}<p
-								id="locationCity-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.locationCity}
-							</p>{/if}
-					</div>
+					<FormField
+						id="locationPostcode-{vehicle.id}"
+						label="PLZ"
+						required
+						inputmode="numeric"
+						error={errors?.locationPostcode}
+						bind:value={vehicle.locationPostcode}
+					/>
+					<FormField
+						id="locationCity-{vehicle.id}"
+						label="Ort"
+						required
+						error={errors?.locationCity}
+						bind:value={vehicle.locationCity}
+					/>
 				</div>
 			</fieldset>
 
@@ -512,111 +373,83 @@
 				<legend class="px-1 text-lg font-medium text-ink">Fahrzeug</legend>
 
 				<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
-					<div class="min-w-0">
-						<label for="licensePlateCountry-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Länderkennz.</label
-						>
-						<input
-							id="licensePlateCountry-{vehicle.id}"
-							bind:value={vehicle.licensePlateCountry}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-					</div>
-					<div class="min-w-0">
-						<label for="licensePlate-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Kennzeichen <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="licensePlate-{vehicle.id}"
-							value={vehicle.licensePlate}
-							oninput={handleLicensePlateInput}
-							onblur={handleLicensePlateBlur}
-							required
-							aria-required="true"
-							autocapitalize="characters"
-							{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.licensePlate}<p
-								id="licensePlate-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.licensePlate}
-							</p>{/if}
-					</div>
+					<FormField
+						id="licensePlateCountry-{vehicle.id}"
+						label="Länderkennz."
+						bind:value={vehicle.licensePlateCountry}
+					/>
+					<FormField
+						id="licensePlate-{vehicle.id}"
+						label="Kennzeichen"
+						required
+						error={errors?.licensePlate}
+					>
+						{#snippet control()}
+							<input
+								id="licensePlate-{vehicle.id}"
+								name="licensePlate-{vehicle.id}"
+								value={vehicle.licensePlate}
+								oninput={handleLicensePlateInput}
+								onblur={handleLicensePlateBlur}
+								required
+								aria-required="true"
+								autocapitalize="characters"
+								spellcheck="false"
+								{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
+								class={inputBase}
+							/>
+						{/snippet}
+					</FormField>
 				</div>
 
 				<div class="mt-2">
-					<label for="vehicleType-{vehicle.id}" class="block text-lg font-medium text-ink"
-						>Fahrzeugart <span class="text-error-fg">*</span></label
-					>
-					<select
+					<FormField
 						id="vehicleType-{vehicle.id}"
-						bind:value={vehicle.vehicleType}
+						label="Fahrzeugart"
 						required
-						aria-required="true"
-						{...ariaFieldProps(`vehicleType-${vehicle.id}`, errors?.vehicleType)}
-						class="mt-1 w-full rounded-control border border-border p-2 text-lg"
+						error={errors?.vehicleType}
+						wrapperClass=""
 					>
-						<option value="" disabled>Bitte wählen</option>
-						{#each VEHICLE_TYPES as type (type)}<option value={type}>{type}</option>{/each}
-					</select>
-					{#if errors?.vehicleType}<p
-							id="vehicleType-{vehicle.id}-error"
-							role="alert"
-							class="mt-1 text-lg text-error-fg"
-						>
-							{errors.vehicleType}
-						</p>{/if}
+						{#snippet control()}
+							<select
+								id="vehicleType-{vehicle.id}"
+								name="vehicleType-{vehicle.id}"
+								bind:value={vehicle.vehicleType}
+								required
+								aria-required="true"
+								{...ariaFieldProps(`vehicleType-${vehicle.id}`, errors?.vehicleType)}
+								class="{inputBase} bg-surface text-ink"
+							>
+								<option value="" disabled>Bitte wählen</option>
+								{#each VEHICLE_TYPES as type (type)}<option value={type}>{type}</option>{/each}
+							</select>
+						{/snippet}
+					</FormField>
 				</div>
 
 				<div class="mt-2 grid grid-cols-2 gap-3">
-					<div class="min-w-0">
-						<label for="make-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Marke <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="make-{vehicle.id}"
-							list="vehicle-makes-{vehicle.id}"
-							bind:value={vehicle.make}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`make-${vehicle.id}`, errors?.make)}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-						<datalist id="vehicle-makes-{vehicle.id}">
-							{#each VEHICLE_MAKES as make (make)}<option value={make}></option>{/each}
-						</datalist>
-						{#if errors?.make}<p
-								id="make-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.make}
-							</p>{/if}
-					</div>
-					<div class="min-w-0">
-						<label for="color-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Farbe <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="color-{vehicle.id}"
-							placeholder="z. B. Rot, hell, dunkel"
-							bind:value={vehicle.color}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`color-${vehicle.id}`, errors?.color)}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.color}<p
-								id="color-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.color}
-							</p>{/if}
-					</div>
+					<FormField
+						id="make-{vehicle.id}"
+						label="Marke"
+						required
+						error={errors?.make}
+						list="vehicle-makes-{vehicle.id}"
+						bind:value={vehicle.make}
+					>
+						{#snippet after()}
+							<datalist id="vehicle-makes-{vehicle.id}">
+								{#each VEHICLE_MAKES as make (make)}<option value={make}></option>{/each}
+							</datalist>
+						{/snippet}
+					</FormField>
+					<FormField
+						id="color-{vehicle.id}"
+						label="Farbe"
+						required
+						error={errors?.color}
+						placeholder="z. B. Rot, hell, dunkel"
+						bind:value={vehicle.color}
+					/>
 				</div>
 				<p class="mt-1 text-base text-ink-muted">
 					Genaue Farbe unbekannt? Auch Beschreibungen wie „hell" oder „dunkel" reichen aus.
@@ -641,7 +474,7 @@
 							<span class="flex items-center gap-1.5">
 								{type.label}
 								{#if Icon}
-									<Icon class="size-5 shrink-0" />
+									<Icon class="size-5 shrink-0" aria-hidden="true" />
 								{/if}
 							</span>
 						</label>
@@ -653,13 +486,15 @@
 			</fieldset>
 
 			<div class="mt-3">
-				<label for="notes-{vehicle.id}" class="block text-lg font-medium text-ink"
-					>Weitere Angaben (optional)</label
-				>
-				<textarea
-					id="notes-{vehicle.id}"
-					bind:value={vehicle.notes}
-					class="mt-1 w-full rounded-control border border-border p-2 text-lg"></textarea>
+				<FormField id="notes-{vehicle.id}" label="Weitere Angaben (optional)" wrapperClass="">
+					{#snippet control()}
+						<textarea
+							id="notes-{vehicle.id}"
+							name="notes-{vehicle.id}"
+							bind:value={vehicle.notes}
+							class={inputBase}></textarea>
+					{/snippet}
+				</FormField>
 			</div>
 		</div>
 	{/if}
@@ -669,10 +504,8 @@
 			<button
 				type="button"
 				onclick={openPreviewDialog}
-				disabled={!isComplete()}
-				title={isComplete()
-					? undefined
-					: 'Erst verfügbar, wenn alle Pflichtfelder ausgefüllt sind.'}
+				disabled={!isComplete}
+				title={isComplete ? undefined : 'Erst verfügbar, wenn alle Pflichtfelder ausgefüllt sind.'}
 				class="flex flex-1 items-center justify-center gap-1 {buttonSecondary} disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				<Eye class="size-4" aria-hidden="true" />
@@ -681,8 +514,8 @@
 			{#if open}
 				<button
 					type="button"
-					onclick={() => isComplete() && (open = false)}
-					disabled={!isComplete()}
+					onclick={() => isComplete && (open = false)}
+					disabled={!isComplete}
 					class="flex flex-1 items-center justify-center gap-1 {buttonPrimary} disabled:cursor-not-allowed disabled:bg-border disabled:text-ink-muted"
 					aria-expanded={open}
 				>
@@ -699,7 +532,7 @@
 				</button>
 			{/if}
 		</div>
-		{#if open && !isComplete()}
+		{#if open && !isComplete}
 			<div
 				role="status"
 				transition:fade={{ duration: transitionDuration(150) }}
@@ -707,7 +540,7 @@
 			>
 				<p>Noch nicht einklappbar, bitte prüfen:</p>
 				<ul class="mt-1 list-disc pl-5">
-					{#each missingFieldMessages() as message (message)}
+					{#each missingFieldMessages as message (message)}
 						<li>{message}</li>
 					{/each}
 				</ul>
@@ -718,7 +551,6 @@
 
 <ConfirmDialog
 	bind:dialog={resetDialog}
-	onBackdropClick={handleResetBackdropClick}
 	titleId="reset-dialog-title-{vehicle.id}"
 	title={total > 1 ? 'Fahrzeug/Vorgang entfernen?' : 'Fahrzeug/Vorgang zurücksetzen?'}
 >
@@ -728,53 +560,16 @@
 			: 'Die bereits eingetragenen Daten werden unwiderruflich gelöscht.'}
 	</p>
 
-	<dl class="mt-3 flex flex-col gap-3 text-lg">
-		{#if vehicle.photoIds.length > 0}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Foto Auswahl</dt>
-				<dd class="text-ink">{vehicle.photoIds.length}</dd>
-			</div>
-		{/if}
-		{#if vehicle.licensePlate}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Kennzeichen</dt>
-				<dd class="text-ink">{vehicle.licensePlate}</dd>
-			</div>
-		{/if}
-		{#if vehicle.color}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Fahrzeug</dt>
-				<dd class="text-ink">
-					{vehicle.vehicleType ? `${vehicle.vehicleType} · ` : ''}{vehicle.make} ·
-					{vehicle.color}
-				</dd>
-			</div>
-		{/if}
-		{#if summaryAddress()}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Tatort</dt>
-				<dd class="text-ink">{summaryAddress()}</dd>
-			</div>
-		{/if}
-		{#if vehicle.date && vehicle.time}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Datum / Uhrzeit</dt>
-				<dd class="text-ink">{formatDateDMY(vehicle.date)}, {formatTimeRange(vehicle)} Uhr</dd>
-			</div>
-		{/if}
-		{#if summaryIncidentTypes()}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Art des Verstoßes</dt>
-				<dd class="text-ink">{summaryIncidentTypes()}</dd>
-			</div>
-		{/if}
-		{#if vehicle.notes}
-			<div>
-				<dt class="text-base font-medium text-ink-muted">Weitere Angaben</dt>
-				<dd class="text-ink">{vehicle.notes}</dd>
-			</div>
-		{/if}
-	</dl>
+	<SummaryList rows={buildVehicleSummaryRows(vehicle, incidentTypes, { includeEmpty: false })}>
+		{#snippet leading()}
+			{#if vehicle.photoIds.length > 0}
+				<div>
+					<dt class="text-base font-medium text-ink-muted">Foto Auswahl</dt>
+					<dd class="text-ink">{vehicle.photoIds.length}</dd>
+				</div>
+			{/if}
+		{/snippet}
+	</SummaryList>
 	{#snippet actions()}
 		<button type="button" onclick={() => resetDialog?.close()} class="flex-1 {buttonSecondary}">
 			Abbrechen
@@ -787,7 +582,6 @@
 
 <ConfirmDialog
 	bind:dialog={previewDialog}
-	onBackdropClick={handlePreviewBackdropClick}
 	titleId="preview-dialog-title-{vehicle.id}"
 	title={total > 1 ? `Vorschau: Fahrzeug ${index + 1} von ${total}` : 'Vorschau'}
 	desktopMaxWidthClass="sm:max-w-2xl"
@@ -795,7 +589,7 @@
 	{#if !previewEmail}
 		<p class="mt-1 text-lg text-ink-muted">Noch nicht einklappbar, bitte prüfen:</p>
 		<ul class="mt-1 list-disc pl-5 text-lg text-ink-muted">
-			{#each missingFieldMessages() as message (message)}
+			{#each missingFieldMessages as message (message)}
 				<li>{message}</li>
 			{/each}
 		</ul>

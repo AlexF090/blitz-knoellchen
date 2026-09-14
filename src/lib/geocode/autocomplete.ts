@@ -41,10 +41,8 @@ const buildSuggestionLabel = (item: {
 	return cityLine ? `${streetLine}, ${cityLine}` : streetLine;
 };
 
-// Die App deckt aktuell nur Köln ab (s. CLAUDE.md, "Weitere Stadt hinzufügen") — die Suche wird
-// deshalb hart auf eine Köln-Bounding-Box begrenzt (`bounded=1`), statt eine ungenutzte
-// Multi-City-Parametrisierung vorzubereiten. Format laut LocationIQ-Doku: viewbox=left,top,right,bottom
-// (min_lon,max_lat,max_lon,min_lat).
+// Nur Köln aktiv (s. docs/architektur.md, "Weitere Stadt hinzufügen") — Suche deshalb hart auf
+// diese Bounding-Box begrenzt (`bounded=1`). Format: viewbox=left,top,right,bottom.
 const KOELN_VIEWBOX = '6.7728,51.0839,7.1620,50.8304';
 
 export const createLocationIqAutocompleteProvider = (apiKey: string, fetchFn: typeof fetch) => {

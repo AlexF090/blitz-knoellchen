@@ -32,7 +32,7 @@ const fillCompleteForm = async (page: import('@playwright/test').Page) => {
 };
 
 const getPreviewRecipient = (page: import('@playwright/test').Page) => {
-	const previewDialog = page.getByRole('dialog', { name: 'Vorschau der E-Mail' });
+	const previewDialog = page.getByRole('dialog', { name: 'Vorschau' });
 	return previewDialog.locator('xpath=.//p[text()="An"]/following-sibling::p[1]');
 };
 
@@ -60,12 +60,16 @@ test('Demo-Modus: Badge im Header und Test-Adresse in der E-Mail-Vorschau', asyn
 	await page.goto('/');
 	await chooseAppMode(page, 'demo');
 
-	await expect(page.getByRole('dialog', { name: 'Demo- oder Live-Modus?' })).not.toBeVisible();
+	// Nicht auf dem Dialog selbst assertieren: die CSS-Exit-Animation (layout.css,
+	// `transition: display 300ms allow-discrete`) hält ihn in manchen Browsern optisch noch kurz
+	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert (choose() setzt
+	// pointer-events: none synchron). Stattdessen auf ein Element *hinter* dem Dialog prüfen.
+	await expect(page.locator('#firstName')).toBeEditable();
 	await expect(page.getByText('Demo', { exact: true })).toBeVisible();
 
 	await fillCompleteForm(page);
 
-	await page.getByRole('button', { name: 'E-Mail-Vorschau' }).click();
+	await page.getByRole('button', { name: 'Vorschau' }).click();
 
 	const recipient = getPreviewRecipient(page);
 	await expect(recipient).toBeVisible();
@@ -79,10 +83,18 @@ test('Nach hartem Reload bleibt die Wahl innerhalb der Session erhalten', async 
 
 	await page.goto('/');
 	await chooseAppMode(page, 'demo');
-	await expect(page.getByRole('dialog', { name: 'Demo- oder Live-Modus?' })).not.toBeVisible();
+	// Nicht auf dem Dialog selbst assertieren: die CSS-Exit-Animation (layout.css,
+	// `transition: display 300ms allow-discrete`) hält ihn in manchen Browsern optisch noch kurz
+	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert (choose() setzt
+	// pointer-events: none synchron). Stattdessen auf ein Element *hinter* dem Dialog prüfen.
+	await expect(page.locator('#firstName')).toBeEditable();
 
 	await page.reload();
-	await expect(page.getByRole('dialog', { name: 'Demo- oder Live-Modus?' })).not.toBeVisible();
+	// Nicht auf dem Dialog selbst assertieren: die CSS-Exit-Animation (layout.css,
+	// `transition: display 300ms allow-discrete`) hält ihn in manchen Browsern optisch noch kurz
+	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert (choose() setzt
+	// pointer-events: none synchron). Stattdessen auf ein Element *hinter* dem Dialog prüfen.
+	await expect(page.locator('#firstName')).toBeEditable();
 	await expect(page.getByText('Demo', { exact: true })).toBeVisible();
 });
 
@@ -99,7 +111,11 @@ test('Klick auf das Modus-Badge im Header öffnet den Dialog erneut und erlaubt 
 	await expect(page.getByRole('dialog', { name: 'Demo- oder Live-Modus?' })).toBeVisible();
 
 	await chooseAppMode(page, 'live');
-	await expect(page.getByRole('dialog', { name: 'Demo- oder Live-Modus?' })).not.toBeVisible();
+	// Nicht auf dem Dialog selbst assertieren: die CSS-Exit-Animation (layout.css,
+	// `transition: display 300ms allow-discrete`) hält ihn in manchen Browsern optisch noch kurz
+	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert (choose() setzt
+	// pointer-events: none synchron). Stattdessen auf ein Element *hinter* dem Dialog prüfen.
+	await expect(page.locator('#firstName')).toBeEditable();
 	await expect(page.getByText('Live', { exact: true })).toBeVisible();
 });
 
@@ -111,12 +127,19 @@ test('Live-Modus: Badge im Header und echte Bußgeldstelle-Adresse in der E-Mail
 	await page.goto('/');
 	await chooseAppMode(page, 'live');
 
-	await expect(page.getByRole('dialog', { name: 'Demo- oder Live-Modus?' })).not.toBeVisible();
+	// Nicht auf dem Dialog selbst assertieren: die CSS-Exit-Animation (layout.css,
+	// `transition: display 300ms allow-discrete`) hält ihn in manchen Browsern optisch noch kurz
+	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert (choose() setzt
+	// pointer-events: none synchron). Stattdessen auf ein Element *hinter* dem Dialog prüfen.
+	await expect(page.locator('#firstName')).toBeEditable();
 	await expect(page.getByText('Live', { exact: true })).toBeVisible();
 
 	await fillCompleteForm(page);
 
-	await page.getByRole('button', { name: 'E-Mail-Vorschau' }).click();
+	await page.getByRole('button', { name: 'Vorschau' }).click();
 
-	await expect(getPreviewRecipient(page)).toHaveText('bussgeldstelle@stadt-koeln.de');
+	// In CI ist RECIPIENT_EMAIL_LIVE eine Dummy-Adresse (s. ci.yml) statt der echten
+	// Bußgeldstelle-Adresse — der Test prüft die konfigurierte Adresse, nicht einen Literal-Wert.
+	const expectedRecipient = process.env.RECIPIENT_EMAIL_LIVE ?? 'bussgeldstelle@stadt-koeln.de';
+	await expect(getPreviewRecipient(page)).toHaveText(expectedRecipient);
 });

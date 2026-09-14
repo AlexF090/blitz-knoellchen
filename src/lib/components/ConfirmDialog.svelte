@@ -7,14 +7,12 @@
 		title: string;
 		children: Snippet;
 		actions: Snippet;
-		onBackdropClick: (event: MouseEvent) => void;
 		// Erlaubt Dialogen mit mehr Inhalt (z.B. E-Mail-Vorschau) auf Desktop-Breakpoints breiter
 		// zu sein als der Standard-Bestätigungsdialog — Mobile bleibt davon unberührt (immer volle
 		// Breite als Bottom-Sheet).
 		desktopMaxWidthClass?: string;
 		// Für Dialoge, die eine aktive Entscheidung erzwingen (z.B. Demo-/Live-Modus-Auswahl) —
-		// unterbindet das Schließen per Escape-Taste zusätzlich zum ignorierten Backdrop-Klick,
-		// den der Aufrufer dafür in onBackdropClick selbst zu einem No-op macht.
+		// unterbindet das Schließen per Escape-Taste und Backdrop-Klick.
 		dismissable?: boolean;
 	}
 
@@ -24,13 +22,16 @@
 		title,
 		children,
 		actions,
-		onBackdropClick,
 		desktopMaxWidthClass = 'sm:max-w-sm',
 		dismissable = true
 	}: Props = $props();
 
 	const oncancel = (event: Event) => {
 		if (!dismissable) event.preventDefault();
+	};
+
+	const onBackdropClick = (event: MouseEvent) => {
+		if (dismissable && event.target === dialog) dialog?.close();
 	};
 </script>
 

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { triggerHaptic } from './vibrate';
 
+if (typeof navigator === 'undefined') {
+	Object.defineProperty(globalThis, 'navigator', { value: {}, configurable: true, writable: true });
+}
+
 const originalVibrate = Object.getOwnPropertyDescriptor(navigator, 'vibrate');
 
 afterEach(() => {

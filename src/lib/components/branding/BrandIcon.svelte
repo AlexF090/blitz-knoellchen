@@ -22,15 +22,15 @@
 	class="shrink-0"
 	xmlns="http://www.w3.org/2000/svg"
 >
-	<rect width="512" height="512" fill="#255a54" />
+	<rect width="512" height="512" fill="oklch(42.99% 0.0572 185.34)" />
 	<clipPath id={clipId}>
 		<polygon points="97.75,97.75 376.27,97.75 414.25,135.73 414.25,414.25 97.75,414.25" />
 	</clipPath>
 	<g clip-path="url(#{clipId})">
-		<rect x="97.75" y="97.75" width="316.51" height="316.51" fill="#f3f2f2" />
+		<rect x="97.75" y="97.75" width="316.51" height="316.51" fill="oklch(96.19% 0.0011 17.18)" />
 	</g>
 	<polygon
 		points="269.96,168.73 203.64,264.73 249.02,264.73 235.06,343.27 311.86,242.04 262.98,242.04"
-		fill="#255a54"
+		fill="oklch(42.99% 0.0572 185.34)"
 	/>
 </svg>

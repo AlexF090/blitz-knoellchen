@@ -41,8 +41,7 @@ export interface VehicleEntry {
 	notes?: string;
 	date: string;
 	time: string;
-	// 'parkverstoss' erfordert einen Zeitraum (endTime) mit Mindestparkzeit von 4 Minuten;
-	// 'halteverstoss' braucht nur den Einzelzeitpunkt in `time` (s. validateVehicle).
+	// 'parkverstoss' erfordert endTime mit Mindestparkzeit 4 Min., 'halteverstoss' nur `time`.
 	timeMode: 'halteverstoss' | 'parkverstoss';
 	endTime?: string;
 	locationStreet: string;
@@ -102,14 +101,10 @@ const POSTCODE_PATTERN = /^\d{5}$/;
 // endet auf eine Zahl, optional gefolgt von einem einzelnen Buchstaben.
 export const HOUSE_NUMBER_SUFFIX_PATTERN = /\d+\s?[a-zA-ZäöüÄÖÜ]?$/;
 // Deutsches Kennzeichenschema: 1-3 Buchstaben (Kreis/Stadt), 1-2 Buchstaben
-// (Erkennungsnummer), 1-4 Ziffern, optional "E" (E-Kennzeichen) oder "H" (Saisonkennzeichen).
-// Capture-Gruppen werden zusätzlich von normalizeLicensePlate() genutzt, um das von der Stadt
-// Köln geforderte kanonische Format (z. B. "H-VA1234", kein Zeichen zwischen Buchstaben und
-// Ziffern) zu bauen — Eingabe bleibt dabei tippfreundlich/flexibel.
-// Der Kreis-Kürzel-Teil ist "lazy" (kürzestmögliche Übereinstimmung zuerst) — bei fehlendem
-// Trennzeichen zwischen Kürzel und Buchstabenkombination (z. B. "KAB1234") sorgt das dafür, dass
-// das Kürzel möglichst kurz und die anschließende Buchstabenkombination möglichst lang gelesen
-// wird (realistischer für deutsche Kennzeichen als ein gieriges Kürzel).
+// (Erkennungsnummer), 1-4 Ziffern, optional "E"/"H". Capture-Gruppen füttern
+// normalizeLicensePlate() (kanonisches Stadt-Köln-Format, s. dort). Kreis-Kürzel ist "lazy",
+// damit bei fehlendem Trennzeichen (z. B. "KAB1234") die Buchstabenkombination korrekt lang
+// statt das Kürzel gierig lang gelesen wird.
 const LICENSE_PLATE_PATTERN = /^([A-ZÄÖÜ]{1,3}?)[\s-]?([A-ZÄÖÜ]{1,2})[\s-]?(\d{1,4})\s?(E|H)?$/i;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -128,21 +123,14 @@ const toMinutes = (time: string): number => {
 	return hours * 60 + minutes;
 };
 
-// Das von der Stadt Köln geforderte kanonische Format gilt nur für deutsche Kennzeichen (s.
-// normalizeLicensePlate) — andere Länder haben keine vergleichbare Formatvorgabe der
-// Bußgeldstelle. Deckt sowohl das im Formular verwendete Nationalitätszeichen ("D") als auch
-// den ISO-Code ("DE") ab.
+// Das kanonische Format (s. normalizeLicensePlate) gilt nur für deutsche Kennzeichen. Deckt
+// sowohl das Formular-Nationalitätszeichen ("D") als auch den ISO-Code ("DE") ab.
 const isGermanLicensePlateCountry = (country: string): boolean =>
 	['D', 'DE'].includes(country.trim().toUpperCase());
 
-// Formt eine flexibel getippte Eingabe ("K AB 1234", "KAB1234", "k-ab 1234") in das von der
-// Stadt Köln für die maschinelle Verarbeitung geforderte kanonische Format um (z. B.
-// "H-VA1234"): ein Bindestrich zwischen Kreis-Kürzel und Buchstabenkombination, kein Zeichen
-// zwischen Buchstaben- und Ziffernkombination. Nicht-parsbare Eingaben werden nur getrimmt und
-// großgeschrieben zurückgegeben — fail-safe statt zu werfen. Für Kennzeichen aus anderen
-// Ländern gibt es keine vergleichbare Formatvorgabe; dort wird nur getrimmt/großgeschrieben,
-// ohne die Zeichen umzustrukturieren (Kennzeichen bestehen international nur aus
-// Großbuchstaben).
+// Formt eine flexibel getippte Eingabe ("K AB 1234", "KAB1234") ins von der Stadt Köln
+// geforderte kanonische Format ("H-VA1234"). Nicht-parsbare/ausländische Eingaben werden nur
+// getrimmt und großgeschrieben zurückgegeben — fail-safe statt zu werfen.
 export const normalizeLicensePlate = (value: string, country: string): string => {
 	const trimmed = value.trim();
 	if (!isGermanLicensePlateCountry(country)) return trimmed.toUpperCase();
