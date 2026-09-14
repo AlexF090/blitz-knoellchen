@@ -105,9 +105,6 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ error: 'Versand fehlgeschlagen.' }, { status: 502 });
 		}
 
-		const result: { messageId?: string } = await response.json();
-		console.log('Brevo-Versand erfolgreich, messageId:', result.messageId);
-
 		return json({ ok: true });
 	} catch {
 		return json({ error: 'Versand fehlgeschlagen.' }, { status: 502 });
