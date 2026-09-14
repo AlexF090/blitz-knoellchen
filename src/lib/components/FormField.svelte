@@ -12,6 +12,8 @@
 		error?: string;
 		list?: string;
 		placeholder?: string;
+		autocompleteAttr?: string;
+		spellcheck?: boolean;
 		onblur?: () => void;
 		wrapperClass?: string;
 		// Escape-Hatch für Controls, die FormField nicht selbst abbildet (select/textarea,
@@ -35,6 +37,8 @@
 		error,
 		list,
 		placeholder,
+		autocompleteAttr,
+		spellcheck,
 		onblur,
 		wrapperClass = 'min-w-0',
 		control,
@@ -57,6 +61,8 @@
 			aria-required={required}
 			{list}
 			{placeholder}
+			{spellcheck}
+			autocomplete={autocompleteAttr as HTMLInputElement['autocomplete']}
 			{...ariaFieldProps(id, error)}
 			{value}
 			oninput={(event) => (value = event.currentTarget.value)}
