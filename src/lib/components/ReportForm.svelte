@@ -11,6 +11,7 @@
 	import { createPhotoEntry, HeicConversionError } from '$lib/photo/createPhotoEntry';
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
 	import { PHOTO_WARNINGS, pruneWarnings } from '$lib/report/photoWarnings';
+	import { buildSendFormData } from '$lib/report/sendFormData';
 	import {
 		buttonDestructive,
 		buttonDestructiveSecondary,
@@ -379,35 +380,17 @@
 					.map((id) => photoById.get(id))
 					.filter((photo): photo is PhotoEntry => photo !== undefined);
 
-				const body = new FormData();
-				body.set('firstName', form.firstName);
-				body.set('lastName', form.lastName);
-				body.set('addressStreet', form.addressStreet);
-				body.set('addressPostcode', form.addressPostcode);
-				body.set('addressCity', form.addressCity);
-				body.set('email', form.email);
-				body.set('phone', form.phone ?? '');
-				body.set('date', vehicle.date);
-				body.set('time', vehicle.time);
-				body.set('timeMode', vehicle.timeMode);
-				body.set('endTime', vehicle.endTime ?? '');
-				body.set('locationStreet', vehicle.locationStreet);
-				body.set('locationHouseNumber', vehicle.locationHouseNumber ?? '');
-				body.set('locationPostcode', vehicle.locationPostcode);
-				body.set('locationCity', vehicle.locationCity);
-				body.set('vehicleIndex', String(index + 1));
-				body.set('vehicleTotal', String(form.vehicles.length));
-				body.set('licensePlate', vehicle.licensePlate);
-				body.set('licensePlateCountry', vehicle.licensePlateCountry);
-				body.set('vehicleType', vehicle.vehicleType);
-				body.set('make', vehicle.make);
-				body.set('color', vehicle.color);
-				for (const id of vehicle.incidentTypeIds) body.append('incidentTypeIds', id);
-				body.set('notes', vehicle.notes ?? '');
-				body.set('mode', appMode.current ?? 'demo');
-				vehiclePhotos.forEach((photo, pIdx) =>
-					body.append('photos', photo.blob, `beweisfoto-${pIdx + 1}.jpg`)
-				);
+				const body = buildSendFormData({
+					profile: form,
+					vehicle,
+					vehicleIndex: index + 1,
+					vehicleTotal: form.vehicles.length,
+					mode: appMode.current ?? 'demo',
+					photos: vehiclePhotos.map((photo, pIdx) => ({
+						blob: photo.blob,
+						fileName: `beweisfoto-${pIdx + 1}.jpg`
+					}))
+				});
 
 				let ok: boolean;
 				try {
