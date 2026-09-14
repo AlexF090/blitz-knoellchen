@@ -1,12 +1,12 @@
 import { json } from '@sveltejs/kit';
 import { BREVO_API_KEY, EMAIL_FROM } from '$env/static/private';
-import type { AppMode } from '$lib/appMode.svelte';
 import { CITIES } from '$lib/config/cities';
 import { getRecipientEmail } from '$lib/config/cities.server';
 import {
 	buildEmailTemplateInput,
 	resolveVehicleIncidentTypes
 } from '$lib/email/buildEmailTemplateInput';
+import { parseSendFormData } from '$lib/report/sendFormData';
 import {
 	validateReportForm,
 	isFormValid,
@@ -21,9 +21,9 @@ const BREVO_SEND_URL = 'https://api.brevo.com/v3/smtp/email';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const formData = await request.formData();
+	const parsed = parseSendFormData(formData);
 
-	const photoBlobs = formData.getAll('photos').filter((p): p is File => p instanceof File);
-	const photos: PhotoEntry[] = photoBlobs.map((blob, index) => ({
+	const photos: PhotoEntry[] = parsed.photoBlobs.map((blob, index) => ({
 		id: String(index),
 		blob,
 		fileName: `beweisfoto-${index + 1}.jpg`,
@@ -31,44 +31,22 @@ export const POST: RequestHandler = async ({ request }) => {
 		date: null,
 		time: null
 	}));
-	const timeMode = formData.get('timeMode') === 'parkverstoss' ? 'parkverstoss' : 'halteverstoss';
+	// normalizeLicensePlate bleibt hier statt in parseSendFormData: die Rohangabe muss dort
+	// unverändert bleiben, damit der Round-Trip-Test build->parse exakt das Eingabe-Objekt
+	// zurückerhält.
 	const vehicle: VehicleEntry = {
 		id: '0',
 		photoIds: photos.map((photo) => photo.id),
+		...parsed.vehicle,
 		licensePlate: normalizeLicensePlate(
-			String(formData.get('licensePlate') ?? ''),
-			String(formData.get('licensePlateCountry') ?? '')
-		),
-		licensePlateCountry: String(formData.get('licensePlateCountry') ?? ''),
-		vehicleType: String(formData.get('vehicleType') ?? ''),
-		make: String(formData.get('make') ?? ''),
-		color: String(formData.get('color') ?? ''),
-		incidentTypeIds: formData.getAll('incidentTypeIds').map(String),
-		notes: String(formData.get('notes') ?? '') || undefined,
-		date: String(formData.get('date') ?? ''),
-		time: String(formData.get('time') ?? ''),
-		timeMode,
-		endTime: String(formData.get('endTime') ?? '') || undefined,
-		locationStreet: String(formData.get('locationStreet') ?? ''),
-		locationHouseNumber: String(formData.get('locationHouseNumber') ?? '') || undefined,
-		locationPostcode: String(formData.get('locationPostcode') ?? ''),
-		locationCity: String(formData.get('locationCity') ?? '')
+			parsed.vehicle.licensePlate,
+			parsed.vehicle.licensePlateCountry
+		)
 	};
-	const vehicleIndex = Number(formData.get('vehicleIndex') ?? '1');
-	const vehicleTotal = Number(formData.get('vehicleTotal') ?? '1');
-	// Fällt bei fehlendem/ungültigem Wert bewusst auf 'demo' zurück — nie ungewollt live an die
-	// Bußgeldstelle senden, nur weil ein Client den Modus nicht mitschickt.
-	const modeValue = formData.get('mode');
-	const mode: AppMode = modeValue === 'live' ? 'live' : 'demo';
+	const { vehicleIndex, vehicleTotal, mode } = parsed;
 
 	const data: ReportFormData = {
-		firstName: String(formData.get('firstName') ?? ''),
-		lastName: String(formData.get('lastName') ?? ''),
-		addressStreet: String(formData.get('addressStreet') ?? ''),
-		addressPostcode: String(formData.get('addressPostcode') ?? ''),
-		addressCity: String(formData.get('addressCity') ?? ''),
-		email: String(formData.get('email') ?? ''),
-		phone: String(formData.get('phone') ?? '') || undefined,
+		...parsed.profile,
 		photos,
 		vehicles: [vehicle]
 	};
