@@ -20,7 +20,9 @@
 		<label
 			class="relative flex-1 cursor-pointer rounded-[calc(var(--radius-control)-0.25rem)] px-3
 			py-3 text-center text-lg font-medium text-ink-muted transition-colors
-			has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card"
+			has-checked:bg-surface has-checked:text-primary-600 has-checked:shadow-card
+			has-focus-visible:outline has-focus-visible:outline-2 has-focus-visible:outline-offset-2
+			has-focus-visible:outline-primary-600"
 		>
 			<input
 				type="radio"
