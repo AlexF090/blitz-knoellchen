@@ -138,5 +138,8 @@ test('Live-Modus: Badge im Header und echte Bußgeldstelle-Adresse in der E-Mail
 
 	await page.getByRole('button', { name: 'Vorschau' }).click();
 
-	await expect(getPreviewRecipient(page)).toHaveText('bussgeldstelle@stadt-koeln.de');
+	// In CI ist RECIPIENT_EMAIL_LIVE eine Dummy-Adresse (s. ci.yml) statt der echten
+	// Bußgeldstelle-Adresse — der Test prüft die konfigurierte Adresse, nicht einen Literal-Wert.
+	const expectedRecipient = process.env.RECIPIENT_EMAIL_LIVE ?? 'bussgeldstelle@stadt-koeln.de';
+	await expect(getPreviewRecipient(page)).toHaveText(expectedRecipient);
 });
