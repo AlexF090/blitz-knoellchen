@@ -19,6 +19,7 @@
 		buttonPrimary,
 		buttonSecondary
 	} from '$lib/ui/buttonStyles';
+	import { onEnterKey } from '$lib/ui/onEnterKey';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import {
 		getMaxPoolPhotos,
@@ -178,11 +179,7 @@
 	// Die Profil-Felder liegen im selben <form> wie der eigentliche Absenden-Button (s. u.) —
 	// ohne diesen Handler würde Enter in einem Profil-Feld das gesamte Formular abschicken statt
 	// nur das Profil zu speichern.
-	const onProfileFieldKeydown = (event: KeyboardEvent) => {
-		if (event.key !== 'Enter') return;
-		event.preventDefault();
-		void onSaveProfile();
-	};
+	const onProfileFieldKeydown = onEnterKey(() => void onSaveProfile());
 
 	let usageCounts = $derived.by(() => {
 		const counts: Record<string, number> = {};
@@ -355,15 +352,7 @@
 		await resetAll();
 	};
 
-	const handleResetBackdropClick = (event: MouseEvent) => {
-		if (event.target === resetDialog) resetDialog.close();
-	};
-
 	const closeSuccessDialog = () => successDialog?.close();
-
-	const handleSuccessBackdropClick = (event: MouseEvent) => {
-		if (event.target === successDialog) successDialog.close();
-	};
 
 	// Reihenfolge bestimmt, welches Feld bei mehreren gleichzeitigen Fehlern fokussiert wird —
 	// folgt der visuellen Reihenfolge des Formulars von oben nach unten.
@@ -841,7 +830,6 @@
 
 <ConfirmDialog
 	bind:dialog={resetDialog}
-	onBackdropClick={handleResetBackdropClick}
 	titleId="reset-form-dialog-title"
 	title="Formular komplett zurücksetzen?"
 >
@@ -861,7 +849,6 @@
 
 <ConfirmDialog
 	bind:dialog={successDialog}
-	onBackdropClick={handleSuccessBackdropClick}
 	titleId="success-dialog-title"
 	title={successCount > 1
 		? `Alle ${successCount} Anzeigen erfolgreich versendet`
