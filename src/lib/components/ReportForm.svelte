@@ -22,6 +22,7 @@
 	} from '$lib/ui/buttonStyles';
 	import { onEnterKey } from '$lib/ui/onEnterKey';
 	import { createEmptyForm, createEmptyVehicle } from '$lib/validation/emptyForm';
+	import { findFirstErrorTarget } from '$lib/validation/fieldOrder';
 	import {
 		getMaxPoolPhotos,
 		isFormValid,
@@ -31,8 +32,7 @@
 		validateReportForm,
 		type PhotoEntry,
 		type ReportFormData,
-		type VehicleEntry,
-		type VehicleErrors
+		type VehicleEntry
 	} from '$lib/validation/formSchema';
 	import { tick } from 'svelte';
 	import { fly } from 'svelte/transition';
@@ -301,58 +301,29 @@
 
 	// Reihenfolge bestimmt, welches Feld bei mehreren gleichzeitigen Fehlern fokussiert wird —
 	// folgt der visuellen Reihenfolge des Formulars von oben nach unten.
-	const PROFILE_FIELD_ORDER: (keyof typeof errors)[] = [
-		'firstName',
-		'lastName',
-		'addressStreet',
-		'addressPostcode',
-		'addressCity',
-		'email'
-	];
-	const VEHICLE_FIELD_ORDER: (keyof VehicleErrors)[] = [
-		'photoIds',
-		'date',
-		'time',
-		'endTime',
-		'locationStreet',
-		'locationPostcode',
-		'locationCity',
-		'licensePlate',
-		'make',
-		'color',
-		'incidentTypeIds'
-	];
-
 	// Fokussiert das erste fehlerhafte Feld nach einem gescheiterten Absenden — Bildschirmleser
 	// erfahren so direkt, welches Feld korrigiert werden muss, statt nur einen visuellen Scroll
 	// (der sehende Maus-Nutzer hilft, aber Tastatur-/Screenreader-Nutzer nicht weiterbringt).
 	const focusFirstError = async (formErrors: ReturnType<typeof validateReportForm>) => {
 		await tick();
-		if (formErrors.photos) {
+		const target = findFirstErrorTarget(
+			formErrors,
+			form.vehicles.map((vehicle) => vehicle.id)
+		);
+		if (!target) return;
+		if (target.type === 'photos') {
 			photosCardElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-			return;
-		}
-		const profileField = PROFILE_FIELD_ORDER.find((field) => formErrors[field]);
-		if (profileField) {
-			document.getElementById(profileField)?.focus();
-			return;
-		}
-		for (const [index, vehicleErrors] of (formErrors.vehicles ?? []).entries()) {
-			const field = VEHICLE_FIELD_ORDER.find((f) => vehicleErrors[f]);
-			if (!field) continue;
-			const vehicleId = form.vehicles[index]?.id;
-			if (!vehicleId) return;
-			// photoIds/incidentTypeIds haben kein einzelnes fokussierbares Eingabefeld (Foto-Grid
-			// bzw. Checkbox-Gruppe) — dafür genügt das Scrollen zur Fahrzeugkarte als Fallback.
-			const target = document.getElementById(`${field}-${vehicleId}`);
-			if (target) {
-				target.focus();
+		} else if (target.type === 'profileField') {
+			document.getElementById(target.elementId)?.focus();
+		} else {
+			const field = document.getElementById(target.fieldElementId);
+			if (field) {
+				field.focus();
 			} else {
 				document
-					.getElementById(`vehicle-block-${vehicleId}`)
+					.getElementById(target.blockElementId)
 					?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			}
-			return;
 		}
 	};
 
