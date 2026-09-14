@@ -4,7 +4,9 @@ import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-vercel';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
-import { version as appVersion } from './package.json' with { type: 'json' };
+import pkg from './package.json' with { type: 'json' };
+
+const appVersion = pkg.version;
 
 export default defineConfig({
 	define: {
