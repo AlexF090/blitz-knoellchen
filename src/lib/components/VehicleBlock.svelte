@@ -13,6 +13,7 @@
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { buildVehicleSummaryRows } from '$lib/report/vehicleSummary';
 	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
+	import { inputBase } from '$lib/ui/inputStyles';
 	import { onEnterKey } from '$lib/ui/onEnterKey';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import type {
@@ -26,6 +27,7 @@
 	import { fade } from 'svelte/transition';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import FormField from './FormField.svelte';
 	import SummaryList from './SummaryList.svelte';
 
 	interface Props {
@@ -312,71 +314,31 @@
 				<div
 					class={`mt-2 grid grid-cols-1 gap-3 ${vehicle.timeMode === 'parkverstoss' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
 				>
-					<div class="min-w-0">
-						<label for="date-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Datum <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="date-{vehicle.id}"
-							type="date"
-							bind:value={vehicle.date}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`date-${vehicle.id}`, errors?.date)}
-							class="mt-1 w-full min-w-0 rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.date}<p
-								id="date-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.date}
-							</p>{/if}
-					</div>
-					<div class="min-w-0">
-						<label for="time-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>{vehicle.timeMode === 'parkverstoss' ? 'Von' : 'Uhrzeit'}
-							<span class="text-error-fg">*</span></label
-						>
-						<input
-							id="time-{vehicle.id}"
-							type="time"
-							bind:value={vehicle.time}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`time-${vehicle.id}`, errors?.time)}
-							class="mt-1 w-full min-w-0 rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.time}<p
-								id="time-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.time}
-							</p>{/if}
-					</div>
+					<FormField
+						id="date-{vehicle.id}"
+						label="Datum"
+						type="date"
+						required
+						error={errors?.date}
+						bind:value={vehicle.date}
+					/>
+					<FormField
+						id="time-{vehicle.id}"
+						label={vehicle.timeMode === 'parkverstoss' ? 'Von' : 'Uhrzeit'}
+						type="time"
+						required
+						error={errors?.time}
+						bind:value={vehicle.time}
+					/>
 					{#if vehicle.timeMode === 'parkverstoss'}
-						<div class="min-w-0">
-							<label for="endTime-{vehicle.id}" class="block text-lg font-medium text-ink"
-								>Bis <span class="text-error-fg">*</span></label
-							>
-							<input
-								id="endTime-{vehicle.id}"
-								type="time"
-								bind:value={vehicle.endTime}
-								required
-								aria-required="true"
-								{...ariaFieldProps(`endTime-${vehicle.id}`, errors?.endTime)}
-								class="mt-1 w-full min-w-0 rounded-control border border-border p-2 text-lg"
-							/>
-							{#if errors?.endTime}<p
-									id="endTime-{vehicle.id}-error"
-									role="alert"
-									class="mt-1 text-lg text-error-fg"
-								>
-									{errors.endTime}
-								</p>{/if}
-						</div>
+						<FormField
+							id="endTime-{vehicle.id}"
+							label="Bis"
+							type="time"
+							required
+							error={errors?.endTime}
+							bind:value={vehicle.endTime}
+						/>
 					{/if}
 				</div>
 				<div class="mt-2 grid grid-cols-[2fr_1fr] gap-3">
@@ -388,61 +350,30 @@
 						bind:value={vehicle.locationStreet}
 						onSelect={(suggestion) => applyAddressSuggestion(vehicle, suggestion, true)}
 					/>
-					<div class="min-w-0">
-						<label for="locationHouseNumber-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Hausnr.</label
-						>
-						<input
-							id="locationHouseNumber-{vehicle.id}"
-							bind:value={vehicle.locationHouseNumber}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-					</div>
+					<FormField
+						id="locationHouseNumber-{vehicle.id}"
+						label="Hausnr."
+						bind:value={vehicle.locationHouseNumber}
+					/>
 				</div>
 				{#if geocodeWarning}<p role="status" class="mt-1 text-lg text-warning-fg">
 						{geocodeWarning}
 					</p>{/if}
 				<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
-					<div class="min-w-0">
-						<label for="locationPostcode-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>PLZ <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="locationPostcode-{vehicle.id}"
-							bind:value={vehicle.locationPostcode}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`locationPostcode-${vehicle.id}`, errors?.locationPostcode)}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.locationPostcode}<p
-								id="locationPostcode-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.locationPostcode}
-							</p>{/if}
-					</div>
-					<div class="min-w-0">
-						<label for="locationCity-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Ort <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="locationCity-{vehicle.id}"
-							bind:value={vehicle.locationCity}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`locationCity-${vehicle.id}`, errors?.locationCity)}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.locationCity}<p
-								id="locationCity-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.locationCity}
-							</p>{/if}
-					</div>
+					<FormField
+						id="locationPostcode-{vehicle.id}"
+						label="PLZ"
+						required
+						error={errors?.locationPostcode}
+						bind:value={vehicle.locationPostcode}
+					/>
+					<FormField
+						id="locationCity-{vehicle.id}"
+						label="Ort"
+						required
+						error={errors?.locationCity}
+						bind:value={vehicle.locationCity}
+					/>
 				</div>
 			</fieldset>
 
@@ -450,111 +381,80 @@
 				<legend class="px-1 text-lg font-medium text-ink">Fahrzeug</legend>
 
 				<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
-					<div class="min-w-0">
-						<label for="licensePlateCountry-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Länderkennz.</label
-						>
-						<input
-							id="licensePlateCountry-{vehicle.id}"
-							bind:value={vehicle.licensePlateCountry}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-					</div>
-					<div class="min-w-0">
-						<label for="licensePlate-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Kennzeichen <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="licensePlate-{vehicle.id}"
-							value={vehicle.licensePlate}
-							oninput={handleLicensePlateInput}
-							onblur={handleLicensePlateBlur}
-							required
-							aria-required="true"
-							autocapitalize="characters"
-							{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.licensePlate}<p
-								id="licensePlate-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.licensePlate}
-							</p>{/if}
-					</div>
+					<FormField
+						id="licensePlateCountry-{vehicle.id}"
+						label="Länderkennz."
+						bind:value={vehicle.licensePlateCountry}
+					/>
+					<FormField
+						id="licensePlate-{vehicle.id}"
+						label="Kennzeichen"
+						required
+						error={errors?.licensePlate}
+					>
+						{#snippet control()}
+							<input
+								id="licensePlate-{vehicle.id}"
+								value={vehicle.licensePlate}
+								oninput={handleLicensePlateInput}
+								onblur={handleLicensePlateBlur}
+								required
+								aria-required="true"
+								autocapitalize="characters"
+								{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
+								class={inputBase}
+							/>
+						{/snippet}
+					</FormField>
 				</div>
 
 				<div class="mt-2">
-					<label for="vehicleType-{vehicle.id}" class="block text-lg font-medium text-ink"
-						>Fahrzeugart <span class="text-error-fg">*</span></label
-					>
-					<select
+					<FormField
 						id="vehicleType-{vehicle.id}"
-						bind:value={vehicle.vehicleType}
+						label="Fahrzeugart"
 						required
-						aria-required="true"
-						{...ariaFieldProps(`vehicleType-${vehicle.id}`, errors?.vehicleType)}
-						class="mt-1 w-full rounded-control border border-border p-2 text-lg"
+						error={errors?.vehicleType}
+						wrapperClass=""
 					>
-						<option value="" disabled>Bitte wählen</option>
-						{#each VEHICLE_TYPES as type (type)}<option value={type}>{type}</option>{/each}
-					</select>
-					{#if errors?.vehicleType}<p
-							id="vehicleType-{vehicle.id}-error"
-							role="alert"
-							class="mt-1 text-lg text-error-fg"
-						>
-							{errors.vehicleType}
-						</p>{/if}
+						{#snippet control()}
+							<select
+								id="vehicleType-{vehicle.id}"
+								bind:value={vehicle.vehicleType}
+								required
+								aria-required="true"
+								{...ariaFieldProps(`vehicleType-${vehicle.id}`, errors?.vehicleType)}
+								class={inputBase}
+							>
+								<option value="" disabled>Bitte wählen</option>
+								{#each VEHICLE_TYPES as type (type)}<option value={type}>{type}</option>{/each}
+							</select>
+						{/snippet}
+					</FormField>
 				</div>
 
 				<div class="mt-2 grid grid-cols-2 gap-3">
-					<div class="min-w-0">
-						<label for="make-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Marke <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="make-{vehicle.id}"
-							list="vehicle-makes-{vehicle.id}"
-							bind:value={vehicle.make}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`make-${vehicle.id}`, errors?.make)}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-						<datalist id="vehicle-makes-{vehicle.id}">
-							{#each VEHICLE_MAKES as make (make)}<option value={make}></option>{/each}
-						</datalist>
-						{#if errors?.make}<p
-								id="make-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.make}
-							</p>{/if}
-					</div>
-					<div class="min-w-0">
-						<label for="color-{vehicle.id}" class="block text-lg font-medium text-ink"
-							>Farbe <span class="text-error-fg">*</span></label
-						>
-						<input
-							id="color-{vehicle.id}"
-							placeholder="z. B. Rot, hell, dunkel"
-							bind:value={vehicle.color}
-							required
-							aria-required="true"
-							{...ariaFieldProps(`color-${vehicle.id}`, errors?.color)}
-							class="mt-1 w-full rounded-control border border-border p-2 text-lg"
-						/>
-						{#if errors?.color}<p
-								id="color-{vehicle.id}-error"
-								role="alert"
-								class="mt-1 text-lg text-error-fg"
-							>
-								{errors.color}
-							</p>{/if}
-					</div>
+					<FormField
+						id="make-{vehicle.id}"
+						label="Marke"
+						required
+						error={errors?.make}
+						list="vehicle-makes-{vehicle.id}"
+						bind:value={vehicle.make}
+					>
+						{#snippet after()}
+							<datalist id="vehicle-makes-{vehicle.id}">
+								{#each VEHICLE_MAKES as make (make)}<option value={make}></option>{/each}
+							</datalist>
+						{/snippet}
+					</FormField>
+					<FormField
+						id="color-{vehicle.id}"
+						label="Farbe"
+						required
+						error={errors?.color}
+						placeholder="z. B. Rot, hell, dunkel"
+						bind:value={vehicle.color}
+					/>
 				</div>
 				<p class="mt-1 text-base text-ink-muted">
 					Genaue Farbe unbekannt? Auch Beschreibungen wie „hell" oder „dunkel" reichen aus.
@@ -591,13 +491,12 @@
 			</fieldset>
 
 			<div class="mt-3">
-				<label for="notes-{vehicle.id}" class="block text-lg font-medium text-ink"
-					>Weitere Angaben (optional)</label
-				>
-				<textarea
-					id="notes-{vehicle.id}"
-					bind:value={vehicle.notes}
-					class="mt-1 w-full rounded-control border border-border p-2 text-lg"></textarea>
+				<FormField id="notes-{vehicle.id}" label="Weitere Angaben (optional)" wrapperClass="">
+					{#snippet control()}
+						<textarea id="notes-{vehicle.id}" bind:value={vehicle.notes} class={inputBase}
+						></textarea>
+					{/snippet}
+				</FormField>
 			</div>
 		</div>
 	{/if}
