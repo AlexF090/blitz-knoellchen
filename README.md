@@ -117,9 +117,9 @@ manuelles Nachziehen nötig. Für Minor-/Major-Sprünge den Patch-Bump danach ma
 
 ## Lizenz
 
-Dieses Repository steht ohne Lizenz zur Verfügung (kein `LICENSE`-File, kein `license`-Feld in
-`package.json`) — es werden damit keine Nutzungsrechte an Dritte eingeräumt. Der Quelltext
-dient der Nachvollziehbarkeit, nicht der freien Weiterverwendung.
+Siehe [`LICENSE`](./LICENSE) — alle Rechte vorbehalten. Der Quelltext ist zur Einsichtnahme und
+Begutachtung öffentlich zugänglich, es werden damit aber keine Nutzungs-, Kopier- oder
+Weiterentwicklungsrechte an Dritte eingeräumt.
 
 ## Asset-Attribution
 
