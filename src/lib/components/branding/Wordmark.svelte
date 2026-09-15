@@ -14,7 +14,7 @@
 </script>
 
 <span
-	class="flex flex-col items-start text-left leading-[0.95] font-[800] tracking-[-0.02em]"
+	class="flex flex-col items-start text-left leading-[0.95] font-extrabold tracking-[-0.02em]"
 	class:text-base={size === 'sm'}
 	class:text-3xl={size === 'lg'}
 	style="font-family: 'Archivo', sans-serif;"
