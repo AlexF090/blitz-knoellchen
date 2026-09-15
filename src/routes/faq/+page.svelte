@@ -112,7 +112,7 @@
 		Anzeige also nicht automatisch. Überblick, wer was bekommt, wo es liegt und wie lange:
 	</p>
 	<div class="-mx-3 mt-2 overflow-x-auto px-3">
-		<table class="w-full min-w-[640px] border-collapse text-sm">
+		<table class="w-full min-w-160 border-collapse text-sm">
 			<thead>
 				<tr class="border-b border-border text-left">
 					<th scope="col" class="py-2 pr-3 font-semibold">Stelle</th>
