@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chooseAppMode } from './helpers/appMode';
+import { test, expect } from './fixtures';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(__dirname, 'fixtures/photo-with-gps.jpg');
@@ -14,7 +14,6 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 			}
 		})
 	);
-	await page.route('**/api/send', (route) => route.fulfill({ json: { ok: true } }));
 
 	await page.goto('/');
 	await chooseAppMode(page);

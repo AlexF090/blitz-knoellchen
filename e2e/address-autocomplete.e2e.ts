@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chooseAppMode } from './helpers/appMode';
+import { test, expect } from './fixtures';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(__dirname, 'fixtures/photo-with-gps.jpg');
@@ -31,7 +31,6 @@ test.beforeEach(async ({ page }) => {
 			}
 		})
 	);
-	await page.route('**/api/send', (route) => route.fulfill({ json: { ok: true } }));
 });
 
 test('Adress-Autocomplete bei "Deine Angaben": Tippen zeigt Vorschläge, Klick befüllt Feld', async ({

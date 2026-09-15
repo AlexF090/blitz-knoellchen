@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chooseAppMode } from './helpers/appMode';
+import { test, expect, getBrevoMockRequestsSince } from './fixtures';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(__dirname, 'fixtures/photo-with-gps.jpg');
@@ -15,13 +15,10 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 		})
 	);
 
-	const sentLicensePlates: string[] = [];
-	await page.route('**/api/send', async (route) => {
-		const body = route.request().postData() ?? '';
-		const match = /name="licensePlate"\r\n\r\n([^\r]*)/.exec(body);
-		if (match) sentLicensePlates.push(match[1]);
-		await route.fulfill({ json: { ok: true } });
-	});
+	// /api/send läuft real gegen den Brevo-Mock (s. fixtures.ts) — das tatsächlich an Brevo
+	// geschickte Kennzeichen steht im E-Mail-Betreff (s. buildEmailBody.ts), nicht mehr in einem
+	// hier abgefangenen FormData-Feld.
+	const testStartedAt = Date.now();
 
 	await page.goto('/');
 	await chooseAppMode(page);
@@ -60,6 +57,14 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 	await expect(
 		page.getByRole('dialog', { name: 'Alle 2 Anzeigen erfolgreich versendet' })
 	).toContainText('Alle 2 Anzeigen erfolgreich versendet');
+	// Der Brevo-Mock läuft als ein über alle parallelen Test-Worker geteilter Prozess — "seit
+	// testStartedAt" reicht allein nicht zur Isolation, andere Tests können im selben Zeitfenster
+	// senden. Zusätzlich auf die für diesen Test eindeutigen Kennzeichen filtern.
+	const brevoRequests = await getBrevoMockRequestsSince(testStartedAt);
+	const expectedPlates = ['K-AA111', 'K-BB222'];
+	const sentLicensePlates = expectedPlates.filter((plate) =>
+		brevoRequests.some((request) => request.body?.subject?.includes(plate))
+	);
 	// Kennzeichen-Normalisierung passiert bereits bei Blur (gewollt), nicht erst beim Versand.
-	expect(sentLicensePlates.sort()).toEqual(['K-AA111', 'K-BB222']);
+	expect(sentLicensePlates.sort()).toEqual(expectedPlates);
 });
