@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { compressImage } from './compress';
 
 const makeTestBlob = (width: number, height: number): Promise<Blob> => {
@@ -27,5 +27,29 @@ describe('compressImage', () => {
 		const bitmap = await createImageBitmap(result);
 		expect(bitmap.width).toBe(100);
 		expect(bitmap.height).toBe(100);
+	});
+
+	it('wirft, wenn kein 2D-Canvas-Kontext erstellt werden kann', async () => {
+		const source = await makeTestBlob(100, 100);
+		const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+
+		await expect(compressImage(source, { maxDimension: 400, quality: 0.8 })).rejects.toThrow(
+			'2D-Canvas-Kontext konnte nicht erstellt werden.'
+		);
+
+		getContextSpy.mockRestore();
+	});
+
+	it('lehnt ab, wenn die Kompression keinen Blob liefert', async () => {
+		const source = await makeTestBlob(100, 100);
+		const toBlobSpy = vi
+			.spyOn(HTMLCanvasElement.prototype, 'toBlob')
+			.mockImplementation((callback) => callback(null));
+
+		await expect(compressImage(source, { maxDimension: 400, quality: 0.8 })).rejects.toThrow(
+			'Bildkompression fehlgeschlagen.'
+		);
+
+		toBlobSpy.mockRestore();
 	});
 });

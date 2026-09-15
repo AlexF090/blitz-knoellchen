@@ -44,6 +44,17 @@ describe('parseExif', () => {
 		expect(result.gps).toEqual({ lat: 50.9375, lon: 6.9603 });
 	});
 
+	it('liefert kein Datum, wenn der EXIF-Zeitstempel nicht dem erwarteten Format entspricht', async () => {
+		mockedLoad.mockResolvedValue({
+			exif: { DateTimeOriginal: { id: 0, description: 'kein-datum', value: [] } }
+		});
+
+		const result = await parseExif(new Blob());
+		expect(result.date).toBeNull();
+		expect(result.time).toBeNull();
+		expect(result.dateTimeOriginal).toBeNull();
+	});
+
 	it('wirft nicht bei korrupten Daten, liefert leeres Ergebnis', async () => {
 		mockedLoad.mockRejectedValue(new Error('corrupt'));
 

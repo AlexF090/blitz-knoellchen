@@ -1,5 +1,5 @@
 import { parseExif, type ParsedExif } from '$lib/exif/parseExif';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { embedExifMetadata } from './embedExif';
 
 const makeTestJpeg = (): Promise<Blob> => {
@@ -15,6 +15,43 @@ const makeTestJpeg = (): Promise<Blob> => {
 const EMPTY_EXIF: ParsedExif = { date: null, time: null, gps: null, dateTimeOriginal: null };
 
 describe('embedExifMetadata', () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it('bettet nur die GPS-Position ein, wenn kein Aufnahmedatum vorhanden ist (auch mit südlichen/westlichen Koordinaten)', async () => {
+		const source = await makeTestJpeg();
+		const exif: ParsedExif = {
+			date: null,
+			time: null,
+			gps: { lat: -33.8688, lon: -18.4241 },
+			dateTimeOriginal: null
+		};
+
+		const result = await embedExifMetadata(source, exif);
+		const parsed = await parseExif(result);
+
+		expect(parsed.gps?.lat).toBeCloseTo(-33.8688, 2);
+		expect(parsed.gps?.lon).toBeCloseTo(-18.4241, 2);
+	});
+
+	it('gibt den Original-Blob zurück, wenn das Lesen des Blobs fehlschlägt', async () => {
+		vi.spyOn(FileReader.prototype, 'readAsDataURL').mockImplementation(function (this: FileReader) {
+			this.onerror?.(new ProgressEvent('error') as ProgressEvent<FileReader>);
+		});
+		const source = await makeTestJpeg();
+		const exif: ParsedExif = {
+			date: '2026-03-01',
+			time: '14:30',
+			gps: null,
+			dateTimeOriginal: new Date(2026, 2, 1, 14, 30, 0)
+		};
+
+		const result = await embedExifMetadata(source, exif);
+
+		expect(result).toBe(source);
+	});
+
 	it('bettet Datum und GPS-Position als lesbares EXIF in das JPEG ein', async () => {
 		const source = await makeTestJpeg();
 		const exif: ParsedExif = {
@@ -38,5 +75,19 @@ describe('embedExifMetadata', () => {
 		const source = await makeTestJpeg();
 		const result = await embedExifMetadata(source, EMPTY_EXIF);
 		expect(result).toBe(source);
+	});
+
+	it('gibt den Original-Blob zurück, wenn das Einbetten fehlschlägt (kein gültiges JPEG)', async () => {
+		const invalidJpeg = new Blob(['not a real jpeg'], { type: 'image/jpeg' });
+		const exif: ParsedExif = {
+			date: '2026-03-01',
+			time: '14:30',
+			gps: null,
+			dateTimeOriginal: new Date(2026, 2, 1, 14, 30, 0)
+		};
+
+		const result = await embedExifMetadata(invalidJpeg, exif);
+
+		expect(result).toBe(invalidJpeg);
 	});
 });
