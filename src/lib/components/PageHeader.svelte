@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ArrowLeft, History } from '@lucide/svelte';
+	import { resolve } from '$app/paths';
 	import { appMode } from '$lib/appMode.svelte';
 	import LogoLockup from '$lib/components/branding/LogoLockup.svelte';
 
@@ -19,7 +20,13 @@
 		class="mx-auto flex max-w-md items-center justify-between px-4 py-3 sm:px-6 md:max-w-3xl lg:max-w-5xl"
 	>
 		<div class="flex items-center gap-3">
-			<LogoLockup />
+			<a
+				href={resolve('/')}
+				aria-label="Zur Startseite"
+				class="rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+			>
+				<LogoLockup />
+			</a>
 			{#if appMode.current !== null}
 				<button
 					type="button"
