@@ -63,6 +63,14 @@
 				du die Adresse manuell eingeben.
 			</p>
 			<p class="mt-2">
+				<strong>LocationIQ</strong> (Unwired Labs, Indien) und <strong>BigDataCloud</strong> (Australien)
+				sitzen außerhalb der EU/des EWR, in Ländern ohne Angemessenheitsbeschluss der EU-Kommission. Die
+				Übermittlung der Koordinaten bzw. des eingetippten Adresstexts an diese Anbieter stellt daher
+				eine Datenübermittlung in ein Drittland dar (Art. 44 ff. DSGVO). Laut eigenen Angaben von LocationIQ
+				wird der Inhalt der Anfragen (Koordinaten bzw. Adresstext) dabei grundsätzlich nicht gespeichert
+				oder protokolliert, sondern nur für die einzelne Anfrage verarbeitet.
+			</p>
+			<p class="mt-2">
 				Zusätzlich bietet die App bei der manuellen Adresseingabe (sowohl bei deiner eigenen
 				Anschrift als auch beim Tatort) eine Adressvorschlagsliste während des Tippens an. Dafür
 				wird dein bereits eingetippter Text – anders als beim Reverse Geocoding oben – ebenfalls
@@ -79,13 +87,14 @@
 		<section>
 			<h2>5. Versand der Anzeige per E-Mail</h2>
 			<p>
-				Beim Absenden werden deine Angaben im Formular – Name, Anschrift, E-Mail-Adresse,
-				Kennzeichen, Tatort, Tatzeit, Verstoßart, ggf. Anmerkungen sowie das Beweisfoto – über einen
-				eigenen Server-Endpunkt an den E-Mail-Versanddienst <strong>Brevo</strong> (Sinch Engage GmbH,
-				EU-Anbieter) übergeben, der die E-Mail im Namen dieser App an die Bußgeldstelle Köln verschickt.
-				Deine E-Mail-Adresse wird dabei als Antwortadresse (Reply-To) sowie als Kopie-Empfänger (Bcc)
-				hinterlegt, damit du automatisch eine Kopie der Anzeige erhältst – dein E-Mail-Postfach oder -Passwort
-				wird dafür nicht benötigt und nicht abgefragt.
+				Beim Absenden werden deine Angaben im Formular – Name, Anschrift, E-Mail-Adresse, ggf.
+				Telefonnummer, Kennzeichen, Tatort, Tatzeit, Verstoßart, ggf. Anmerkungen sowie das
+				Beweisfoto – über einen eigenen Server-Endpunkt an den E-Mail-Versanddienst <strong
+					>Brevo</strong
+				> (Sinch Engage GmbH, EU-Anbieter) übergeben, der die E-Mail im Namen dieser App an die Bußgeldstelle
+				Köln verschickt. Deine E-Mail-Adresse wird dabei als Antwortadresse (Reply-To) sowie als Kopie-Empfänger
+				(Bcc) hinterlegt, damit du automatisch eine Kopie der Anzeige erhältst – dein E-Mail-Postfach
+				oder -Passwort wird dafür nicht benötigt und nicht abgefragt.
 			</p>
 			<p class="mt-2">
 				Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erfüllung deines Wunsches, die Anzeige in
@@ -98,10 +107,11 @@
 			<p>
 				Damit du bereits versendete Anzeigen nachschlagen kannst, speichert die App in der Historie
 				ein komprimiertes Vorschaubild sowie die Eckdaten der Anzeige lokal in der
-				<em>IndexedDB</em> deines Browsers – nicht auf einem Server. Dein Name, deine Anschrift und
-				E-Mail-Adresse werden zusätzlich im <em>localStorage</em> deines Browsers hinterlegt, damit das
-				Formular beim nächsten Öffnen automatisch vorausgefüllt ist. Ein noch nicht abgesendeter Formularentwurf
-				wird ebenfalls lokal zwischengespeichert und nach spätestens zwei Stunden automatisch verworfen.
+				<em>IndexedDB</em> deines Browsers – nicht auf einem Server. Dein Name, deine Anschrift,
+				E-Mail-Adresse und ggf. Telefonnummer werden zusätzlich als Profil in derselben
+				<em>IndexedDB</em> hinterlegt, damit das Formular beim nächsten Öffnen automatisch vorausgefüllt
+				ist. Ein noch nicht abgesendeter Formularentwurf wird ebenfalls lokal zwischengespeichert und
+				nach spätestens zwei Stunden automatisch verworfen.
 			</p>
 			<p class="mt-2">
 				Diese Daten verlassen dein Gerät nicht von selbst und werden ausschließlich beim Absenden
@@ -115,8 +125,10 @@
 			<p>
 				Diese App wird über <strong>Vercel</strong> gehostet, Serverstandort Frankfurt am Main (Deutschland).
 				Beim Aufruf der App verarbeitet Vercel technisch notwendige Zugriffsdaten (z. B. IP-Adresse, Zeitpunkt
-				des Zugriffs) zur Bereitstellung und Absicherung des Dienstes. Rechtsgrundlage ist Art. 6 Abs.
-				1 lit. f DSGVO (berechtigtes Interesse am sicheren und stabilen Betrieb der App).
+				des Zugriffs) zur Bereitstellung und Absicherung des Dienstes. Diese technischen Zugriffs-Logs
+				werden von Vercel standardmäßig nur 1 Stunde vorgehalten (länger nur, falls der Betreiber optional
+				erweitertes Logging hinzubucht). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes
+				Interesse am sicheren und stabilen Betrieb der App).
 			</p>
 			<p class="mt-2">
 				Zusätzlich nutzt diese App <strong>Vercel Web Analytics</strong>, um anonyme, aggregierte
@@ -130,10 +142,11 @@
 		<section>
 			<h2>8. Empfänger deiner Anzeige</h2>
 			<p>
-				Der Inhalt deiner Anzeige (Name, Anschrift, E-Mail-Adresse, Kennzeichen, Tatort, Tatzeit,
-				Verstoßart, Anmerkungen, Beweisfoto) wird an die Bußgeldstelle der Stadt Köln übermittelt,
-				damit diese den gemeldeten Verstoß bearbeiten kann. Diese Übermittlung ist der eigentliche
-				Zweck der App und beruht auf deiner ausdrücklichen Anweisung beim Absenden des Formulars.
+				Der Inhalt deiner Anzeige (Name, Anschrift, E-Mail-Adresse, ggf. Telefonnummer, Kennzeichen,
+				Tatort, Tatzeit, Verstoßart, Anmerkungen, Beweisfoto) wird an die Bußgeldstelle der Stadt
+				Köln übermittelt, damit diese den gemeldeten Verstoß bearbeiten kann. Diese Übermittlung ist
+				der eigentliche Zweck der App und beruht auf deiner ausdrücklichen Anweisung beim Absenden
+				des Formulars.
 			</p>
 		</section>
 
@@ -172,11 +185,12 @@
 		<section>
 			<h2>11. Speicherdauer</h2>
 			<p>
-				Daten, die zum Versand der Anzeige an Brevo bzw. die Bußgeldstelle Köln übermittelt werden,
-				verbleiben so lange dort, wie es für die Bearbeitung des Verstoßes bzw. gesetzliche
-				Aufbewahrungspflichten erforderlich ist; hierauf hat der Betreiber dieser App keinen
-				Einfluss. Lokal auf deinem Gerät gespeicherte Daten (Abschnitt 6) bleiben bestehen, bis du
-				sie selbst löschst.
+				Bei <strong>Brevo</strong> werden die Transaktions-Logs des Versands (u. a. Zustellstatus)
+				nach spätestens 1 Monat automatisch gelöscht – das ist die vom Betreiber dieser App
+				eingestellte, kürzestmögliche Aufbewahrungsfrist. Wie lange die zugestellte E-Mail
+				anschließend bei der <strong>Bußgeldstelle Köln</strong> verbleibt, richtet sich nach deren gesetzlichen
+				Aufbewahrungspflichten; hierauf hat der Betreiber dieser App keinen Einfluss. Lokal auf deinem
+				Gerät gespeicherte Daten (Abschnitt 6) bleiben bestehen, bis du sie selbst löschst.
 			</p>
 		</section>
 
