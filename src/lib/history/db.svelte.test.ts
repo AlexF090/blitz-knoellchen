@@ -4,6 +4,8 @@ import {
 	addEntry,
 	getEntry,
 	listEntries,
+	deleteEntry,
+	clearEntries,
 	getProfile,
 	saveProfile,
 	getDraft,
@@ -86,6 +88,29 @@ describe('history db', () => {
 		const olderIndex = entries.findIndex((e) => e.id === older.id);
 		const newerIndex = entries.findIndex((e) => e.id === newer.id);
 		expect(newerIndex).toBeLessThan(olderIndex);
+	});
+
+	it('löscht einen einzelnen Eintrag', async () => {
+		const toDelete = makeEntry();
+		const toKeep = makeEntry();
+		await addEntry(toDelete);
+		await addEntry(toKeep);
+
+		await deleteEntry(toDelete.id);
+
+		expect(await getEntry(toDelete.id)).toBeUndefined();
+		const remainingIds = (await listEntries()).map((e) => e.id);
+		expect(remainingIds).not.toContain(toDelete.id);
+		expect(remainingIds).toContain(toKeep.id);
+	});
+
+	it('löscht alle Einträge', async () => {
+		await addEntry(makeEntry());
+		await addEntry(makeEntry());
+
+		await clearEntries();
+
+		expect(await listEntries()).toEqual([]);
 	});
 });
 

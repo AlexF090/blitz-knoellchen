@@ -104,6 +104,16 @@ export const getEntry = async (id: string): Promise<HistoryEntry | undefined> =>
 	return db.get(STORE_NAME, id);
 };
 
+export const deleteEntry = async (id: string): Promise<void> => {
+	const db = await getDb();
+	await db.delete(STORE_NAME, id);
+};
+
+export const clearEntries = async (): Promise<void> => {
+	const db = await getDb();
+	await db.clear(STORE_NAME);
+};
+
 export const getProfile = async (): Promise<UserProfile | undefined> => {
 	const db = await getDb();
 	const stored = await db.get(PROFILE_STORE_NAME, PROFILE_KEY);
