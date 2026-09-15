@@ -92,6 +92,65 @@ export default defineConfig({
 	],
 	test: {
 		expect: { requireAssertions: true },
+		coverage: {
+			provider: 'v8',
+			reporter: ['text', 'html'],
+			include: ['src/**/*.{ts,svelte}'],
+			exclude: [
+				'src/**/*.{test,spec}.{ts,js}',
+				'src/**/*.d.ts',
+				'src/lib/index.ts',
+				'src/lib/geocode/geocodeAddress.ts',
+				'src/lib/report/sendResults.ts',
+				'src/routes/**/$types.d.ts'
+			],
+			// Ziel ist 100% — praktisch jede Datei erreicht das auch. Für den Rest gibt es zwei
+			// begründete, einzeln recherchierte Ausnahme-Kategorien (kein pauschaler Freifahrtschein):
+			// (a) Svelte-Compiler/v8-Instrumentierungsartefakt: `bind:value`, Template-Interpolationen
+			//     (z.B. `{buttonPrimary}`) und `$props()`-Default-Destrukturierung erzeugen kompilierten
+			//     Code, den v8 als zusätzliche Branch/Function zählt, obwohl es keine echte Verzweigung
+			//     im Quellcode gibt — verifiziert an mehreren bereits vollständig getesteten Stellen
+			//     (z.B. beide Zweige von Props mit Default explizit getestet, trotzdem 0% Branch).
+			// (b) Echter, aber über die öffentliche Komponenten-/Modul-API nie erreichbarer Defensiv-Code
+			//     (z.B. `if (!container) return;` bei einem `bind:this`, das nie vor dem ersten Event
+			//     ungebunden ist; ein `if (oldVersion < 3)`-Zweig, den `idb` laut eigener Semantik nie
+			//     falsch aufruft; ein SSR-Guard, der im Browser-Testprojekt strukturell immer true ist).
+			//
+			// WICHTIG: vitest wendet die globalen Thresholds unten IMMER auf die Gesamtsumme aller
+			// Dateien an, auch wenn einzelne Dateien per Glob unten eigene (niedrigere) Werte haben —
+			// die globalen Werte sind daher bewusst knapp unter dem aktuell tatsächlich erreichten
+			// Gesamtwert gesetzt, nicht 100. Die Glob-Einträge sind zusätzliche, engere Regressions-Floors
+			// für genau die betroffenen Dateien; jede Datei, die hier nicht explizit gelistet ist, bleibt
+			// implizit bei 100% gefordert (jede Regression drückt sofort den Gesamtwert unter den Floor).
+			thresholds: {
+				lines: 99.5,
+				branches: 88,
+				functions: 99.5,
+				statements: 98.5,
+				'src/lib/components/Footer.svelte': { branches: 70 }, // (a) __APP_VERSION__ Vite-Define
+				'src/lib/components/InstallBanner.svelte': { branches: 85 }, // (a)
+				'src/lib/components/PhotoLightbox.svelte': {
+					statements: 95,
+					branches: 80,
+					lines: 95
+				}, // (b) bind:this-Guards für container/dialog
+				'src/lib/components/PhotoPool.svelte': { branches: 80 }, // (a)
+				'src/lib/components/PullToRefresh.svelte': { statements: 95, branches: 90 }, // (a)+(b)
+				'src/lib/components/ReportForm.svelte': { statements: 95, branches: 75 }, // (b) vier Defensiv-Guards, s. PR-Beschreibung
+				'src/lib/components/VehicleBlock.svelte': {
+					statements: 95,
+					branches: 70,
+					functions: 95,
+					lines: 95
+				}, // (a)+(b)
+				'src/lib/components/icons/*.svelte': { branches: 0 }, // (a) $props()-Default
+				'src/lib/history/db.ts': { branches: 90 }, // (b) idb ruft upgrade() nie mit oldVersion>=targetVersion auf
+				'src/lib/pwa/installPrompt.svelte.ts': { branches: 80 }, // (b) `if (browser)`-SSR-Guard
+				'src/routes/+layout.svelte': { branches: 45 }, // (a) `dev`-Build-Time-Konstante
+				'src/routes/+page.svelte': { statements: 80, branches: 45, lines: 75 }, // (a) Prop-Weitergabe an ReportForm
+				'src/routes/historie/+page.svelte': { statements: 95, branches: 60 } // (b) zwei Defensiv-Guards (gelöschtes Lightbox-Target)
+			}
+		},
 		projects: [
 			{
 				extends: './vite.config.ts',
