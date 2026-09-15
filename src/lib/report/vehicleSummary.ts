@@ -26,19 +26,22 @@ export const buildVehicleSummaryRows = (
 				postcode: vehicle.locationPostcode,
 				city: vehicle.locationCity
 			})
-		: '';
+		: [vehicle.locationPostcode, vehicle.locationCity].filter(Boolean).join(' ');
 	const vehicleDescription = includeEmpty
 		? `${vehicle.vehicleType || '—'} · ${vehicle.make} · ${vehicle.color || '—'}`
-		: vehicle.color
-			? `${vehicle.vehicleType ? `${vehicle.vehicleType} · ` : ''}${vehicle.make} · ${vehicle.color}`
+		: vehicle.vehicleType || vehicle.make || vehicle.color
+			? [vehicle.vehicleType, vehicle.make, vehicle.color].filter(Boolean).join(' · ')
 			: '';
 	const incidentLabels = incidentTypes
 		.filter((type) => vehicle.incidentTypeIds.includes(type.id))
 		.map((type) => type.label)
 		.join(', ');
-	const dateTime =
-		vehicle.date && vehicle.time
+	const dateTime = vehicle.date
+		? vehicle.time
 			? `${formatIsoDateDMY(vehicle.date)}, ${formatTimeRange(vehicle)} Uhr`
+			: formatIsoDateDMY(vehicle.date)
+		: vehicle.time
+			? `${formatTimeRange(vehicle)} Uhr`
 			: '';
 
 	const rows: SummaryRow[] = [];
