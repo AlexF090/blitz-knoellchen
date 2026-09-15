@@ -44,4 +44,33 @@ describe('Accordion', () => {
 		await userEvent.click(buttonA);
 		await expect.element(buttonA).toHaveAttribute('aria-expanded', 'false');
 	});
+
+	it('rendert nichts bei leerem items-Array', async () => {
+		const { container } = render(Accordion, { items: [] });
+
+		expect(container.querySelectorAll('button')).toHaveLength(0);
+	});
+
+	it('nutzt den Leerstring-Fallback für ID- und Text-basierte Attribute bei fehlenden Feldern', async () => {
+		// id/question sind laut Typ Pflichtfelder; zur Laufzeit kompiliert Svelte die abgeleiteten
+		// Attribute/Texte (`id`/`aria-controls`/`aria-labelledby`/Fragetext) dennoch mit einem
+		// `?? ''`-Fallback. Nur zur Laufzeit fehlende Werte (hier bewusst per Type-Cast erzwungen)
+		// decken diesen Fallback-Zweig ab.
+		const itemsWithMissingFields = [
+			{ id: undefined, question: undefined, answer: textSnippet('Antwort ohne ID') }
+		] as unknown as AccordionItem[];
+
+		const { container } = render(Accordion, { items: itemsWithMissingFields });
+		const button = container.querySelector('button') as HTMLButtonElement;
+
+		expect(button.id).toBe('-button');
+		expect(button.getAttribute('aria-controls')).toBe('-panel');
+		expect(button.textContent?.trim()).toBe('');
+
+		await userEvent.click(button);
+
+		const region = page.getByRole('region');
+		await expect.element(region).toHaveAttribute('id', '-panel');
+		await expect.element(region).toHaveAttribute('aria-labelledby', '-button');
+	});
 });
