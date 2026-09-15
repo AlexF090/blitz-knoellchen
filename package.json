@@ -3,7 +3,7 @@
 	"description": "Progressive Web App zur Meldung von Falschparkern an die Bußgeldstelle Köln per E-Mail.",
 	"private": true,
 	"license": "UNLICENSED",
-	"version": "1.0.106",
+	"version": "1.0.107",
 	"type": "module",
 	"engines": {
 		"node": ">=22"
