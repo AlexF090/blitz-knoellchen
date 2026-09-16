@@ -34,7 +34,7 @@ afterEach(() => {
 
 describe('AddressAutocomplete', () => {
 	it('öffnet die Vorschlagsliste nach Eingabe und wartet den Debounce ab', async () => {
-		mockedFetchAddressSuggestions.mockResolvedValue(suggestions);
+		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
 		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
@@ -48,7 +48,7 @@ describe('AddressAutocomplete', () => {
 	});
 
 	it('navigiert mit den Pfeiltasten und aktualisiert aria-activedescendant', async () => {
-		mockedFetchAddressSuggestions.mockResolvedValue(suggestions);
+		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
 		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
@@ -69,7 +69,7 @@ describe('AddressAutocomplete', () => {
 	});
 
 	it('wählt mit Enter den aktiven Vorschlag aus und ruft onSelect korrekt auf', async () => {
-		mockedFetchAddressSuggestions.mockResolvedValue(suggestions);
+		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
 		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
@@ -87,7 +87,7 @@ describe('AddressAutocomplete', () => {
 	});
 
 	it('ignoriert Enter ohne aktiven Vorschlag', async () => {
-		mockedFetchAddressSuggestions.mockResolvedValue(suggestions);
+		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
 		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
@@ -103,7 +103,7 @@ describe('AddressAutocomplete', () => {
 	});
 
 	it('schließt die Liste mit Escape', async () => {
-		mockedFetchAddressSuggestions.mockResolvedValue(suggestions);
+		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
 		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
@@ -122,7 +122,7 @@ describe('AddressAutocomplete', () => {
 	});
 
 	it('schließt die Liste bei einem Klick außerhalb und ruft onBlur beim Verlassen per Tab auf', async () => {
-		mockedFetchAddressSuggestions.mockResolvedValue(suggestions);
+		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
 		const onBlur = vi.fn();
 		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect, onBlur });
@@ -153,7 +153,7 @@ describe('AddressAutocomplete', () => {
 	});
 
 	it('ignoriert andere Tasten, während die Liste geöffnet ist', async () => {
-		mockedFetchAddressSuggestions.mockResolvedValue(suggestions);
+		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
 		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
@@ -185,8 +185,33 @@ describe('AddressAutocomplete', () => {
 			.toHaveAttribute('aria-invalid', 'true');
 	});
 
+	it('zeigt eine Fehlermeldung, wenn die Adresssuche fehlschlägt', async () => {
+		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions: [], failed: true });
+		const onSelect = vi.fn();
+		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+
+		const input = page.getByRole('combobox', { name: 'Adresse' });
+		await userEvent.fill(input, 'Domklo');
+
+		await expect
+			.element(page.getByText('Adressvorschläge aktuell nicht verfügbar — bitte manuell eingeben.'))
+			.toBeInTheDocument();
+	});
+
+	it('zeigt keine Fehlermeldung, wenn die Query nur zu kurz ist (keine echten Treffer)', async () => {
+		const onSelect = vi.fn();
+		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+
+		const input = page.getByRole('combobox', { name: 'Adresse' });
+		await userEvent.fill(input, 'Do');
+
+		await expect
+			.element(page.getByText('Adressvorschläge aktuell nicht verfügbar — bitte manuell eingeben.'))
+			.not.toBeInTheDocument();
+	});
+
 	it('ein Klick innerhalb des Containers (ohne Fokuswechsel) schließt die Liste nicht', async () => {
-		mockedFetchAddressSuggestions.mockResolvedValue(suggestions);
+		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
 		const { container } = render(AddressAutocomplete, {
 			id: 'addr',
@@ -211,7 +236,7 @@ describe('AddressAutocomplete', () => {
 	});
 
 	it('ein Klick außerhalb des Containers (ohne Fokuswechsel) schließt die Liste', async () => {
-		mockedFetchAddressSuggestions.mockResolvedValue(suggestions);
+		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
 		const { container } = render(AddressAutocomplete, {
 			id: 'addr',
@@ -236,7 +261,7 @@ describe('AddressAutocomplete', () => {
 	});
 
 	it('wählt einen Vorschlag per Klick aus und schließt die Liste', async () => {
-		mockedFetchAddressSuggestions.mockResolvedValue(suggestions);
+		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
 		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 

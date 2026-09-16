@@ -30,7 +30,7 @@ vi.mock('$lib/geocode/client', () => ({
 }));
 
 vi.mock('$lib/geocode/autocompleteClient', () => ({
-	fetchAddressSuggestions: vi.fn().mockResolvedValue([])
+	fetchAddressSuggestions: vi.fn().mockResolvedValue({ suggestions: [], failed: false })
 }));
 
 vi.mock('$lib/report/sendClient', () => ({
@@ -106,7 +106,7 @@ const setDefaultMocks = () => {
 	mockedClearDraft.mockResolvedValue(undefined);
 	mockedAddEntry.mockResolvedValue(undefined);
 	mockedFetchAddress.mockResolvedValue(null);
-	mockedFetchAddressSuggestions.mockResolvedValue([]);
+	mockedFetchAddressSuggestions.mockResolvedValue({ suggestions: [], failed: false });
 	mockedSendVehicleReport.mockResolvedValue(true);
 };
 
@@ -500,15 +500,18 @@ describe('ReportForm', () => {
 
 	it('übernimmt eine per Autocomplete ausgewählte Adresse in die Profil-Adressfelder', async () => {
 		setDefaultMocks();
-		mockedFetchAddressSuggestions.mockResolvedValue([
-			{
-				label: 'Domkloster 4, 50667 Köln',
-				street: 'Domkloster',
-				houseNumber: '4',
-				postcode: '50667',
-				city: 'Köln'
-			}
-		]);
+		mockedFetchAddressSuggestions.mockResolvedValue({
+			suggestions: [
+				{
+					label: 'Domkloster 4, 50667 Köln',
+					street: 'Domkloster',
+					houseNumber: '4',
+					postcode: '50667',
+					city: 'Köln'
+				}
+			],
+			failed: false
+		});
 
 		renderForm();
 		await expect.element(page.getByRole('button', { name: 'Speichern' })).toBeInTheDocument();
@@ -526,9 +529,18 @@ describe('ReportForm', () => {
 
 	it('übernimmt aus einer Autocomplete-Auswahl ohne PLZ/Ort nur Straße und Hausnr., ohne PLZ/Ort zu leeren', async () => {
 		setDefaultMocks();
-		mockedFetchAddressSuggestions.mockResolvedValue([
-			{ label: 'Domkloster 4', street: 'Domkloster', houseNumber: '4', postcode: null, city: null }
-		]);
+		mockedFetchAddressSuggestions.mockResolvedValue({
+			suggestions: [
+				{
+					label: 'Domkloster 4',
+					street: 'Domkloster',
+					houseNumber: '4',
+					postcode: null,
+					city: null
+				}
+			],
+			failed: false
+		});
 
 		renderForm();
 		await expect.element(page.getByRole('button', { name: 'Speichern' })).toBeInTheDocument();

@@ -1,6 +1,13 @@
 import type { AddressSuggestion } from './autocomplete';
 
-export const fetchAddressSuggestions = async (query: string): Promise<AddressSuggestion[]> => {
+export interface AddressSuggestionsFetchResult {
+	suggestions: AddressSuggestion[];
+	failed: boolean;
+}
+
+export const fetchAddressSuggestions = async (
+	query: string
+): Promise<AddressSuggestionsFetchResult> => {
 	try {
 		const response = await fetch(`/api/geocode/autocomplete?q=${encodeURIComponent(query)}`);
 		if (!response.ok) {
@@ -9,12 +16,15 @@ export const fetchAddressSuggestions = async (query: string): Promise<AddressSug
 				response.status,
 				await response.text()
 			);
-			return [];
+			return { suggestions: [], failed: true };
 		}
 		const data = await response.json();
-		return Array.isArray(data.suggestions) ? data.suggestions : [];
+		return {
+			suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+			failed: false
+		};
 	} catch (error) {
 		console.error('fetchAddressSuggestions fehlgeschlagen:', error);
-		return [];
+		return { suggestions: [], failed: true };
 	}
 };

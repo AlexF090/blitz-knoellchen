@@ -27,15 +27,18 @@ describe('fetchAddressSuggestions', () => {
 			)
 		);
 
-		await expect(fetchAddressSuggestions('Domklo')).resolves.toEqual([
-			{
-				label: 'Domkloster 4, 50667 Köln',
-				street: 'Domkloster',
-				houseNumber: '4',
-				postcode: '50667',
-				city: 'Köln'
-			}
-		]);
+		await expect(fetchAddressSuggestions('Domklo')).resolves.toEqual({
+			suggestions: [
+				{
+					label: 'Domkloster 4, 50667 Köln',
+					street: 'Domkloster',
+					houseNumber: '4',
+					postcode: '50667',
+					city: 'Köln'
+				}
+			],
+			failed: false
+		});
 	});
 
 	it('liefert eine leere Liste, wenn suggestions kein Array ist', async () => {
@@ -44,17 +47,23 @@ describe('fetchAddressSuggestions', () => {
 			vi.fn(async () => new Response(JSON.stringify({})))
 		);
 
-		await expect(fetchAddressSuggestions('Domklo')).resolves.toEqual([]);
+		await expect(fetchAddressSuggestions('Domklo')).resolves.toEqual({
+			suggestions: [],
+			failed: false
+		});
 	});
 
-	it('loggt und liefert eine leere Liste bei einer !ok-Antwort', async () => {
+	it('loggt und liefert failed:true bei einer !ok-Antwort', async () => {
 		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 		vi.stubGlobal(
 			'fetch',
 			vi.fn(async () => new Response('Server-Fehler', { status: 502 }))
 		);
 
-		await expect(fetchAddressSuggestions('Domklo')).resolves.toEqual([]);
+		await expect(fetchAddressSuggestions('Domklo')).resolves.toEqual({
+			suggestions: [],
+			failed: true
+		});
 		expect(errorSpy).toHaveBeenCalledWith(
 			'fetchAddressSuggestions fehlgeschlagen:',
 			502,
@@ -62,7 +71,7 @@ describe('fetchAddressSuggestions', () => {
 		);
 	});
 
-	it('loggt und liefert eine leere Liste, wenn fetch wirft', async () => {
+	it('loggt und liefert failed:true, wenn fetch wirft', async () => {
 		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 		vi.stubGlobal(
 			'fetch',
@@ -71,7 +80,10 @@ describe('fetchAddressSuggestions', () => {
 			})
 		);
 
-		await expect(fetchAddressSuggestions('Domklo')).resolves.toEqual([]);
+		await expect(fetchAddressSuggestions('Domklo')).resolves.toEqual({
+			suggestions: [],
+			failed: true
+		});
 		expect(errorSpy).toHaveBeenCalledWith(
 			'fetchAddressSuggestions fehlgeschlagen:',
 			expect.any(Error)

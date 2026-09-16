@@ -14,7 +14,7 @@ import VehicleBlock from './VehicleBlock.svelte';
 // AddressAutocomplete wird intern gerendert (Straßenfeld) — echte Netzwerkaufrufe beim Tippen
 // sind hier nicht Testgegenstand, daher wird der Client konsequent gemockt.
 vi.mock('$lib/geocode/autocompleteClient', () => ({
-	fetchAddressSuggestions: vi.fn().mockResolvedValue([])
+	fetchAddressSuggestions: vi.fn().mockResolvedValue({ suggestions: [], failed: false })
 }));
 
 const mockedFetchAddressSuggestions = vi.mocked(fetchAddressSuggestions);
@@ -414,15 +414,18 @@ describe('VehicleBlock', () => {
 	});
 
 	it('übernimmt eine per Autocomplete ausgewählte Adresse in die Tatort-Felder', async () => {
-		mockedFetchAddressSuggestions.mockResolvedValue([
-			{
-				label: 'Domkloster 4, 50667 Köln',
-				street: 'Domkloster',
-				houseNumber: '4',
-				postcode: '50667',
-				city: 'Köln'
-			}
-		]);
+		mockedFetchAddressSuggestions.mockResolvedValue({
+			suggestions: [
+				{
+					label: 'Domkloster 4, 50667 Köln',
+					street: 'Domkloster',
+					houseNumber: '4',
+					postcode: '50667',
+					city: 'Köln'
+				}
+			],
+			failed: false
+		});
 		const vehicle = $state(
 			makeCompleteVehicle({
 				locationStreet: '',
