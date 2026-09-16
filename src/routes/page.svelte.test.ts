@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
+import { page } from 'vitest/browser';
 
-// Simuliert den vom PWA-Build-Plugin erzeugten Manifest-Link-Tag, der in der Dev-Umgebung fehlt —
-// deckt den {#if pwaInfo?.webManifest?.linkTag}-Zweig ab, der sonst nie wahr wird.
+// Simuliert die vom PWA-Build-Plugin erzeugten Manifest-Daten, die in der Dev-Umgebung fehlen —
+// deckt den {#if pwaInfo?.webManifest?.href}-Zweig ab, der sonst nie wahr wird.
 vi.mock('virtual:pwa-info', () => ({
-	pwaInfo: { webManifest: { linkTag: '<link rel="manifest" href="/manifest.webmanifest" />' } }
+	pwaInfo: { webManifest: { href: '/manifest.webmanifest', useCredentials: false } }
 }));
 
 describe('+page.svelte (Startseite)', () => {

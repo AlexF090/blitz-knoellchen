@@ -10,9 +10,12 @@
 
 <svelte:head>
 	<title>Blitz-Knöllchen – Falschparker melden</title>
-	{#if pwaInfo?.webManifest?.linkTag}
-		<!-- eslint-disable-next-line svelte/no-at-html-tags -- statisch vom Build-Plugin erzeugt, keine Nutzereingabe -->
-		{@html pwaInfo.webManifest.linkTag}
+	{#if pwaInfo?.webManifest?.href}
+		<link
+			rel="manifest"
+			href={pwaInfo.webManifest.href}
+			crossorigin={pwaInfo.webManifest.useCredentials ? 'use-credentials' : undefined}
+		/>
 	{/if}
 </svelte:head>
 
