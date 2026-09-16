@@ -1,10 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getProfile } from '$lib/history/db';
 import { createProfileStore } from './profileStore.svelte';
+import type { UserProfile } from '$lib/history/db';
 
-vi.mock('$lib/history/db', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('$lib/history/db')>();
-	return { ...actual, getProfile: vi.fn(actual.getProfile) };
+// Eigene In-Memory-Fake statt Durchreichen an die echte IndexedDB (via importOriginal):
+// db.svelte.test.ts testet $lib/history/db bereits gegen die echte IndexedDB mit demselben
+// festen Profil-Schlüssel — liefen beide Testdateien parallel, überschrieben sie sich
+// gegenseitig und machten db.ts' Branch-Coverage je nach Ausführungsreihenfolge flaky.
+vi.mock('$lib/history/db', () => {
+	let stored: UserProfile | undefined;
+	return {
+		getProfile: vi.fn(async () => stored),
+		saveProfile: vi.fn(async (profile: UserProfile) => {
+			stored = profile;
+		})
+	};
 });
 
 describe('profileStore', () => {
