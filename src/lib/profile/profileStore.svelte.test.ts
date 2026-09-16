@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { getProfile } from '$lib/history/db';
 import { createProfileStore } from './profileStore.svelte';
+
+vi.mock('$lib/history/db', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('$lib/history/db')>();
+	return { ...actual, getProfile: vi.fn(actual.getProfile) };
+});
 
 describe('profileStore', () => {
 	it('startet mit leerem Profil', () => {
@@ -31,5 +37,22 @@ describe('profileStore', () => {
 		await reloaded.load();
 		expect(reloaded.value.firstName).toBe('Max');
 		expect(reloaded.value.email).toBe('max@example.com');
+	});
+
+	it('lässt das Profil unverändert, wenn beim Laden noch keines gespeichert ist', async () => {
+		const store = createProfileStore();
+		vi.mocked(getProfile).mockResolvedValueOnce(undefined);
+
+		await store.load();
+
+		expect(store.value).toEqual({
+			firstName: '',
+			lastName: '',
+			addressStreet: '',
+			addressPostcode: '',
+			addressCity: '',
+			email: '',
+			phone: ''
+		});
 	});
 });

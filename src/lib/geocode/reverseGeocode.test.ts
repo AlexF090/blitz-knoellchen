@@ -50,6 +50,15 @@ describe('reverseGeocode', () => {
 		expect(result.error).toBeNull();
 	});
 
+	it('fällt auf den zweiten Provider zurück, wenn der erste null liefert (ohne zu werfen)', async () => {
+		const locationIq = provider('locationIq', async () => null);
+		const bigdatacloud = provider('bigdatacloud', async () => FALLBACK_ADDRESS);
+
+		const result = await reverseGeocode(50.9, 6.9, [locationIq, bigdatacloud]);
+
+		expect(result.address).toEqual(FALLBACK_ADDRESS);
+	});
+
 	it('liefert einen Fehler, wenn alle Provider fehlschlagen', async () => {
 		vi.spyOn(console, 'error').mockImplementation(() => {});
 		const locationIq = provider('locationIq', async () => {
@@ -113,6 +122,33 @@ describe('createBigDataCloudProvider', () => {
 		const bigdatacloud = createBigDataCloudProvider(fetchFn);
 
 		await expect(bigdatacloud.lookup(50.9, 6.9)).rejects.toThrow(/blockiert.*403/);
+	});
+
+	it('liefert null für postcode und city, wenn keine der Angaben vorhanden ist', async () => {
+		const fetchFn = vi.fn(async () => new Response(JSON.stringify({}))) as unknown as typeof fetch;
+		const bigdatacloud = createBigDataCloudProvider(fetchFn);
+
+		await expect(bigdatacloud.lookup(50.9, 6.9)).resolves.toBeNull();
+	});
+
+	it('fällt auf locality zurück, wenn city fehlt', async () => {
+		const fetchFn = vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify({
+						locality: 'Altstadt',
+						postcode: '50667'
+					})
+				)
+		) as unknown as typeof fetch;
+		const bigdatacloud = createBigDataCloudProvider(fetchFn);
+
+		await expect(bigdatacloud.lookup(50.9, 6.9)).resolves.toEqual({
+			street: null,
+			houseNumber: null,
+			postcode: '50667',
+			city: 'Altstadt'
+		});
 	});
 
 	it('sendet ein Timeout-Signal und liefert nur Ort/PLZ (keine Straße)', async () => {

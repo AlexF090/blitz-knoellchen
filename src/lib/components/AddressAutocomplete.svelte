@@ -34,11 +34,13 @@
 	let suggestions = $state<AddressSuggestion[]>([]);
 	let open = $state(false);
 	let activeIndex = $state(-1);
+	let searchFailed = $state(false);
 	let inputElement: HTMLInputElement | undefined;
 	let containerElement: HTMLDivElement | undefined;
 
-	const suggestionsController = createAddressSuggestionsController((result) => {
+	const suggestionsController = createAddressSuggestionsController((result, failed) => {
 		suggestions = result;
+		searchFailed = failed;
 		activeIndex = -1;
 		open = result.length > 0;
 	});
@@ -50,6 +52,7 @@
 		open = false;
 		activeIndex = -1;
 		suggestions = [];
+		searchFailed = false;
 		// Verwirft auch einen bereits laufenden Debounce/Fetch — sonst könnte dessen Antwort
 		// die Liste nach einem Klick nach außen (oder Blur) unerwartet wieder öffnen.
 		suggestionsController.cancel();
@@ -145,6 +148,11 @@
 						</li>
 					{/each}
 				</ul>
+			{/if}
+			{#if searchFailed}
+				<p role="status" class="mt-1 text-lg text-warning-fg">
+					Adressvorschläge aktuell nicht verfügbar — bitte manuell eingeben.
+				</p>
 			{/if}
 		{/snippet}
 	</FormField>

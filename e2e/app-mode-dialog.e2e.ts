@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chooseAppMode } from './helpers/appMode';
+import { test, expect } from './fixtures';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(__dirname, 'fixtures/photo-with-gps.jpg');
@@ -39,8 +39,6 @@ const getPreviewRecipient = (page: import('@playwright/test').Page) => {
 test('Dialog erscheint beim ersten Laden und lässt sich nicht per Escape oder Backdrop-Klick schließen', async ({
 	page
 }) => {
-	await page.route('**/api/send', (route) => route.fulfill({ json: { ok: true } }));
-
 	await page.goto('/');
 
 	const dialog = page.getByRole('dialog', { name: 'Demo- oder Live-Modus?' });
@@ -55,8 +53,6 @@ test('Dialog erscheint beim ersten Laden und lässt sich nicht per Escape oder B
 });
 
 test('Demo-Modus: Badge im Header und Test-Adresse in der E-Mail-Vorschau', async ({ page }) => {
-	await page.route('**/api/send', (route) => route.fulfill({ json: { ok: true } }));
-
 	await page.goto('/');
 	await chooseAppMode(page, 'demo');
 
@@ -79,8 +75,6 @@ test('Demo-Modus: Badge im Header und Test-Adresse in der E-Mail-Vorschau', asyn
 });
 
 test('Nach hartem Reload bleibt die Wahl innerhalb der Session erhalten', async ({ page }) => {
-	await page.route('**/api/send', (route) => route.fulfill({ json: { ok: true } }));
-
 	await page.goto('/');
 	await chooseAppMode(page, 'demo');
 	// Nicht auf dem Dialog selbst assertieren: die CSS-Exit-Animation (layout.css,
@@ -101,8 +95,6 @@ test('Nach hartem Reload bleibt die Wahl innerhalb der Session erhalten', async 
 test('Klick auf das Modus-Badge im Header öffnet den Dialog erneut und erlaubt einen Wechsel', async ({
 	page
 }) => {
-	await page.route('**/api/send', (route) => route.fulfill({ json: { ok: true } }));
-
 	await page.goto('/');
 	await chooseAppMode(page, 'demo');
 	await expect(page.getByText('Demo', { exact: true })).toBeVisible();
@@ -122,8 +114,6 @@ test('Klick auf das Modus-Badge im Header öffnet den Dialog erneut und erlaubt 
 test('Live-Modus: Badge im Header und echte Bußgeldstelle-Adresse in der E-Mail-Vorschau', async ({
 	page
 }) => {
-	await page.route('**/api/send', (route) => route.fulfill({ json: { ok: true } }));
-
 	await page.goto('/');
 	await chooseAppMode(page, 'live');
 

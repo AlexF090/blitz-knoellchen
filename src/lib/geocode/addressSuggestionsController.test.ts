@@ -19,7 +19,7 @@ describe('createAddressSuggestionsController', () => {
 
 		controller.search('Do');
 
-		expect(onResult).toHaveBeenCalledWith([]);
+		expect(onResult).toHaveBeenCalledWith([], false);
 		expect(fetchSpy).not.toHaveBeenCalled();
 	});
 
@@ -35,7 +35,7 @@ describe('createAddressSuggestionsController', () => {
 		];
 		const fetchSpy = vi
 			.spyOn(autocompleteClient, 'fetchAddressSuggestions')
-			.mockResolvedValue(suggestions);
+			.mockResolvedValue({ suggestions, failed: false });
 		const onResult = vi.fn();
 		const controller = createAddressSuggestionsController(onResult);
 
@@ -45,7 +45,21 @@ describe('createAddressSuggestionsController', () => {
 		await vi.advanceTimersByTimeAsync(300);
 
 		expect(fetchSpy).toHaveBeenCalledWith('Domklo');
-		expect(onResult).toHaveBeenCalledWith(suggestions);
+		expect(onResult).toHaveBeenCalledWith(suggestions, false);
+	});
+
+	it('meldet failed:true an onResult weiter, wenn fetchAddressSuggestions fehlschlägt', async () => {
+		vi.spyOn(autocompleteClient, 'fetchAddressSuggestions').mockResolvedValue({
+			suggestions: [],
+			failed: true
+		});
+		const onResult = vi.fn();
+		const controller = createAddressSuggestionsController(onResult);
+
+		controller.search('Domklo');
+		await vi.advanceTimersByTimeAsync(300);
+
+		expect(onResult).toHaveBeenCalledWith([], true);
 	});
 
 	it('verwirft eine veraltete Antwort, wenn zwischenzeitlich eine neuere Suche gestartet wurde', async () => {
@@ -56,9 +70,12 @@ describe('createAddressSuggestionsController', () => {
 			{ label: 'fresh', street: null, houseNumber: null, postcode: null, city: null }
 		];
 		const fetchSpy = vi.spyOn(autocompleteClient, 'fetchAddressSuggestions');
-		let resolveFirst: (value: typeof staleResult) => void = () => {};
+		let resolveFirst: (value: {
+			suggestions: typeof staleResult;
+			failed: boolean;
+		}) => void = () => {};
 		fetchSpy.mockImplementationOnce(() => new Promise((resolve) => (resolveFirst = resolve)));
-		fetchSpy.mockResolvedValueOnce(freshResult);
+		fetchSpy.mockResolvedValueOnce({ suggestions: freshResult, failed: false });
 		const onResult = vi.fn();
 		const controller = createAddressSuggestionsController(onResult);
 
@@ -68,19 +85,18 @@ describe('createAddressSuggestionsController', () => {
 		controller.search('Domkloster');
 		await vi.advanceTimersByTimeAsync(300);
 
-		resolveFirst(staleResult);
+		resolveFirst({ suggestions: staleResult, failed: false });
 		await Promise.resolve();
 
-		expect(onResult).toHaveBeenCalledWith(freshResult);
-		expect(onResult).not.toHaveBeenCalledWith(staleResult);
+		expect(onResult).toHaveBeenCalledWith(freshResult, false);
+		expect(onResult).not.toHaveBeenCalledWith(staleResult, false);
 	});
 
 	it('cancel() verwirft eine laufende Anfrage', async () => {
-		const fetchSpy = vi
-			.spyOn(autocompleteClient, 'fetchAddressSuggestions')
-			.mockResolvedValue([
-				{ label: 'x', street: null, houseNumber: null, postcode: null, city: null }
-			]);
+		const fetchSpy = vi.spyOn(autocompleteClient, 'fetchAddressSuggestions').mockResolvedValue({
+			suggestions: [{ label: 'x', street: null, houseNumber: null, postcode: null, city: null }],
+			failed: false
+		});
 		const onResult = vi.fn();
 		const controller = createAddressSuggestionsController(onResult);
 

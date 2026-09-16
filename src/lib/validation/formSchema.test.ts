@@ -229,6 +229,13 @@ describe('validateReportForm', () => {
 		expect(errors.vehicles?.[0].locationPostcode).toBeDefined();
 	});
 
+	it('meldet fehlendes Datum', () => {
+		const data = makeValidData();
+		data.vehicles[0].date = '';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].date).toBe('Datum ist erforderlich.');
+	});
+
 	it('meldet ungültiges Datum', () => {
 		const data = makeValidData();
 		data.vehicles[0].date = '2026-02-30';
@@ -236,11 +243,25 @@ describe('validateReportForm', () => {
 		expect(errors.vehicles?.[0].date).toBeDefined();
 	});
 
+	it('meldet ein Datum in falschem Format (kein ISO-Muster)', () => {
+		const data = makeValidData();
+		data.vehicles[0].date = '01-01-2026';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].date).toBe('Datum ist ungültig.');
+	});
+
 	it('meldet Datum in der Zukunft', () => {
 		const data = makeValidData();
 		data.vehicles[0].date = '2999-01-01';
 		const errors = validateReportForm(data);
 		expect(errors.vehicles?.[0].date).toBeDefined();
+	});
+
+	it('meldet fehlende Uhrzeit', () => {
+		const data = makeValidData();
+		data.vehicles[0].time = '';
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].time).toBe('Uhrzeit ist erforderlich.');
 	});
 
 	it('meldet ungültige Uhrzeit', () => {
@@ -337,6 +358,13 @@ describe('validateVehicle: timeMode', () => {
 		const errors = validateVehicle(vehicle, []);
 		expect(errors.endTime).toBeDefined();
 	});
+
+	it('prüft den Bis-Zeitraum nicht mehr, wenn die Von-Uhrzeit selbst schon ungültig ist', () => {
+		const vehicle = makeVehicle({ timeMode: 'parkverstoss', time: '99:99', endTime: '14:04' }, []);
+		const errors = validateVehicle(vehicle, []);
+		expect(errors.time).toBe('Uhrzeit ist ungültig.');
+		expect(errors.endTime).toBeUndefined();
+	});
 });
 
 describe('normalizeLicensePlate', () => {
@@ -391,9 +419,29 @@ describe('validateProfileFields', () => {
 		expect(Object.keys(errors)).toEqual(['firstName', 'email']);
 	});
 
+	it('meldet fehlenden Nachnamen', () => {
+		const errors = validateProfileFields({ ...makeValidProfile(), lastName: '' });
+		expect(errors.lastName).toBe('Nachname ist erforderlich.');
+	});
+
+	it('meldet fehlenden Ort', () => {
+		const errors = validateProfileFields({ ...makeValidProfile(), addressCity: '' });
+		expect(errors.addressCity).toBe('Ort ist erforderlich.');
+	});
+
+	it('meldet fehlende Postleitzahl im Profil', () => {
+		const errors = validateProfileFields({ ...makeValidProfile(), addressPostcode: '' });
+		expect(errors.addressPostcode).toBe('Postleitzahl ist erforderlich.');
+	});
+
 	it('meldet ungültige Postleitzahl im Profil', () => {
 		const errors = validateProfileFields({ ...makeValidProfile(), addressPostcode: '123' });
 		expect(errors.addressPostcode).toBeDefined();
+	});
+
+	it('meldet eine fehlende Straße im Profil', () => {
+		const errors = validateProfileFields({ ...makeValidProfile(), addressStreet: '' });
+		expect(errors.addressStreet).toBe('Straße ist erforderlich.');
 	});
 
 	it('meldet eine Straße ohne Hausnummer als ungültig', () => {

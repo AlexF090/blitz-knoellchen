@@ -12,7 +12,13 @@ export const appMode = {
 	},
 	set(value: AppMode) {
 		mode = value;
-		sessionStorage.setItem(STORAGE_KEY, value);
+		try {
+			sessionStorage.setItem(STORAGE_KEY, value);
+		} catch {
+			// Safari Private Mode (ältere Versionen) oder erreichtes Storage-Quota kann hier
+			// werfen — der In-Memory-State bleibt für die laufende Session gültig, nur die
+			// Persistenz über Reloads hinweg entfällt. Kein Rethrow, erwarteter Edge-Case.
+		}
 	},
 	// Nur clientseitig aus einem $effect heraus aufrufen (nie am Modul-Top-Level) — sonst
 	// schlägt der Zugriff auf sessionStorage während SSR fehl.

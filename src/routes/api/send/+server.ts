@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { BREVO_API_KEY, EMAIL_FROM } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { CITIES } from '$lib/config/cities';
 import { getRecipientEmail } from '$lib/config/cities.server';
 import {
@@ -17,7 +18,10 @@ import {
 } from '$lib/validation/formSchema';
 import type { RequestHandler } from './$types';
 
-const BREVO_SEND_URL = 'https://api.brevo.com/v3/smtp/email';
+// Nur für E2E-Tests überschreibbar (s. .env.example, playwright.config.ts) — zeigt dort auf einen
+// lokalen Mock statt der echten Brevo-API, damit dieser Endpunkt real (inkl. Validierung,
+// E-Mail-Aufbau) durchlaufen wird, ohne echte E-Mails zu versenden.
+const BREVO_SEND_URL = env.BREVO_API_URL || 'https://api.brevo.com/v3/smtp/email';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const formData = await request.formData();

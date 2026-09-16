@@ -12,7 +12,7 @@ export interface AddressSuggestionsController {
 // Debounce + Request-Token-Race-Schutz für die Autocomplete-Suche, herausgelöst aus
 // AddressAutocomplete.svelte, damit das Timing-Verhalten ohne Component-Rendering testbar ist.
 export const createAddressSuggestionsController = (
-	onResult: (suggestions: AddressSuggestion[]) => void
+	onResult: (suggestions: AddressSuggestion[], failed: boolean) => void
 ): AddressSuggestionsController => {
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 	let requestToken = 0;
@@ -27,14 +27,14 @@ export const createAddressSuggestionsController = (
 		const trimmed = query.trim();
 		if (trimmed.length < MIN_QUERY_LENGTH) {
 			cancel();
-			onResult([]);
+			onResult([], false);
 			return;
 		}
 		debounceTimer = setTimeout(async () => {
 			const token = ++requestToken;
-			const result = await fetchAddressSuggestions(trimmed);
+			const { suggestions, failed } = await fetchAddressSuggestions(trimmed);
 			if (token !== requestToken) return;
-			onResult(result);
+			onResult(suggestions, failed);
 		}, DEBOUNCE_MS);
 	};
 

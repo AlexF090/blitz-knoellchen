@@ -7,5 +7,7 @@ export const VEHICLE_ACCENT_CLASSES = [
 	'border-vehicle-6'
 ] as const;
 
-export const getVehicleAccentClass = (index: number): string =>
-	VEHICLE_ACCENT_CLASSES[index % VEHICLE_ACCENT_CLASSES.length];
+export const getVehicleAccentClass = (index: number): string => {
+	const length = VEHICLE_ACCENT_CLASSES.length;
+	return VEHICLE_ACCENT_CLASSES[((index % length) + length) % length];
+};

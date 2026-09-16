@@ -1,12 +1,14 @@
-import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { expect, getBrevoMockRequestsSince, test } from './fixtures';
 import { chooseAppMode } from './helpers/appMode';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(__dirname, 'fixtures/photo-with-gps.jpg');
 
-test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', async ({ page }) => {
+test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', async ({
+	page
+}, testInfo) => {
 	await page.route('**/api/geocode**', (route) =>
 		route.fulfill({
 			json: {
@@ -15,13 +17,15 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 		})
 	);
 
-	const sentLicensePlates: string[] = [];
-	await page.route('**/api/send', async (route) => {
-		const body = route.request().postData() ?? '';
-		const match = /name="licensePlate"\r\n\r\n([^\r]*)/.exec(body);
-		if (match) sentLicensePlates.push(match[1]);
-		await route.fulfill({ json: { ok: true } });
-	});
+	// /api/send läuft real gegen den Brevo-Mock (s. fixtures.ts) — das tatsächlich an Brevo
+	// geschickte Kennzeichen steht im E-Mail-Betreff (s. buildEmailBody.ts), nicht mehr in einem
+	// hier abgefangenen FormData-Feld.
+	const testStartedAt = Date.now();
+	// parallelIndex ist über alle Worker (auch projektübergreifend, z.B. desktop+mobile) innerhalb
+	// eines Testlaufs eindeutig — verhindert Kennzeichen-Kollisionen, wenn dieser Test parallel in
+	// mehreren Projekten läuft.
+	const plateA = `K-AA${100 + testInfo.parallelIndex}`;
+	const plateB = `K-BB${200 + testInfo.parallelIndex}`;
 
 	await page.goto('/');
 	await chooseAppMode(page);
@@ -37,7 +41,7 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 
 	const vehicleBlocks = page.locator('[id^="vehicle-block-"]');
 	await expect(vehicleBlocks).toHaveCount(1);
-	await vehicleBlocks.first().getByLabel('Kennzeichen').fill('K-AA 111');
+	await vehicleBlocks.first().getByLabel('Kennzeichen').fill(plateA.replace(/(\d)/, ' $1'));
 	await vehicleBlocks.first().getByLabel('Fahrzeugart').selectOption('PKW');
 	await vehicleBlocks.first().getByLabel('Farbe').fill('Blau');
 	await vehicleBlocks.first().getByLabel('Parken auf dem Gehweg').check();
@@ -47,7 +51,7 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 
 	const secondVehicle = vehicleBlocks.nth(1);
 	await secondVehicle.getByRole('button', { name: /auswählen/ }).click();
-	await secondVehicle.getByLabel('Kennzeichen').fill('K-BB 222');
+	await secondVehicle.getByLabel('Kennzeichen').fill(plateB.replace(/(\d)/, ' $1'));
 	await secondVehicle.getByLabel('Fahrzeugart').selectOption('PKW');
 	await secondVehicle.getByLabel('Farbe').fill('Grün');
 	await secondVehicle.getByLabel('Parken im Halteverbot').check();
@@ -60,6 +64,16 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 	await expect(
 		page.getByRole('dialog', { name: 'Alle 2 Anzeigen erfolgreich versendet' })
 	).toContainText('Alle 2 Anzeigen erfolgreich versendet');
-	// Kennzeichen-Normalisierung passiert bereits bei Blur (gewollt), nicht erst beim Versand.
-	expect(sentLicensePlates.sort()).toEqual(['K-AA111', 'K-BB222']);
+	// Der Brevo-Mock läuft als ein über alle parallelen Test-Worker geteilter Prozess — "seit
+	// testStartedAt" reicht allein nicht zur Isolation, andere Tests können im selben Zeitfenster
+	// senden. Zusätzlich auf die für diesen Test eindeutigen Kennzeichen filtern.
+	const brevoRequests = await getBrevoMockRequestsSince(testStartedAt);
+	const expectedPlates = [plateA, plateB];
+	const sentLicensePlateCounts = expectedPlates.map(
+		(plate) => brevoRequests.filter((request) => request.body?.subject?.includes(plate)).length
+	);
+	// Pro Kennzeichen zählen statt nur auf Existenz zu prüfen — sonst bleiben Doppel-Sends für ein
+	// Fahrzeug unentdeckt. Die Kennzeichen sind über parallelIndex worker-eindeutig, daher ist die
+	// exakte Zählung auch bei parallel laufenden Projekten (desktop+mobile) verlässlich.
+	expect(sentLicensePlateCounts).toEqual([1, 1]);
 });

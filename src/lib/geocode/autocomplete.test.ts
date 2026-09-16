@@ -112,6 +112,40 @@ describe('createLocationIqAutocompleteProvider', () => {
 		await expect(provider.search('Domklo')).rejects.toThrow(/Rate-Limiting.*429/);
 	});
 
+	it('baut das Label ohne Hausnummer/PLZ/Ort/Stadtteil, wenn nur die Straße bekannt ist', async () => {
+		const fetchFn = vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify([
+						{
+							display_name: 'Domkloster, Köln',
+							address: { road: 'Domkloster' }
+						}
+					])
+				)
+		) as unknown as typeof fetch;
+		const provider = createLocationIqAutocompleteProvider('test-key', fetchFn);
+
+		const [suggestion] = await provider.search('Domklo');
+		expect(suggestion).toEqual({
+			label: 'Domkloster',
+			street: 'Domkloster',
+			houseNumber: null,
+			postcode: null,
+			city: null
+		});
+	});
+
+	it('fällt auf einen leeren String zurück, wenn weder Straße noch display_name vorliegen', async () => {
+		const fetchFn = vi.fn(
+			async () => new Response(JSON.stringify([{}]))
+		) as unknown as typeof fetch;
+		const provider = createLocationIqAutocompleteProvider('test-key', fetchFn);
+
+		const [suggestion] = await provider.search('Domklo');
+		expect(suggestion.label).toBe('');
+	});
+
 	it('liefert eine leere Liste, wenn die Antwort kein Array ist', async () => {
 		const fetchFn = vi.fn(
 			async () => new Response(JSON.stringify({ error: 'unexpected' }))
