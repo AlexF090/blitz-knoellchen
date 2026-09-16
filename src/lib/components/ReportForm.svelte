@@ -259,15 +259,34 @@
 
 	const removeVehicle = (id: string) => {
 		if (form.vehicles.length <= 1) return;
+		const removedIndex = form.vehicles.findIndex((vehicle) => vehicle.id === id);
 		form.vehicles = form.vehicles.filter((vehicle) => vehicle.id !== id);
 		vehicleGeocodeWarnings = pruneWarnings(vehicleGeocodeWarnings, form.vehicles);
+		// errors.vehicles ist index-basiert an die Fahrzeug-POSITION gebunden (nicht an die id,
+		// s. VehicleBlock errors={errors.vehicles?.[index]}) — muss beim Entfernen analog zu
+		// vehicleGeocodeWarnings neu indiziert werden, sonst verschieben sich die Fehler auf die
+		// verbleibenden Fahrzeuge.
+		if (removedIndex !== -1 && errors.vehicles) {
+			errors = {
+				...errors,
+				vehicles: errors.vehicles.filter((_, index) => index !== removedIndex)
+			};
+		}
 	};
 
 	const resetVehicle = (id: string) => {
+		const resetIndex = form.vehicles.findIndex((vehicle) => vehicle.id === id);
 		form.vehicles = form.vehicles.map((vehicle) =>
 			vehicle.id === id ? createEmptyVehicle() : vehicle
 		);
 		vehicleGeocodeWarnings = pruneWarnings(vehicleGeocodeWarnings, form.vehicles);
+		// Das Fahrzeug an dieser Position ist frisch und noch nicht neu validiert — der alte
+		// Fehler-Eintrag an derselben Position würde sonst fälschlich weiter angezeigt.
+		if (resetIndex !== -1 && errors.vehicles) {
+			const nextVehicleErrors = [...errors.vehicles];
+			nextVehicleErrors[resetIndex] = {};
+			errors = { ...errors, vehicles: nextVehicleErrors };
+		}
 	};
 
 	// Setzt das komplette Formular inkl. "Deine Angaben" zurück, lässt das gespeicherte Profil

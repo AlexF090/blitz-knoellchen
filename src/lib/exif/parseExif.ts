@@ -14,6 +14,11 @@ const parseExifDateTime = (value: string): Date | null => {
 	if (!match) return null;
 	const [, year, month, day, hour, minute, second] = match.map(Number);
 	const date = new Date(year, month - 1, day, hour, minute, second);
+	// Die Regex erzwingt max. 4-stellige Jahres- und 2-stellige Monats-/Tages-/Zeit-Anteile;
+	// selbst mit den größtmöglichen Werten (Jahr 9999, Monat/Tag/Zeit je 99) bleibt das
+	// Ergebnis innerhalb des von Date darstellbaren Bereichs (±275760) — der Invalid-Date-Fall
+	// ist mit diesem Eingabeformat nicht erreichbar, bleibt aber als Absicherung bestehen.
+	/* v8 ignore next */
 	return isNaN(date.getTime()) ? null : date;
 };
 

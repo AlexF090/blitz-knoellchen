@@ -203,4 +203,60 @@ describe('draft', () => {
 
 		expect(await getDraft()).toBeUndefined();
 	});
+
+	it('verwirft einen Entwurf mit strukturell inkompatiblem Foto (fehlendes blob)', async () => {
+		const legacyPhoto = { ...makePhoto(), blob: undefined };
+		await writeRawDraft({
+			vehicles: [makeVehicle()],
+			photos: [legacyPhoto],
+			savedAt: Date.now()
+		});
+
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('verwirft einen Entwurf, wenn vehicles kein Array ist', async () => {
+		await writeRawDraft({ vehicles: 'nicht-array', photos: [], savedAt: Date.now() });
+
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('verwirft einen Entwurf mit ungültigem timeMode', async () => {
+		const legacyVehicle = { ...makeVehicle(), timeMode: 'unbekannt' };
+		await writeRawDraft({ vehicles: [legacyVehicle], photos: [], savedAt: Date.now() });
+
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('verwirft einen Entwurf, dessen Fahrzeugeintrag kein Objekt ist', async () => {
+		await writeRawDraft({ vehicles: [null], photos: [], savedAt: Date.now() });
+
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('verwirft einen Entwurf mit nicht-stringwertiger Fahrzeug-id', async () => {
+		const legacyVehicle = { ...makeVehicle(), id: 123 };
+		await writeRawDraft({ vehicles: [legacyVehicle], photos: [], savedAt: Date.now() });
+
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('verwirft einen Entwurf, wenn photos kein Array ist', async () => {
+		await writeRawDraft({ vehicles: [makeVehicle()], photos: 'nicht-array', savedAt: Date.now() });
+
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('verwirft einen Entwurf, dessen Foto-Eintrag kein Objekt ist', async () => {
+		await writeRawDraft({ vehicles: [], photos: [null], savedAt: Date.now() });
+
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('verwirft einen Entwurf mit nicht-stringwertigem Foto-Dateinamen', async () => {
+		const legacyPhoto = { ...makePhoto(), fileName: 42 };
+		await writeRawDraft({ vehicles: [], photos: [legacyPhoto], savedAt: Date.now() });
+
+		expect(await getDraft()).toBeUndefined();
+	});
 });

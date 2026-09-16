@@ -1,7 +1,8 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chooseAppMode } from './helpers/appMode';
+import { test, expect } from './fixtures';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(__dirname, 'fixtures/photo-with-gps.jpg');
@@ -17,7 +18,6 @@ const submitReport = async (page: Page, licensePlate: string) => {
 			}
 		})
 	);
-	await page.route('**/api/send', (route) => route.fulfill({ json: { ok: true } }));
 
 	await page.goto('/');
 	const appModeDialog = page.getByRole('dialog', { name: 'Demo- oder Live-Modus?' });

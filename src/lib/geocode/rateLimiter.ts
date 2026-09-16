@@ -17,9 +17,15 @@ export const shouldThrottle = (minIntervalMs: number): boolean => {
 // Blocking Wartemuster für Endpunkte mit nur einem Call pro Vorgang (Reverse-Geocode) — dort ist
 // ein kurzes Warten unmerklich und einfacher als ein Retry auf Client-Seite.
 export const waitForSlot = async (minIntervalMs: number): Promise<void> => {
-	const elapsed = Date.now() - lastRequestAt;
-	if (elapsed < minIntervalMs) {
-		await new Promise((resolve) => setTimeout(resolve, minIntervalMs - elapsed));
+	const now = Date.now();
+	const elapsed = now - lastRequestAt;
+	// Zielzeitpunkt synchron VOR dem `await` reservieren, damit ein quasi gleichzeitiger
+	// zweiter Aufruf bereits den korrekten (längeren) Wartezeit-Wert sieht (TOCTOU-Fix).
+	const scheduledAt = elapsed < minIntervalMs ? lastRequestAt + minIntervalMs : now;
+	lastRequestAt = scheduledAt;
+
+	const waitMs = scheduledAt - now;
+	if (waitMs > 0) {
+		await new Promise((resolve) => setTimeout(resolve, waitMs));
 	}
-	lastRequestAt = Date.now();
 };

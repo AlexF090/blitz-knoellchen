@@ -54,4 +54,26 @@ describe('reloadWithLatestVersion', () => {
 
 		expect(reload).toHaveBeenCalledOnce();
 	});
+
+	it('nutzt ohne übergebenen reload-Parameter location.reload als Default', async () => {
+		const locationReload = vi.fn();
+		const originalLocation = Object.getOwnPropertyDescriptor(globalThis, 'location');
+		Object.defineProperty(globalThis, 'location', {
+			value: { reload: locationReload },
+			configurable: true,
+			writable: true
+		});
+		Reflect.deleteProperty(navigator, 'serviceWorker');
+
+		try {
+			await reloadWithLatestVersion();
+			expect(locationReload).toHaveBeenCalledOnce();
+		} finally {
+			if (originalLocation) {
+				Object.defineProperty(globalThis, 'location', originalLocation);
+			} else {
+				Reflect.deleteProperty(globalThis, 'location');
+			}
+		}
+	});
 });
