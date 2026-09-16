@@ -24,7 +24,43 @@ export default defineConfig({
 			// Fest @sveltejs/adapter-vercel statt adapter-auto (einziges Deployment-Ziel). runtime
 			// explizit gesetzt, sonst rät adapter-vercel anhand der lokalen (z.B. per nvm neueren,
 			// von Vercel noch nicht unterstützten) Node-Version und bricht den Build sonst ab.
-			adapter: adapter({ runtime: 'nodejs22.x' })
+			adapter: adapter({ runtime: 'nodejs22.x' }),
+
+			// CSP über SvelteKits eingebaute Unterstützung statt manuell in hooks.server.ts, damit
+			// SvelteKit das von ihm selbst injizierte Bootstrap-<script> automatisch per Nonce/Hash
+			// freischaltet (mode: 'auto' → Nonce bei dynamischem Rendering, Hash bei Prerendering).
+			// Direktiven basieren auf einer vollständigen Durchsicht aller externen Aufrufe:
+			// LocationIQ (api/geocode) und Brevo (api/send) laufen ausschließlich serverseitig, der
+			// Browser ruft nur eigene /api/*-Endpunkte auf. style-src braucht 'unsafe-inline':
+			// dynamische style="..."-Attribute in PullToRefresh.svelte, PhotoLightbox.svelte
+			// (Per-Frame-Transform, nicht hashbar), Wordmark.svelte und app.html. Gilt nur für
+			// HTML-Seiten (SvelteKits Render-Pfad) — X-Frame-Options/COOP für alle Responses
+			// inkl. /api/* liegen in hooks.server.ts.
+			csp: {
+				mode: 'auto',
+				directives: {
+					'default-src': ['self'],
+					'script-src': ['self'],
+					'style-src': ['self', 'unsafe-inline'],
+					'img-src': ['self', 'blob:'],
+					'font-src': ['self'],
+					'connect-src': ['self'],
+					'worker-src': ['self'],
+					'manifest-src': ['self'],
+					'object-src': ['none'],
+					'base-uri': ['self'],
+					'form-action': ['self'],
+					'frame-ancestors': ['none']
+					// KEIN `require-trusted-types-for: ['script']`: live gegen den Production-Build
+					// getestet (Chromium/Playwright) — SvelteKits eigener Chunk-Loader weist
+					// dynamisch `script.src` zu (Lazy-Loading der Route-Module), was der Browser
+					// dann mit "This document requires 'TrustedScriptURL' assignment" blockt und die
+					// komplette Client-Hydration verhindert. Eine eigene Trusted-Types-Policy dafür
+					// wäre ein separates, nicht triviales Vorhaben (Policy für den Vite/SvelteKit-
+					// Modul-Loader schreiben) — daher hier bewusst nicht aktiviert. Der Lighthouse-
+					// Befund `trusted-types-xss` bleibt dadurch offen.
+				}
+			}
 		}),
 		SvelteKitPWA({
 			registerType: 'autoUpdate',
