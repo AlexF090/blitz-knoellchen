@@ -114,7 +114,7 @@ describe('PhotoPool', () => {
 		expect(onAdd).not.toHaveBeenCalled();
 	});
 
-	it('clamped auf die verbleibenden Slots, wenn maxPhotos fast erreicht ist', async () => {
+	it('clamped auf die verbleibenden Slots und zeigt die Gesamtlimit-Meldung, wenn maxPhotos fast erreicht ist (Bug-Fix)', async () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
 		const photos = [makePhoto()];
@@ -130,6 +130,9 @@ describe('PhotoPool', () => {
 		dispatchFileChange(input!, [makeFile('a.jpg'), makeFile('b.jpg')]);
 
 		await expect.poll(() => onAdd).toBeCalledTimes(1);
+		await expect
+			.element(page.getByText('Das Gesamtlimit von 2 Fotos ist bereits erreicht.'))
+			.toBeInTheDocument();
 	});
 
 	it('zeigt error- und processingError-Props als Alerts an', async () => {

@@ -47,7 +47,7 @@
 		batchError =
 			files.length > MAX_PHOTOS_PER_BATCH
 				? `Es können maximal ${MAX_PHOTOS_PER_BATCH} Fotos gleichzeitig hinzugefügt werden.`
-				: remainingSlots === 0
+				: allowedCount < files.length
 					? `Das Gesamtlimit von ${maxPhotos} Fotos ist bereits erreicht.`
 					: null;
 
