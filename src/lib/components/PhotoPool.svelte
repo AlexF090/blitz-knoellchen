@@ -38,16 +38,18 @@
 		input.value = '';
 		if (files.length === 0) return;
 
-		batchError =
-			files.length > MAX_PHOTOS_PER_BATCH
-				? `Es können maximal ${MAX_PHOTOS_PER_BATCH} Fotos gleichzeitig hinzugefügt werden.`
-				: null;
-
 		// Das sichtbare Label wird zwar ab maxPhotos ausgeblendet, das versteckte <input
 		// type="file"> bleibt aber im DOM bedienbar (Tastatur/AT) — deshalb hier zusätzlich auf
 		// das Gesamtlimit clampen, nicht nur auf MAX_PHOTOS_PER_BATCH.
 		const remainingSlots = Math.max(0, maxPhotos - photos.length);
 		const allowedCount = Math.min(MAX_PHOTOS_PER_BATCH, remainingSlots);
+
+		batchError =
+			files.length > MAX_PHOTOS_PER_BATCH
+				? `Es können maximal ${MAX_PHOTOS_PER_BATCH} Fotos gleichzeitig hinzugefügt werden.`
+				: remainingSlots === 0
+					? `Das Gesamtlimit von ${maxPhotos} Fotos ist bereits erreicht.`
+					: null;
 
 		for (const file of files.slice(0, allowedCount)) {
 			await onAdd(file);

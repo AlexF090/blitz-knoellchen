@@ -106,6 +106,9 @@ describe('PhotoPool', () => {
 		expect(input).not.toBeNull();
 		dispatchFileChange(input!, [makeFile('c.jpg')]);
 
+		await expect
+			.element(page.getByText('Das Gesamtlimit von 2 Fotos ist bereits erreicht.'))
+			.toBeInTheDocument();
 		// Kurz warten, damit ein evtl. asynchroner (fehlerhafter) onAdd-Aufruf Zeit hätte zu laufen.
 		await new Promise((resolve) => setTimeout(resolve, 50));
 		expect(onAdd).not.toHaveBeenCalled();
