@@ -328,15 +328,15 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 ## Kommandos
 
 ```bash
-npm run dev          # Dev-Server
-npm run build         # Production-Build
-npm run preview        # Production-Build lokal ansehen
-npm run check           # svelte-check (Typprüfung)
-npm run lint             # Prettier --check + ESLint
-npm run format            # Prettier --write
-npm run test:unit          # Vitest (Unit- + Komponententests, Node- und Browser-Projekt)
-npm run test:e2e            # Playwright (installiert Browser, baut + startet die App)
-npm run test                  # test:unit + test:e2e
+npm run dev        # Dev-Server
+npm run build      # Production-Build
+npm run preview    # Production-Build lokal ansehen
+npm run check      # svelte-check (Typprüfung)
+npm run lint       # Prettier --check + ESLint
+npm run format     # Prettier --write
+npm run test:unit  # Vitest (Unit- + Komponententests, Node- und Browser-Projekt)
+npm run test:e2e   # Playwright (installiert Browser, baut + startet die App)
+npm run test       # test:unit + test:e2e
 ```
 
 ## Coding-Konventionen
