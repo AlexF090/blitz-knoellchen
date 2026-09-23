@@ -58,7 +58,9 @@ npm run screenshots                    # README-Screenshots aus dem Production-B
   Laufzeit gelesen. Echte Werte aus der lokalen `.env` stecken damit in jedem lokalen Build — so
   wäre fast eine private Adresse in den README-Screenshots gelandet. Deshalb überschreibt
   `npm run screenshots` die Adressen schon beim Build.
-- Install-Skripte laufen nur für die versionsgenauen Einträge in `allowScripts` (`package.json`).
-  Ändert sich die Version eines dort gelisteten Pakets, muss der Eintrag mitgezogen werden.
+- Install-Skripte laufen nur für die versionsgenauen Einträge in `allowScripts` (`package.json`);
+  `strict-allow-scripts` in `.npmrc` lässt den Install sonst mit `ESTRICTALLOWSCRIPTS` scheitern.
+  Ändert sich die Version eines dort gelisteten Pakets (auch per Dependabot), muss der Eintrag
+  mitgezogen werden: `npm install-scripts approve` bzw. `npm install-scripts prune`.
 
 Details, ADRs und die vollständige Ordnerstruktur-Tabelle: [`docs/architektur.md`](./docs/architektur.md).

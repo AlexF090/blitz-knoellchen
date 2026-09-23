@@ -7,7 +7,7 @@
 	"type": "module",
 	"engines": {
 		"node": ">=24",
-		"npm": ">=11"
+		"npm": ">=11.17.0"
 	},
 	"author": "Alex F",
 	"repository": {
@@ -78,7 +78,6 @@
 	"allowScripts": {
 		"esbuild@0.28.2": true,
 		"exifreader@4.45.1": true,
-		"fsevents@2.3.3": true,
-		"sharp@0.35.4": true
+		"fsevents@2.3.3": true
 	}
 }
