@@ -4,7 +4,8 @@
 
 Sicherheitsrelevante Funde bitte **nicht** als öffentliches Issue anlegen, sondern über
 [GitHub Security Advisories](https://github.com/AlexF090/blitz-knoellchen/security/advisories/new)
-melden. Ich melde mich innerhalb weniger Tage zurück.
+melden. Ich melde mich innerhalb weniger Tage zurück. Der Link funktioniert, sobald Private
+Vulnerability Reporting aktiviert ist (Settings → Security); bis dahin liefert er einen 404.
 
 Relevant sind insbesondere:
 

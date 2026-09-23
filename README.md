@@ -72,7 +72,7 @@ Die App ist als installierbare PWA gebaut und verhält sich vom Homescreen aus w
 | Build/Deploy | Vite 8, `@sveltejs/adapter-vercel`, PWA über `@vite-pwa/sveltekit`       |
 
 Acht Runtime-Dependencies insgesamt — jede einzelne ist in den Architekturentscheidungen
-begründet. Die 13 ADRs, die Ordnerstruktur und die Coding-Konventionen stehen in
+begründet. Die 12 ADRs, die Ordnerstruktur und die Coding-Konventionen stehen in
 [`docs/architektur.md`](./docs/architektur.md).
 
 ### Umsetzungsdetails
@@ -98,7 +98,7 @@ Client schickt nur `demo` oder `live`, und ein fehlender oder manipulierter Wert
 
 ## Voraussetzungen
 
-- Node.js ≥ 24 und npm ≥ 11 (Version in [`.nvmrc`](./.nvmrc), mit nvm: `nvm use`)
+- Node.js ≥ 24 und npm ≥ 11.17 (Version in [`.nvmrc`](./.nvmrc), mit nvm: `nvm use`)
 - Ein [Brevo](https://brevo.com)-Account (das kostenlose Kontingent reicht zum Ausprobieren)
 - Ein [LocationIQ](https://locationiq.com)-Account (kostenlos, 5.000 Anfragen/Tag)
 
@@ -159,7 +159,9 @@ gegen denselben Brevo-Mock wie die E2E-Tests, mit frei erfundenen Testdaten.
 Das Projekt nutzt `@sveltejs/adapter-vercel` explizit statt `adapter-auto`.
 
 1. Repository mit Vercel verbinden (SvelteKit wird automatisch erkannt).
-2. Unter „Environment Variables" alle fünf Variablen aus `.env.example` eintragen.
+2. Unter „Environment Variables" die fünf Pflicht-Variablen aus der Tabelle unten eintragen.
+   `BREVO_API_URL` und `SEND_LIMIT_PER_HOUR` aus `.env.example` sind nur für E2E-Tests gedacht
+   und gehören nicht nach Vercel.
 3. Deploy auslösen — ein Push auf den verbundenen Branch reicht.
 
 ## Umgebungsvariablen

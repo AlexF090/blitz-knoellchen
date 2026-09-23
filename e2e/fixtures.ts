@@ -10,7 +10,7 @@ const BREVO_MOCK_PORT = 4175;
 // per page.route() in einzelnen Testdateien gezielt gemockten Endpunkte (/api/geocode*), die als
 // zuletzt registrierte Route ohnehin Vorrang vor diesem Catch-all haben. Alles andere (jeder
 // echte externe Request, der nicht explizit gemockt wurde) wird abgebrochen und als Testfehler
-// gemeldet — s. rules/testing.md, "Mocking-Pflicht".
+// gemeldet: Kein E2E-Test darf einen echten externen Dienst ansprechen.
 const ALLOWED_ORIGIN_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1):\d+\//;
 
 export interface BrevoMockRequest {
@@ -58,7 +58,7 @@ export const test = base.extend<{ networkGuard: void }>({
 
 			if (violations.length > 0) {
 				throw new Error(
-					`Unmockter externer Request in E2E-Test entdeckt (s. rules/testing.md, Mocking-Pflicht):\n${violations.join('\n')}`
+					`Unmockter externer Request in E2E-Test entdeckt:\n${violations.join('\n')}`
 				);
 			}
 		},

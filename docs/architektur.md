@@ -28,6 +28,12 @@ Dependencies). `from`/`sender` ist eine feste, per ENV konfigurierte Adresse; `r
 `bcc` sind die vom Nutzer eingegebene E-Mail-Adresse (löst "Kopie im eigenen Postfach", ohne
 dass eine Nutzer-Adresse oder ein Passwort je den Server verlässt bzw. gebraucht wird).
 
+Weil die BCC-Kopie an eine Adresse vom Client geht, ließe sich der Endpunkt sonst als Relay
+nutzen. `/api/send` drosselt deshalb auf 20 Anfragen pro Stunde und IP
+(`src/lib/server/fixedWindowRateLimiter.ts`) und nimmt nur Anhänge an, die als `image/jpeg`
+deklariert sind und mit der JPEG-Signatur beginnen. Das Limit liegt im Speicher und gilt pro
+Serverless-Instanz; ein persistentes Limit oder ein CAPTCHA bräuchte einen externen Dienst.
+
 **`EMAIL_FROM` muss eine in Brevo domain-authentifizierte Adresse sein, keine private
 Adresse eines fremden Großanbieters.** Ursprünglich stand hier testweise eine private
 `@icloud.com`-Adresse — Brevo meldete den Versand trotzdem als `delivered` (SMTP-Annahme durch
@@ -175,6 +181,12 @@ lässt sich Datum/Ort auch direkt aus dem versendeten Beweisfoto prüfen, nicht 
 E-Mail-Text. Schlägt das Einbetten fehl, wird das unveränderte komprimierte Foto verschickt
 (fail-open) — die Angaben stehen ohnehin im E-Mail-Text.
 
+Zwei Folgen der Content-Security-Policy: `heic-to/csp` startet seinen Worker über eine
+`blob:`-URL, deshalb erlaubt `worker-src` neben `'self'` auch `blob:`. Und `embedExif.ts`
+dekodiert die data:-URL von `piexifjs` von Hand statt per `fetch`, weil `connect-src` nur
+`'self'` zulässt. `e2e/heic-upload.e2e.ts` lädt ein HEIC-Foto gegen den Production-Build hoch und
+schlägt bei jedem CSP-Verstoß fehl.
+
 ### Mehrere Verstoßarten pro Anzeige
 
 `incidentTypeIds` ist ein Array (Checkbox-Mehrfachauswahl statt Dropdown). Jede Verstoßart in
@@ -289,41 +301,50 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 
 ## Ordnerstruktur
 
-| Pfad                                             | Zweck                                                                                                                                                           |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/routes/+page.svelte`                        | Formular-Seite (bindet `ReportForm.svelte` ein)                                                                                                                 |
-| `src/routes/historie/+page.svelte`               | Liste bereits versendeter Anzeigen aus IndexedDB                                                                                                                |
-| `src/routes/api/send/+server.ts`                 | Serverseitiger E-Mail-Versand über Brevo                                                                                                                        |
-| `src/routes/api/geocode/+server.ts`              | Reverse-Geocoding-Proxy (LocationIQ + BigDataCloud-Fallback, Throttling)                                                                                        |
-| `src/routes/api/geocode/autocomplete/+server.ts` | Adress-Autocomplete-Proxy (LocationIQ, non-blocking Throttling)                                                                                                 |
-| `src/lib/components/`                            | Svelte-Komponenten (`ReportForm.svelte`, `VehicleBlock.svelte`, `AddressAutocomplete.svelte`, `Footer.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
-| `src/lib/components/branding/`                   | Logo-/Wortmarken-Komponenten (`BrandIcon.svelte`, `LogoLockup.svelte`, `Wordmark.svelte`), s. ADR "Branding-Assets" oben                                        |
-| `src/lib/config/cities.ts`                       | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import                                                                         |
-| `src/lib/config/cities.server.ts`                | Serverseitige, modusabhängige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`                                                             |
-| `src/lib/appMode.svelte.ts`                      | Client-Runen-Modul für die Demo-/Live-Modus-Wahl, s. ADR "Demo/Live-Modus-Auswahl" oben                                                                         |
-| `src/lib/components/AppModeDialog.svelte`        | Blockierender Demo-/Live-Auswahldialog, global in `+layout.svelte` eingebunden                                                                                  |
-| `src/lib/config/vehicleMakes.ts`                 | Kuratierte Marken-Liste für die Marke-`<datalist>` (Fahrzeugbeschreibung), Freitext bleibt möglich                                                              |
-| `src/lib/config/vehicleTypes.ts`                 | Feste Fahrzeugart-Liste (`VEHICLE_TYPES`), geschlossene Auswahl statt Freitext                                                                                  |
-| `src/lib/email/buildEmailBody.ts`                | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                                                                                            |
-| `src/lib/exif/parseExif.ts`                      | Wrapper um `exifreader`, robust gegen fehlende/korrupte EXIF-Tags                                                                                               |
-| `src/lib/image/embedExif.ts`                     | Bettet Datum/GPS (`piexifjs`) nach Konvertierung/Kompression zurück ins JPEG                                                                                    |
-| `src/lib/geocode/reverseGeocode.ts`              | Providerbasierte Fallback-Logik, unabhängig von SvelteKit testbar                                                                                               |
-| `src/lib/geocode/geocodeAddress.ts`              | `GeocodeAddress`-Interface (Straße/Hausnr./PLZ/Ort), von Server und Client geteilt                                                                              |
-| `src/lib/geocode/formatAddress.ts`               | Reine Funktion: `GeocodeAddress`-Felder → ein Adress-String (E-Mail-Text, Historie)                                                                             |
-| `src/lib/geocode/client.ts`                      | Ruft `/api/geocode` vom Client aus auf                                                                                                                          |
-| `src/lib/geocode/autocomplete.ts`                | LocationIQ-Autocomplete-Provider (ohne Fallback-Kette)                                                                                                          |
-| `src/lib/geocode/autocompleteClient.ts`          | Ruft `/api/geocode/autocomplete` vom Client aus auf, fail-quiet                                                                                                 |
-| `src/lib/geocode/httpErrors.ts`                  | Gemeinsame HTTP-Fehlertext-Logik für Reverse-Geocode und Autocomplete                                                                                           |
-| `src/lib/geocode/rateLimiter.ts`                 | Gemeinsames Throttle-Modul (blocking + non-blocking) für beide Geocode-Proxys                                                                                   |
-| `src/lib/history/db.ts`                          | `idb`-Wrapper für die lokale Historie                                                                                                                           |
-| `src/lib/profile/profileStore.svelte.ts`         | `localStorage`-Wrapper mit Svelte-5-Runes                                                                                                                       |
-| `src/lib/image/compress.ts`                      | Canvas-basierte Bildkompression                                                                                                                                 |
-| `src/lib/pwa/isIosSafari.ts`                     | Reine, testbare UA-Erkennung für den iOS-Install-Hinweis                                                                                                        |
-| `src/lib/validation/formSchema.ts`               | Handgeschriebene Formular-Validierung                                                                                                                           |
-| `src/routes/datenschutz/+page.svelte`            | Datenschutzerklärung, aus `Footer.svelte` verlinkt                                                                                                              |
-| `static/app-icon.svg`                            | Icon-Quelle für `@vite-pwa/assets-generator`, s. ADR "Branding-Assets" oben                                                                                     |
-| `e2e/`                                           | Playwright-Tests + `fixtures/photo-with-gps.jpg` (EXIF-Testbild)                                                                                                |
-| `scripts/`                                       | Einmalige Setup-Skripte (EXIF-Fixture-Generierung) — nicht Teil der App                                                                                         |
+| Pfad                                                 | Zweck                                                                                                                                                           |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/routes/+page.svelte`                            | Formular-Seite (bindet `ReportForm.svelte` ein)                                                                                                                 |
+| `src/routes/historie/+page.svelte`                   | Liste bereits versendeter Anzeigen aus IndexedDB                                                                                                                |
+| `src/routes/api/send/+server.ts`                     | Serverseitiger E-Mail-Versand über Brevo                                                                                                                        |
+| `src/routes/api/geocode/+server.ts`                  | Reverse-Geocoding-Proxy (LocationIQ + BigDataCloud-Fallback, Throttling)                                                                                        |
+| `src/routes/api/geocode/autocomplete/+server.ts`     | Adress-Autocomplete-Proxy (LocationIQ, non-blocking Throttling)                                                                                                 |
+| `src/lib/components/`                                | Svelte-Komponenten (`ReportForm.svelte`, `VehicleBlock.svelte`, `AddressAutocomplete.svelte`, `Footer.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
+| `src/lib/components/ProfileCard.svelte`              | Melderprofil („Deine Angaben“) mit Lese- und Bearbeitungsmodus                                                                                                  |
+| `src/lib/components/IncidentLocationFieldset.svelte` | Tatort-Block einer Fahrzeug-Karte: Art der Zeitangabe, Zeitpunkt/Zeitraum, Adresse                                                                              |
+| `src/lib/components/VehicleDetailsFieldset.svelte`   | Fahrzeugangaben einer Fahrzeug-Karte: Kennzeichen, Fahrzeugart, Marke, Farbe                                                                                    |
+| `src/lib/components/VehiclePreviewDialog.svelte`     | Vorschau der E-Mail zu einem Fahrzeug vor dem Absenden                                                                                                          |
+| `src/lib/report/submitVehicleReports.ts`             | Reine Funktion: Versand-Schleife über alle Fahrzeuge plus Historie, Seiteneffekte injiziert                                                                     |
+| `src/lib/server/fixedWindowRateLimiter.ts`           | Rate-Limit pro Schlüssel (IP) im Speicher, drosselt `/api/send`                                                                                                 |
+| `src/lib/server/applySecurityHeaders.ts`             | Sicherheits-Header für jede Response, aufgerufen aus `src/hooks.server.ts`                                                                                      |
+| `src/lib/image/hasJpegSignature.ts`                  | Prüft die JPEG-Signatur der Anhänge in `/api/send`                                                                                                              |
+| `src/lib/components/branding/`                       | Logo-/Wortmarken-Komponenten (`BrandIcon.svelte`, `LogoLockup.svelte`, `Wordmark.svelte`), s. ADR "Branding-Assets" oben                                        |
+| `src/lib/config/cities.ts`                           | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import                                                                         |
+| `src/lib/config/cities.server.ts`                    | Serverseitige, modusabhängige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`                                                             |
+| `src/lib/appMode.svelte.ts`                          | Client-Runen-Modul für die Demo-/Live-Modus-Wahl, s. ADR "Demo/Live-Modus-Auswahl" oben                                                                         |
+| `src/lib/components/AppModeDialog.svelte`            | Blockierender Demo-/Live-Auswahldialog, global in `+layout.svelte` eingebunden                                                                                  |
+| `src/lib/config/vehicleMakes.ts`                     | Kuratierte Marken-Liste für die Marke-`<datalist>` (Fahrzeugbeschreibung), Freitext bleibt möglich                                                              |
+| `src/lib/config/vehicleTypes.ts`                     | Feste Fahrzeugart-Liste (`VEHICLE_TYPES`), geschlossene Auswahl statt Freitext                                                                                  |
+| `src/lib/email/buildEmailBody.ts`                    | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                                                                                            |
+| `src/lib/exif/parseExif.ts`                          | Wrapper um `exifreader`, robust gegen fehlende/korrupte EXIF-Tags                                                                                               |
+| `src/lib/image/embedExif.ts`                         | Bettet Datum/GPS (`piexifjs`) nach Konvertierung/Kompression zurück ins JPEG                                                                                    |
+| `src/lib/geocode/reverseGeocode.ts`                  | Providerbasierte Fallback-Logik, unabhängig von SvelteKit testbar                                                                                               |
+| `src/lib/geocode/geocodeAddress.ts`                  | `GeocodeAddress`-Interface (Straße/Hausnr./PLZ/Ort), von Server und Client geteilt                                                                              |
+| `src/lib/geocode/formatAddress.ts`                   | Reine Funktion: `GeocodeAddress`-Felder → ein Adress-String (E-Mail-Text, Historie)                                                                             |
+| `src/lib/geocode/client.ts`                          | Ruft `/api/geocode` vom Client aus auf                                                                                                                          |
+| `src/lib/geocode/autocomplete.ts`                    | LocationIQ-Autocomplete-Provider (ohne Fallback-Kette)                                                                                                          |
+| `src/lib/geocode/autocompleteClient.ts`              | Ruft `/api/geocode/autocomplete` vom Client aus auf, fail-quiet                                                                                                 |
+| `src/lib/geocode/httpErrors.ts`                      | Gemeinsame HTTP-Fehlertext-Logik für Reverse-Geocode und Autocomplete                                                                                           |
+| `src/lib/geocode/rateLimiter.ts`                     | Gemeinsames Throttle-Modul (blocking + non-blocking) für beide Geocode-Proxys                                                                                   |
+| `src/lib/history/db.ts`                              | `idb`-Wrapper für die lokale Historie                                                                                                                           |
+| `src/lib/profile/profileStore.svelte.ts`             | `localStorage`-Wrapper mit Svelte-5-Runes                                                                                                                       |
+| `src/lib/image/compress.ts`                          | Canvas-basierte Bildkompression                                                                                                                                 |
+| `src/lib/pwa/isIosSafari.ts`                         | Reine, testbare UA-Erkennung für den iOS-Install-Hinweis                                                                                                        |
+| `src/lib/validation/formSchema.ts`                   | Handgeschriebene Formular-Validierung                                                                                                                           |
+| `src/routes/datenschutz/+page.svelte`                | Datenschutzerklärung, aus `Footer.svelte` verlinkt                                                                                                              |
+| `static/app-icon.svg`                                | Icon-Quelle für `@vite-pwa/assets-generator`, s. ADR "Branding-Assets" oben                                                                                     |
+| `e2e/`                                               | Playwright-Tests + `fixtures/photo-with-gps.jpg` bzw. `.heic` (EXIF-Testbilder)                                                                                 |
+| `scripts/generate-e2e-fixture.mjs`                   | Einmaliges Setup-Skript für das EXIF-Testbild — nicht Teil der App                                                                                              |
+| `scripts/generate-screenshots.mjs`                   | Erzeugt die README-Screenshots aus dem Production-Build (`npm run screenshots`)                                                                                 |
 
 ## Kommandos
 
@@ -337,6 +358,7 @@ npm run format     # Prettier --write
 npm run test:unit  # Vitest (Unit- + Komponententests, Node- und Browser-Projekt)
 npm run test:e2e   # Playwright (installiert Browser, baut + startet die App)
 npm run test       # test:unit + test:e2e
+npm run screenshots # README-Screenshots aus dem Production-Build
 ```
 
 ## Coding-Konventionen
@@ -392,6 +414,8 @@ nicht:
 | `RECIPIENT_EMAIL_DEMO` | Empfänger im Demo-Modus (interne Test-Adresse), s. ADR "Demo/Live-Modus-Auswahl" oben.                             |
 | `RECIPIENT_EMAIL_LIVE` | Empfänger im Live-Modus (Bußgeldstelle Köln, `bussgeldstelle@stadt-koeln.de`).                                     |
 | `LOCATIONIQ_API_KEY`   | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider), auch für Adress-Autocomplete. |
+| `BREVO_API_URL`        | Optional, nur für E2E-Tests: leitet den Versand auf den lokalen Brevo-Mock um. Gehört nicht nach Vercel.           |
+| `SEND_LIMIT_PER_HOUR`  | Optional, nur für E2E-Tests: hebt das Rate-Limit von `/api/send` (Standard 20 pro Stunde und IP) an.               |
 
 Immer über `.env.example` dokumentieren, echte Werte nie committen. Serverseitige Secrets
 ausschließlich über `$env/static/private` einbinden (siehe `cities.server.ts`,

@@ -1,4 +1,7 @@
 <script lang="ts">
+	/**
+	 * Die Fahrzeugangaben einer Fahrzeug-Karte: Kennzeichen, Fahrzeugart, Marke und Farbe.
+	 */
 	import { VEHICLE_MAKES } from '$lib/config/vehicleMakes';
 	import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
 	import { inputBase } from '$lib/ui/inputStyles';
