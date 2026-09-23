@@ -356,7 +356,8 @@ npm run test       # test:unit + test:e2e
   Besonderheiten, bewusste Abweichungen. Keine Typ-Tags (`@param {string}`, `@returns {boolean}`) —
   die Typen liefert TypeScript bereits, redundante Tags veralten still. `@param` nur, wenn es
   Semantik ergänzt, die der Parametername nicht hergibt. Kommentare, die den Code lediglich
-  paraphrasieren, gehören nicht in die Codebase.
+  paraphrasieren, gehören nicht in die Codebase. Kommentare beschreiben den aktuellen Stand, keine
+  Vorgeschichte („früher …“, „nicht mehr …“) — die gehört in die Commit-Message.
 - Kein Mocking-Framework (kein MSW): Netzwerkaufrufe in Vitest über `vi.fn()`/`vi.mock()`,
   in Playwright über `page.route()`.
 - Jede zusätzliche Dependency muss begründet werden — vor dem Hinzufügen prüfen, ob

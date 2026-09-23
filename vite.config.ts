@@ -146,16 +146,11 @@ export default defineConfig({
 				'src/routes/**/$types.d.ts'
 			],
 			// Provider ist bewusst istanbul, nicht v8. v8 leitet die Coverage aus den Zählern der
-			// JS-Engine ab und führt sie über die parallel laufenden Testdateien zusammen; dabei
-			// gingen im Browser-Projekt reproduzierbar Informationen verloren. Belegbar an
-			// src/lib/history/db.ts: v8 meldete dort die Top-Level-Konstante DRAFT_MAX_AGE_MS als
-			// nicht abgedeckt, obwohl ein Test sie importiert und an vi.setSystemTime() übergibt —
-			// ohne ihre Ausführung könnte dieser Test nicht grün sein. Wie stark der Verlust
-			// ausfiel, hing an der Anzahl parallel laufender Dateien und damit an der Kernzahl der
-			// Maschine, weshalb dieselbe Suite lokal und auf den CI-Runnern verschiedene Werte
-			// lieferte. Istanbul instrumentiert stattdessen den Code selbst und hat das Problem
-			// nicht: db.ts steigt damit von gemeldeten 86.66% auf 93.75% Funktionen, ohne dass sich
-			// an einer einzigen Testzeile etwas geändert hätte.
+			// JS-Engine ab und führt sie über die parallel laufenden Testdateien zusammen. Dabei gehen
+			// im Browser-Projekt Informationen verloren, z.B. gilt eine nachweislich ausgeführte
+			// Top-Level-Konstante als nicht abgedeckt. Wie viel verloren geht, hängt an der Zahl
+			// parallel laufender Dateien und damit an der Kernzahl: Lokal und in der CI entstünden
+			// verschiedene Werte. Istanbul instrumentiert den Code selbst und hat das Problem nicht.
 			//
 			// Ziel ist 100% — praktisch jede Datei erreicht das auch. Für den Rest gibt es zwei
 			// begründete, einzeln recherchierte Ausnahme-Kategorien (kein pauschaler Freifahrtschein):
@@ -169,8 +164,8 @@ export default defineConfig({
 			//     aufgerufen gilt. Gegenprobe in IncidentLocationFieldset.svelte: genau sieben
 			//     unabgedeckte Funktionen bei sieben Bindings — obwohl der Test "übernimmt Datum,
 			//     Uhrzeit und Adressfelder in das Fahrzeug" in jedes dieser sieben Felder schreibt
-			//     und das Ergebnis am Fahrzeug-Objekt assertiert. Anders als das v8-Merge-Problem
-			//     bleibt dieser Effekt unter istanbul bestehen: der generierte Code existiert real.
+			//     und das Ergebnis am Fahrzeug-Objekt assertiert. Der Effekt hängt nicht vom
+			//     Coverage-Provider ab: Der generierte Code existiert real.
 			// (b) Echter, aber über die öffentliche Komponenten-/Modul-API nie erreichbarer Defensiv-Code
 			//     (z.B. `if (!container) return;` bei einem `bind:this`, das nie vor dem ersten Event
 			//     ungebunden ist; ein `if (oldVersion < 3)`-Zweig, den `idb` laut eigener Semantik nie
@@ -197,7 +192,6 @@ export default defineConfig({
 					functions: 82
 				}, // (a) sieben `bind:value` an FormField/AddressAutocomplete
 				'src/lib/components/InstallBanner.svelte': { branches: 85 }, // (a)
-				'src/lib/components/IosInstallBanner.svelte': { branches: 85 }, // (b) `if (browser)`-SSR-Guard
 				'src/lib/components/PhotoLightbox.svelte': {
 					statements: 95,
 					branches: 80,
@@ -230,9 +224,7 @@ export default defineConfig({
 				'src/lib/components/VehiclePreviewDialog.svelte': { branches: 80 }, // (a) Interpolation in Titel-/alt-Attributen
 				'src/lib/components/icons/*.svelte': { branches: 0 }, // (a) $props()-Default
 				// (b) — `if (oldVersion < 3)` wird von idb nie mit einer neueren Schemaversion
-				// aufgerufen, der false-Zweig ist über die öffentliche API nicht erreichbar. Frühere
-				// Abweichungen zwischen CI und lokal kamen von einer IndexedDB, die sich mehrere
-				// Testdateien teilten. Heute spricht nur noch db.svelte.test.ts die echte Datenbank an.
+				// aufgerufen, der false-Zweig ist über die öffentliche API nicht erreichbar.
 				'src/lib/history/db.ts': { branches: 97 },
 				'src/lib/pwa/installPrompt.svelte.ts': { branches: 80 }, // (b) `if (browser)`-SSR-Guard
 				'src/routes/+layout.svelte': { branches: 45 }, // (a) `dev`-Build-Time-Konstante

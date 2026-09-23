@@ -12,8 +12,8 @@ test('Absenden ohne Foto zeigt Fehlermeldung', async ({ page }) => {
 	await page.locator('#addressCity').fill('Köln');
 	await page.locator('#email').fill('max@example.com');
 
-	// Ohne Foto existiert seit "erste Fahrzeug-Karte erst nach Foto anlegen" noch gar keine
-	// Fahrzeug-Karte — es gibt also keine Datum/Adresse/Verstoßart-Felder zum Ausfüllen.
+	// Die erste Fahrzeug-Karte entsteht erst mit dem ersten Foto. Ohne Foto gibt es also keine
+	// Datum/Adresse/Verstoßart-Felder zum Ausfüllen.
 	await page.getByRole('button', { name: 'Absenden' }).click();
 
 	await expect(

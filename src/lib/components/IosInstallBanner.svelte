@@ -15,6 +15,8 @@
 	// ist, soll der Hinweis bei jedem Öffnen wiederkommen.
 	let dismissed = $state(false);
 
+	// Der SSR-Zweig ist im Browser-Testprojekt nicht erreichbar.
+	/* istanbul ignore else */
 	if (browser) {
 		const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
 		isIosSafariUser = !isStandalone && isIosSafari(navigator.userAgent);

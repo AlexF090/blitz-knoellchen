@@ -35,7 +35,8 @@ npm run screenshots                    # README-Screenshots aus dem Production-B
 - Tailwind: `size-5` statt `h-5 w-5`, wenn Höhe und Breite gleich sind.
 - Jede zusätzliche Dependency muss begründet werden — vor dem Hinzufügen prüfen, ob
   Web-Standard-APIs ausreichen.
-- Kommentare auf Deutsch: JSDoc beschreibt das _Was_, Inline-Kommentare das _Warum_. Details
+- Kommentare auf Deutsch: JSDoc beschreibt das _Was_, Inline-Kommentare das _Warum_ des aktuellen
+  Stands — keine Vorgeschichte, die gehört in die Commit-Message. Details
   unter „Coding-Konventionen" in `docs/architektur.md`.
 - Commits auf Deutsch im Conventional-Commits-Format (`feat`, `fix`, `chore`, `refactor`, `docs`,
   `test`, `ci`). Der Pre-Commit-Hook führt Prettier, ESLint und `npm run check` aus.

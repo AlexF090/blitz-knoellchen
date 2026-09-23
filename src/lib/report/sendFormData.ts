@@ -30,9 +30,9 @@ export interface BuildSendFormDataInput {
 }
 
 /** Serialisiert die Anzeige eines Fahrzeugs als FormData für POST /api/send. */
-// Die Feldnamen-Stringliterale hier und in parseSendFormData existierten zuvor doppelt
-// (ReportForm.svelte `set` vs. api/send/+server.ts `get`) — als Paar in einer Datei mit
-// Round-Trip-Test können sie nicht mehr auseinanderdriften.
+// Serialisierung und parseSendFormData stehen bewusst als Paar in einer Datei: Die
+// Feldnamen-Stringliterale müssen auf beiden Seiten übereinstimmen, der Round-Trip-Test
+// hält sie synchron.
 export const buildSendFormData = ({
 	profile,
 	vehicle,

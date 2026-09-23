@@ -17,9 +17,8 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 		})
 	);
 
-	// /api/send läuft real gegen den Brevo-Mock (s. fixtures.ts) — das tatsächlich an Brevo
-	// geschickte Kennzeichen steht im E-Mail-Betreff (s. buildEmailBody.ts), nicht mehr in einem
-	// hier abgefangenen FormData-Feld.
+	// /api/send läuft real gegen den Brevo-Mock (s. fixtures.ts). Geprüft wird daher, was
+	// tatsächlich bei Brevo ankommt: Das Kennzeichen steht im E-Mail-Betreff (s. buildEmailBody.ts).
 	const testStartedAt = Date.now();
 	// parallelIndex ist über alle Worker (auch projektübergreifend, z.B. desktop+mobile) innerhalb
 	// eines Testlaufs eindeutig — verhindert Kennzeichen-Kollisionen, wenn dieser Test parallel in
