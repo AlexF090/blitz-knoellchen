@@ -13,7 +13,11 @@ import { chromium, devices } from '@playwright/test';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const OUT_DIR = path.join(ROOT, 'docs/screenshots');
-const FIXTURE = path.join(ROOT, 'e2e/fixtures/photo-with-gps.jpg');
+// Echtes Foto statt der synthetischen E2E-Fixture (ein blaues Rechteck) — im README soll
+// erkennbar sein, worum es geht. Kennzeichen im Bild überdeckt, Originalmetadaten entfernt;
+// die EXIF-Daten sind nachträglich auf einen Kölner Demo-Ort gesetzt, damit der Auto-Fill im
+// Screenshot zur gemockten Adresse passt. Sie beschreiben nicht den echten Aufnahmeort.
+const FIXTURE = path.join(ROOT, 'e2e/fixtures/demo-beweisfoto.jpg');
 
 const APP_PORT = 4273;
 const BREVO_MOCK_PORT = 4275;
