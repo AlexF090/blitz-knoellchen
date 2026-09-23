@@ -17,9 +17,12 @@ Relevant sind insbesondere:
 
 - **API-Schlüssel bleiben serverseitig.** Brevo und LocationIQ werden ausschließlich aus
   SvelteKit-Server-Endpunkten heraus aufgerufen; der Browser spricht nur eigene `/api/*`-Routen an.
-- **Der Empfänger wird nie vom Client bestimmt.** Der Client schickt lediglich `demo` oder `live`;
+- **Der Hauptempfänger wird nie vom Client bestimmt.** Der Client schickt lediglich `demo` oder `live`;
   die zugehörige Adresse löst der Server aus seiner eigenen Konfiguration auf. Ein fehlender oder
-  manipulierter Wert fällt auf `demo` zurück, nie auf den Live-Empfänger.
+  manipulierter Wert fällt auf `demo` zurück, nie auf den Live-Empfänger. Die Kopie (BCC) und die
+  Antwortadresse gehen dagegen an die vom Client angegebene Melder-Adresse, siehe unten.
+- **Anhänge werden serverseitig geprüft.** `/api/send` nimmt nur Fotos an, die als `image/jpeg`
+  deklariert sind und mit der JPEG-Signatur beginnen.
 - **Eingaben werden serverseitig erneut validiert** (`src/lib/validation/formSchema.ts`) — die
   Client-Validierung ist reine Komfortfunktion und keine Vertrauensgrenze.
 - **Content-Security-Policy** ohne `unsafe-inline` für Skripte, dazu `X-Frame-Options: DENY` und
@@ -32,7 +35,10 @@ Relevant sind insbesondere:
 - Das Rate-Limiting der Geocoding-Proxys (`src/lib/geocode/rateLimiter.ts`) hält den Modul-State
   pro Server-Prozess. In einer Serverless-Umgebung mit mehreren parallelen Instanzen schützt es
   daher das eigene LocationIQ-Kontingent nur näherungsweise und ist kein Missbrauchsschutz.
-- `/api/send` hat kein Rate-Limiting und kein CAPTCHA.
+- `/api/send` drosselt auf 20 Anfragen pro Stunde und IP, hat aber kein CAPTCHA. Das Limit liegt
+  wie beim Geocoding im Speicher und gilt nur pro Serverless-Instanz. Weil die BCC-Kopie an die
+  vom Client angegebene Adresse geht, lassen sich darüber weiterhin E-Mails von der
+  Absender-Domain an beliebige Adressen auslösen, nur langsamer.
 - `require-trusted-types-for: 'script'` ist bewusst nicht aktiv — der Chunk-Loader von
   SvelteKit weist `script.src` dynamisch zu, was die Hydration blockieren würde. Begründung im
   CSP-Block in `vite.config.ts`.

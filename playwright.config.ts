@@ -19,7 +19,11 @@ export default defineConfig({
 		{
 			command: 'npm run build && npm run preview',
 			port: APP_PORT,
-			env: { BREVO_API_URL: `http://localhost:${BREVO_MOCK_PORT}/v3/smtp/email` }
+			env: {
+				BREVO_API_URL: `http://localhost:${BREVO_MOCK_PORT}/v3/smtp/email`,
+				// Alle Tests senden von localhost aus und würden sonst das Rate-Limit ausschöpfen.
+				SEND_LIMIT_PER_HOUR: '1000'
+			}
 		}
 	],
 	testMatch: '**/*.e2e.{ts,js}',

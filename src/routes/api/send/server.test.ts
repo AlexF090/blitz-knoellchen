@@ -38,6 +38,8 @@ const VALID_FIELDS: Record<string, string> = {
 	mode: 'demo'
 };
 
+const JPEG_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+
 const buildFormData = (
 	overrides: Record<string, string | null> = {},
 	withPhoto = true
@@ -49,14 +51,21 @@ const buildFormData = (
 	}
 	formData.append('incidentTypeIds', 'gehweg');
 	if (withPhoto) {
-		formData.append('photos', new Blob(['x'], { type: 'image/jpeg' }), 'foto.jpg');
+		formData.append('photos', new Blob([JPEG_BYTES], { type: 'image/jpeg' }), 'foto.jpg');
 	}
 	return formData;
 };
 
-const buildEvent = (formData: FormData): RequestEvent =>
+let requestCounter = 0;
+
+// Jede Anfrage bekommt eine eigene IP, damit das modulweite Rate-Limit die Tests nicht koppelt.
+const buildEvent = (
+	formData: FormData,
+	clientAddress = `10.0.0.${(requestCounter += 1)}`
+): RequestEvent =>
 	({
-		request: { formData: async () => formData } as unknown as Request
+		request: { formData: async () => formData } as unknown as Request,
+		getClientAddress: () => clientAddress
 	}) as unknown as RequestEvent;
 
 describe('POST /api/send', () => {
@@ -85,6 +94,39 @@ describe('POST /api/send', () => {
 
 		expect(response.status).toBe(400);
 		await expect(response.json()).resolves.toEqual({ error: 'Unbekannte Verstoßart.' });
+	});
+
+	it('liefert 400, wenn ein Foto kein JPEG ist', async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal('fetch', fetchMock);
+		const formData = buildFormData({}, false);
+		formData.append(
+			'photos',
+			new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/jpeg' }),
+			'foto.jpg'
+		);
+
+		const { POST } = await import('./+server');
+		const response = await POST(buildEvent(formData) as never);
+
+		expect(response.status).toBe(400);
+		await expect(response.json()).resolves.toEqual({ error: 'Nur JPEG-Fotos sind erlaubt.' });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('liefert 429, sobald eine IP das Limit überschreitet', async () => {
+		const { POST } = await import('./+server');
+		const clientAddress = '192.0.2.1';
+
+		for (let attempt = 0; attempt < 20; attempt += 1) {
+			const response = await POST(
+				buildEvent(buildFormData({ firstName: '' }), clientAddress) as never
+			);
+			expect(response.status).toBe(400);
+		}
+		const blocked = await POST(buildEvent(buildFormData(), clientAddress) as never);
+
+		expect(blocked.status).toBe(429);
 	});
 
 	it('sendet bei gültigen Daten an Brevo und liefert ok:true', async () => {
