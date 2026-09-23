@@ -71,6 +71,26 @@ describe('embedExifMetadata', () => {
 		expect(parsed.dateTimeOriginal?.getDate()).toBe(1);
 	});
 
+	it('bettet EXIF ohne fetch ein, weil die CSP data:-URLs in connect-src blockiert', async () => {
+		const fetchSpy = vi
+			.spyOn(globalThis, 'fetch')
+			.mockRejectedValue(new TypeError('Refused to connect (CSP)'));
+		const source = await makeTestJpeg();
+		const exif: ParsedExif = {
+			date: null,
+			time: null,
+			gps: { lat: 50.9375, lon: 6.9603 },
+			dateTimeOriginal: null
+		};
+
+		const result = await embedExifMetadata(source, exif);
+		const parsed = await parseExif(result);
+
+		expect(fetchSpy).not.toHaveBeenCalled();
+		expect(result.type).toBe('image/jpeg');
+		expect(parsed.gps?.lat).toBeCloseTo(50.9375, 3);
+	});
+
 	it('gibt den Blob unverändert zurück, wenn weder Datum noch GPS vorhanden sind', async () => {
 		const source = await makeTestJpeg();
 		const result = await embedExifMetadata(source, EMPTY_EXIF);
