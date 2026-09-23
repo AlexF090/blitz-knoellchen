@@ -3,10 +3,9 @@ import { getProfile } from '$lib/history/db';
 import { createProfileStore } from './profileStore.svelte';
 import type { UserProfile } from '$lib/history/db';
 
-// Eigene In-Memory-Fake statt Durchreichen an die echte IndexedDB (via importOriginal):
-// db.svelte.test.ts testet $lib/history/db bereits gegen die echte IndexedDB mit demselben
-// festen Profil-Schlüssel — liefen beide Testdateien parallel, überschrieben sie sich
-// gegenseitig und machten db.ts' Branch-Coverage je nach Ausführungsreihenfolge flaky.
+// Eigene In-Memory-Fake statt Durchreichen an die echte IndexedDB (via importOriginal): Nur
+// db.svelte.test.ts spricht die echte Datenbank an. Parallel laufende Testdateien teilen sich
+// dieselbe Datenbank und würden sich sonst gegenseitig das Profil überschreiben.
 vi.mock('$lib/history/db', () => {
 	let stored: UserProfile | undefined;
 	return {
