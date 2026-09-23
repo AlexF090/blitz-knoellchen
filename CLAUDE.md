@@ -5,7 +5,9 @@ Kurzanleitung für Claude Code in diesem Repository. Vollständige Architekturen
 
 ## Kommandos
 
-Node-Version steht in `.nvmrc` (`nvm use`); `engine-strict` bricht den Install bei zu altem Node ab.
+Node-Version steht in `.nvmrc` (`nvm use`). `engines.node` ist auf `24.x` gepinnt, `engine-strict`
+bricht den Install mit jeder anderen Node-Major-Version ab. Ein Node-Upgrade ändert `.nvmrc`,
+`engines.node` und `runtime` in `vite.config.ts` gemeinsam.
 
 ```bash
 npm run dev                            # Dev-Server
