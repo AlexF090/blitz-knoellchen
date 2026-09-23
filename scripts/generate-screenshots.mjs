@@ -195,7 +195,6 @@ const run = async () => {
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
 	await page.getByRole('dialog', { name: /erfolgreich versendet/ }).waitFor();
-	await shot('04-versendet');
 
 	await page.getByRole('link', { name: 'Zur Historie' }).click();
 	await page.waitForURL('**/historie');
