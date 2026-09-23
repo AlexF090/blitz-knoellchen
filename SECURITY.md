@@ -25,8 +25,10 @@ Relevant sind insbesondere:
   deklariert sind und mit der JPEG-Signatur beginnen.
 - **Eingaben werden serverseitig erneut validiert** (`src/lib/validation/formSchema.ts`) — die
   Client-Validierung ist reine Komfortfunktion und keine Vertrauensgrenze.
-- **Content-Security-Policy** ohne `unsafe-inline` für Skripte, dazu `X-Frame-Options: DENY` und
-  `Cross-Origin-Opener-Policy: same-origin` (`vite.config.ts`, `src/hooks.server.ts`).
+- **Content-Security-Policy** ohne `unsafe-inline` für Skripte, dazu `X-Frame-Options: DENY`,
+  `Cross-Origin-Opener-Policy: same-origin`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`
+  und eine `Permissions-Policy` ohne Kamera, Mikrofon, Standort und Payment (`vite.config.ts`,
+  `src/lib/server/applySecurityHeaders.ts`).
 - **Keine Server-Persistenz.** Anzeigenhistorie und Entwürfe liegen ausschließlich lokal im
   Browser (IndexedDB); es gibt keine Datenbank mit Nutzerdaten.
 
