@@ -128,6 +128,9 @@
 
 html {
 	overscroll-behavior-y: none;
+	/* Lässt den Browser Scrollbars, Formular-Controls und das native Select-Dropdown passend zum
+	   aktiven Schema rendern — ohne das bleiben sie im Dark Mode hell. */
+	color-scheme: light dark;
 }
 
 body {
@@ -135,6 +138,9 @@ body {
 	color: var(--color-ink);
 	font-family: var(--font-sans);
 	overscroll-behavior-y: none;
+	/* Entfernt die ~300 ms Verzögerung, die mobile Browser vor einem Tap abwarten, um auf einen
+	   möglichen Doppeltipp-Zoom zu prüfen. Pinch-Zoom bleibt erhalten. */
+	touch-action: manipulation;
 }
 
 button:not(:disabled) {
