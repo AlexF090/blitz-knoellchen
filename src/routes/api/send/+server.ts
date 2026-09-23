@@ -7,7 +7,9 @@ import {
 	buildEmailTemplateInput,
 	resolveVehicleIncidentTypes
 } from '$lib/email/buildEmailTemplateInput';
+import { hasJpegSignature } from '$lib/image/hasJpegSignature';
 import { parseSendFormData } from '$lib/report/sendFormData';
+import { createFixedWindowRateLimiter } from '$lib/server/fixedWindowRateLimiter';
 import {
 	validateReportForm,
 	isFormValid,
@@ -23,11 +25,26 @@ import type { RequestHandler } from './$types';
 // E-Mail-Aufbau) durchlaufen wird, ohne echte E-Mails zu versenden.
 const BREVO_SEND_URL = env.BREVO_API_URL || 'https://api.brevo.com/v3/smtp/email';
 
+// Die BCC-Kopie geht an die vom Client angegebene Adresse. Ohne Drosselung ließe sich der
+// Endpunkt so als Relay an beliebige Adressen nutzen. Das Limit lebt im Speicher und gilt damit
+// nur pro Serverless-Instanz: Es bremst ein einzelnes Skript, ist aber kein vollständiger Schutz.
+// 20 pro Stunde lässt Raum für mehrere Fahrzeuge pro Anzeige und für Wiederholungen nach Fehlern.
+// Überschreibbar nur für E2E-Tests, die alle von derselben IP aus senden.
+const SEND_LIMIT_PER_HOUR = Number(env.SEND_LIMIT_PER_HOUR) || 20;
+const sendRateLimiter = createFixedWindowRateLimiter({
+	limit: SEND_LIMIT_PER_HOUR,
+	windowMs: 60 * 60 * 1000
+});
+
 /**
  * Nimmt die Anzeige eines Fahrzeugs entgegen, validiert sie erneut serverseitig und verschickt
  * sie per Brevo an die Bußgeldstelle — mit dem Melder in Reply-To und bcc.
  */
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+	if (!sendRateLimiter.tryConsume(getClientAddress())) {
+		return json({ error: 'Zu viele Anfragen. Bitte später erneut versuchen.' }, { status: 429 });
+	}
+
 	const formData = await request.formData();
 	const parsed = parseSendFormData(formData);
 
@@ -83,12 +100,22 @@ export const POST: RequestHandler = async ({ request }) => {
 		})
 	);
 
-	const attachment = await Promise.all(
-		photos.map(async (photo) => ({
-			name: photo.fileName,
-			content: Buffer.from(await photo.blob.arrayBuffer()).toString('base64')
-		}))
+	const photoBytes = await Promise.all(
+		photos.map(async (photo) => new Uint8Array(await photo.blob.arrayBuffer()))
 	);
+	// Der Client schickt ausschließlich JPEGs (compressImage kodiert jedes Foto neu). Geprüft wird
+	// der Inhalt, nicht nur der MIME-Typ: Den setzt der Client frei.
+	const allPhotosAreJpeg = photos.every(
+		(photo, index) => photo.blob.type === 'image/jpeg' && hasJpegSignature(photoBytes[index])
+	);
+	if (!allPhotosAreJpeg) {
+		return json({ error: 'Nur JPEG-Fotos sind erlaubt.' }, { status: 400 });
+	}
+
+	const attachment = photos.map((photo, index) => ({
+		name: photo.fileName,
+		content: Buffer.from(photoBytes[index]).toString('base64')
+	}));
 
 	try {
 		const response = await fetch(BREVO_SEND_URL, {
