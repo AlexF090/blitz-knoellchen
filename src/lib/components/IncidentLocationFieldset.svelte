@@ -20,15 +20,11 @@
 	let { vehicle = $bindable(), errors, geocodeWarning }: Props = $props();
 
 	/** Schaltet zwischen Zeitraum (Parkverstoß) und Einzelzeitpunkt (Halteverstoß) um. */
-	const selectTimeMode = (mode: string) => {
-		if (mode === 'parkverstoss') {
-			vehicle.timeMode = 'parkverstoss';
-		} else {
-			vehicle.timeMode = 'halteverstoss';
-			// Der Halteverstoß kennt nur einen Zeitpunkt — eine zuvor eingetragene Endzeit bliebe
-			// sonst unsichtbar im Datensatz stehen und tauchte in der E-Mail auf.
-			vehicle.endTime = '';
-		}
+	const selectTimeMode = (mode: VehicleEntry['timeMode']) => {
+		vehicle.timeMode = mode;
+		// Der Halteverstoß kennt nur einen Zeitpunkt — eine zuvor eingetragene Endzeit bliebe
+		// sonst unsichtbar im Datensatz stehen und tauchte in der E-Mail auf.
+		if (mode === 'halteverstoss') vehicle.endTime = '';
 		triggerHaptic('selection');
 	};
 </script>
