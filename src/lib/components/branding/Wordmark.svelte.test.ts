@@ -5,14 +5,14 @@ import Wordmark from './Wordmark.svelte';
 
 describe('Wordmark', () => {
 	it('rendert die Wortmarke in Standardgröße (sm)', async () => {
-		render(Wordmark);
+		await render(Wordmark);
 
 		await expect.element(page.getByText('BLITZ')).toBeInTheDocument();
 		await expect.element(page.getByText('KNÖLLCHEN')).toBeInTheDocument();
 	});
 
 	it('rendert die Wortmarke in Größe lg', async () => {
-		render(Wordmark, { size: 'lg' });
+		await render(Wordmark, { size: 'lg' });
 
 		await expect.element(page.getByText('BLITZ')).toBeInTheDocument();
 		await expect.element(page.getByText('KNÖLLCHEN')).toBeInTheDocument();

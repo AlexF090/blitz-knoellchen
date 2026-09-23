@@ -5,7 +5,7 @@ import SignNoStopping from './SignNoStopping.svelte';
 
 describe('SignNoStopping', () => {
 	it('rendert das Halteverbot-Zeichen mit fester Quelle und Alt-Text', async () => {
-		render(SignNoStopping);
+		await render(SignNoStopping);
 
 		const img = page.getByAltText('Verkehrszeichen 283 (Halteverbot)');
 		await expect.element(img).toBeInTheDocument();
@@ -13,7 +13,7 @@ describe('SignNoStopping', () => {
 	});
 
 	it('gibt class und aria-hidden weiter', async () => {
-		render(SignNoStopping, { class: 'size-6', 'aria-hidden': 'true' });
+		await render(SignNoStopping, { class: 'size-6', 'aria-hidden': 'true' });
 
 		const img = page.getByAltText('Verkehrszeichen 283 (Halteverbot)');
 		await expect.element(img).toHaveAttribute('class', 'size-6');

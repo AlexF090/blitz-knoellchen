@@ -28,7 +28,7 @@ const parkverstossOption = () =>
 
 describe('IncidentLocationFieldset', () => {
 	it('zeigt bei Halteverstoß nur einen Zeitpunkt und keinen Mindestparkzeit-Hinweis', async () => {
-		render(IncidentLocationFieldset, { vehicle: makeVehicle('v-1') });
+		await render(IncidentLocationFieldset, { vehicle: makeVehicle('v-1') });
 
 		await expect.element(halteverstossOption()).toBeChecked();
 		await expect.element(page.getByLabelText('Uhrzeit')).toBeInTheDocument();
@@ -40,7 +40,7 @@ describe('IncidentLocationFieldset', () => {
 
 	it('zeigt bei Parkverstoß das Bis-Feld und den Mindestparkzeit-Hinweis', async () => {
 		const vehicle = makeVehicle('v-2');
-		render(IncidentLocationFieldset, { vehicle });
+		await render(IncidentLocationFieldset, { vehicle });
 
 		await userEvent.click(parkverstossOption());
 
@@ -54,7 +54,7 @@ describe('IncidentLocationFieldset', () => {
 
 	it('leert endTime beim Wechsel zurück auf Halteverstoß', async () => {
 		const vehicle = makeVehicle('v-3', { timeMode: 'parkverstoss', endTime: '10:45' });
-		render(IncidentLocationFieldset, { vehicle });
+		await render(IncidentLocationFieldset, { vehicle });
 
 		await userEvent.click(halteverstossOption());
 
@@ -65,7 +65,7 @@ describe('IncidentLocationFieldset', () => {
 
 	it('übernimmt Datum, Uhrzeit und Adressfelder in das Fahrzeug', async () => {
 		const vehicle = makeVehicle('v-4');
-		render(IncidentLocationFieldset, { vehicle });
+		await render(IncidentLocationFieldset, { vehicle });
 
 		await userEvent.fill(page.getByLabelText('Datum'), '2024-01-05');
 		await userEvent.fill(page.getByLabelText('Uhrzeit'), '10:00');
@@ -98,7 +98,7 @@ describe('IncidentLocationFieldset', () => {
 			failed: false
 		});
 		const vehicle = makeVehicle('v-5');
-		render(IncidentLocationFieldset, { vehicle });
+		await render(IncidentLocationFieldset, { vehicle });
 
 		await userEvent.fill(page.getByRole('combobox', { name: 'Straße' }), 'Domklo');
 		await userEvent.click(page.getByRole('option', { name: 'Domkloster 4, 50667 Köln' }));
@@ -112,7 +112,7 @@ describe('IncidentLocationFieldset', () => {
 	});
 
 	it('rendert geocodeWarning als Status-Meldung', async () => {
-		render(IncidentLocationFieldset, {
+		await render(IncidentLocationFieldset, {
 			vehicle: makeVehicle('v-6'),
 			geocodeWarning: 'Adresse konnte nicht ermittelt werden.'
 		});
@@ -124,7 +124,7 @@ describe('IncidentLocationFieldset', () => {
 
 	it('zeigt Feldfehler aus dem errors-Prop an', async () => {
 		const vehicle = makeVehicle('v-7', { timeMode: 'parkverstoss' });
-		render(IncidentLocationFieldset, {
+		await render(IncidentLocationFieldset, {
 			vehicle,
 			errors: {
 				date: 'Bitte Datum angeben.',

@@ -5,7 +5,7 @@ import FaqPage from './+page.svelte';
 
 describe('FAQ-Seite', () => {
 	it('rendert die Überschrift und öffnet eine Frage per Klick', async () => {
-		render(FaqPage);
+		await render(FaqPage);
 
 		await expect.element(page.getByRole('heading', { name: 'FAQ' })).toBeInTheDocument();
 
@@ -19,7 +19,7 @@ describe('FAQ-Seite', () => {
 	});
 
 	it('öffnet jede Frage beider Themenblöcke und zeigt die jeweilige Antwort', async () => {
-		render(FaqPage);
+		await render(FaqPage);
 
 		const questions = [
 			'Was macht diese App, und muss ich dafür bezahlen?',

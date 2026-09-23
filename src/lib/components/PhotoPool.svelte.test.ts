@@ -27,7 +27,7 @@ describe('PhotoPool', () => {
 	it('ruft onAdd pro ausgewählter Datei bis zum Batch-Limit auf', async () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
-		const { container } = render(PhotoPool, {
+		const { container } = await render(PhotoPool, {
 			photos: [],
 			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
@@ -45,7 +45,7 @@ describe('PhotoPool', () => {
 	it('ruft onAdd nicht auf, wenn die Dateiauswahl leer ist (z.B. Dialog abgebrochen)', async () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
-		const { container } = render(PhotoPool, {
+		const { container } = await render(PhotoPool, {
 			photos: [],
 			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
@@ -63,7 +63,7 @@ describe('PhotoPool', () => {
 	it('zeigt eine batchError-Meldung, wenn mehr Dateien als MAX_PHOTOS_PER_BATCH ausgewählt werden, und ruft onAdd nur bis zum Batch-Limit auf', async () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
-		const { container } = render(PhotoPool, {
+		const { container } = await render(PhotoPool, {
 			photos: [],
 			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
@@ -91,7 +91,7 @@ describe('PhotoPool', () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
 		const photos = [makePhoto(), makePhoto()];
-		const { container } = render(PhotoPool, {
+		const { container } = await render(PhotoPool, {
 			photos,
 			maxPhotos: 2,
 			maxPhotosPerVehicle: 3,
@@ -118,7 +118,7 @@ describe('PhotoPool', () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
 		const photos = [makePhoto()];
-		const { container } = render(PhotoPool, {
+		const { container } = await render(PhotoPool, {
 			photos,
 			maxPhotos: 2,
 			maxPhotosPerVehicle: 3,
@@ -138,7 +138,7 @@ describe('PhotoPool', () => {
 	it('zeigt error- und processingError-Props als Alerts an', async () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
-		render(PhotoPool, {
+		await render(PhotoPool, {
 			photos: [],
 			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
@@ -159,7 +159,7 @@ describe('PhotoPool', () => {
 	it('zeigt einen Spinner, solange processing=true ist, und blendet das Auswahl-Label aus', async () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
-		render(PhotoPool, {
+		await render(PhotoPool, {
 			photos: [],
 			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
@@ -177,7 +177,7 @@ describe('PhotoPool', () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
 		const photo = makePhoto({ fileName: 'zuentfernen.jpg' });
-		render(PhotoPool, {
+		await render(PhotoPool, {
 			photos: [photo],
 			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
@@ -195,7 +195,7 @@ describe('PhotoPool', () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
 		const photo = makePhoto({ fileName: 'gross.jpg' });
-		render(PhotoPool, {
+		await render(PhotoPool, {
 			photos: [photo],
 			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
@@ -213,7 +213,7 @@ describe('PhotoPool', () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
 		const photo = makePhoto({ fileName: 'gross.jpg' });
-		const { container } = render(PhotoPool, {
+		const { container } = await render(PhotoPool, {
 			photos: [photo],
 			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
@@ -235,7 +235,7 @@ describe('PhotoPool', () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
 		const photo = makePhoto();
-		render(PhotoPool, {
+		await render(PhotoPool, {
 			photos: [photo],
 			usageCounts: { [photo.id]: 2 },
 			maxPhotos: 9,
@@ -251,7 +251,7 @@ describe('PhotoPool', () => {
 		const onAdd = vi.fn();
 		const onRemove = vi.fn();
 		const photo = makePhoto();
-		render(PhotoPool, {
+		await render(PhotoPool, {
 			photos: [photo],
 			usageCounts: { [photo.id]: 1 },
 			maxPhotos: 9,

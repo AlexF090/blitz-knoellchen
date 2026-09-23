@@ -5,7 +5,7 @@ import LogoLockup from './LogoLockup.svelte';
 
 describe('LogoLockup', () => {
 	it('rendert Icon und Wortmarke', async () => {
-		render(LogoLockup);
+		await render(LogoLockup);
 
 		await expect.element(page.getByText('BLITZ')).toBeInTheDocument();
 		await expect.element(page.getByText('KNÖLLCHEN')).toBeInTheDocument();

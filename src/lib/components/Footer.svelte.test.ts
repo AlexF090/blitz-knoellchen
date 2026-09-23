@@ -9,7 +9,7 @@ import Footer from './Footer.svelte';
 // nach dem Event erscheint und die anderen Tests keinen Ausgangszustand voraussetzen).
 describe('Footer', () => {
 	it('rendert FAQ- und Datenschutz-Links sowie die App-Version, ohne Install-Button', async () => {
-		render(Footer);
+		await render(Footer);
 
 		await expect.element(page.getByRole('link', { name: 'FAQ' })).toBeInTheDocument();
 		await expect.element(page.getByRole('link', { name: 'Datenschutz' })).toBeInTheDocument();
@@ -27,7 +27,7 @@ describe('Footer', () => {
 		event.userChoice = Promise.resolve({ outcome: 'accepted', platform: 'web' });
 		window.dispatchEvent(event);
 
-		render(Footer);
+		await render(Footer);
 
 		const installButton = page.getByRole('button', { name: 'App installieren' });
 		await expect.element(installButton).toBeInTheDocument();

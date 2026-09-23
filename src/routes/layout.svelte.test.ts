@@ -9,7 +9,7 @@ describe('+layout.svelte', () => {
 		const children = createRawSnippet(() => ({
 			render: () => '<p data-testid="layout-child">Inhalt</p>'
 		}));
-		render(Layout, { children });
+		await render(Layout, { children });
 
 		await expect.element(page.getByTestId('layout-child')).toBeInTheDocument();
 	});

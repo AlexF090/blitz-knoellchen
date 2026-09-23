@@ -11,7 +11,7 @@ const textSnippet = (text: string) =>
 
 describe('ConfirmDialog', () => {
 	it('rendert title, titleId und actions-Snippet', async () => {
-		render(ConfirmDialog, {
+		await render(ConfirmDialog, {
 			dialog: undefined,
 			titleId: 'my-title',
 			title: 'Wirklich löschen?',
@@ -27,7 +27,7 @@ describe('ConfirmDialog', () => {
 	});
 
 	it('schließt NICHT per Escape, wenn dismissable=false ist', async () => {
-		render(ConfirmDialog, {
+		await render(ConfirmDialog, {
 			dialog: undefined,
 			titleId: 't',
 			title: 'Titel',
@@ -47,7 +47,7 @@ describe('ConfirmDialog', () => {
 	});
 
 	it('erlaubt Schließen per Escape, wenn dismissable=true ist', async () => {
-		render(ConfirmDialog, {
+		await render(ConfirmDialog, {
 			dialog: undefined,
 			titleId: 't',
 			title: 'Titel',
@@ -66,7 +66,7 @@ describe('ConfirmDialog', () => {
 	});
 
 	it('schließt bei Backdrop-Klick, wenn dismissable=true ist', async () => {
-		render(ConfirmDialog, {
+		await render(ConfirmDialog, {
 			dialog: undefined,
 			titleId: 't',
 			title: 'Titel',
@@ -88,7 +88,7 @@ describe('ConfirmDialog', () => {
 	});
 
 	it('schließt NICHT bei Klick auf den Dialog-Inhalt selbst', async () => {
-		render(ConfirmDialog, {
+		await render(ConfirmDialog, {
 			dialog: undefined,
 			titleId: 't',
 			title: 'Titel',
@@ -109,7 +109,7 @@ describe('ConfirmDialog', () => {
 		// desktopMaxWidthClass hat einen Default-Wert, der nur bei `undefined` greift — `null`
 		// umgeht das Svelte-Default-Handling und deckt so den `?? ''`-Fallback im kompilierten
 		// class-Attribut ab.
-		render(ConfirmDialog, {
+		await render(ConfirmDialog, {
 			dialog: undefined,
 			titleId: 't',
 			title: 'Titel',

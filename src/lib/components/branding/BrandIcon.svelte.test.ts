@@ -4,8 +4,8 @@ import BrandIcon from './BrandIcon.svelte';
 
 describe('BrandIcon', () => {
 	it('erzeugt bei mehreren Instanzen unterschiedliche clipPath-IDs (keine Kollision)', async () => {
-		render(BrandIcon);
-		render(BrandIcon);
+		await render(BrandIcon);
+		await render(BrandIcon);
 
 		const clipPaths = document.querySelectorAll('clipPath');
 		expect(clipPaths).toHaveLength(2);

@@ -121,10 +121,10 @@ const uploadPhoto = (file: File) => {
 // Ohne explizites Unmounten bleiben Komponenten aus vorherigen Tests im DOM (kein automatisches
 // Cleanup zwischen Tests) — das führt zu mehrdeutigen Selektoren und zu Cross-Test-Interferenz
 // bei gemeinsam genutzten Modul-Mocks. Jeder Test räumt daher seine eigene Instanz danach ab.
-let currentUnmount: (() => void) | undefined;
+let currentUnmount: (() => Promise<void>) | undefined;
 
-const renderForm = (props: typeof defaultProps = defaultProps) => {
-	const result = render(ReportForm, props);
+const renderForm = async (props: typeof defaultProps = defaultProps) => {
+	const result = await render(ReportForm, props);
 	currentUnmount = result.unmount;
 	// Die eigene Validierung (validateReportForm/isFormValid) ist Testgegenstand — native
 	// HTML5-Constraint-Validierung (durch die `required`-Attribute) würde ein "invalid" Submit
@@ -133,8 +133,8 @@ const renderForm = (props: typeof defaultProps = defaultProps) => {
 	return result;
 };
 
-afterEach(() => {
-	currentUnmount?.();
+afterEach(async () => {
+	await currentUnmount?.();
 	currentUnmount = undefined;
 	// restoreAllMocks() leert bei reinen vi.fn()-Modul-Mocks (kein vi.spyOn) nicht deren
 	// mock.calls-Historie — ohne clearAllMocks() bleiben Aufrufzähler wie z.B. von
@@ -151,7 +151,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 
 		await expect.element(page.getByText(validProfile.email, { exact: true })).toBeInTheDocument();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
@@ -174,7 +174,7 @@ describe('ReportForm', () => {
 			city: 'Köln'
 		});
 
-		renderForm();
+		await renderForm();
 
 		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
 		uploadPhoto(new File(['x'], 'exif.jpg', { type: 'image/jpeg' }));
@@ -200,7 +200,7 @@ describe('ReportForm', () => {
 			time: null
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
 		uploadPhoto(new File(['x'], 'no-gps.jpg', { type: 'image/jpeg' }));
 
@@ -220,7 +220,7 @@ describe('ReportForm', () => {
 		setDefaultMocks();
 		mockedCreatePhotoEntry.mockRejectedValue(new HeicConversionError('HEIC kaputt'));
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
 		uploadPhoto(new File(['x'], 'broken.heic', { type: 'image/heic' }));
 
@@ -242,7 +242,7 @@ describe('ReportForm', () => {
 		window.addEventListener('unhandledrejection', onUnhandledRejection);
 
 		try {
-			renderForm();
+			await renderForm();
 			await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
 			uploadPhoto(new File(['x'], 'normal.jpg', { type: 'image/jpeg' }));
 
@@ -266,7 +266,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: '+ Weiteres Fahrzeug hinzufügen' }));
@@ -285,7 +285,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Vorfall entfernen' }).first());
@@ -302,7 +302,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Vorfall zurücksetzen' }));
@@ -320,7 +320,7 @@ describe('ReportForm', () => {
 		});
 		mockedSendVehicleReport.mockResolvedValue(true);
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -343,7 +343,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -367,7 +367,7 @@ describe('ReportForm', () => {
 		});
 		mockedSendVehicleReport.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -389,7 +389,7 @@ describe('ReportForm', () => {
 		});
 		mockedSendVehicleReport.mockResolvedValue(false);
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -412,7 +412,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Zurücksetzen', exact: true }).first());
@@ -433,7 +433,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1'), makePhoto('photo-2')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		// Absenden schlägt fehl: Fahrzeug A (Index 0) ist gültig, Fahrzeug B (Index 1) hat ein
@@ -465,7 +465,7 @@ describe('ReportForm', () => {
 		setDefaultMocks();
 		mockedGetProfile.mockRejectedValue(new Error('IndexedDB kaputt'));
 
-		renderForm();
+		await renderForm();
 
 		await expect.element(page.getByRole('button', { name: 'Speichern' })).toBeInTheDocument();
 		await expect.element(page.getByLabelText('Vorname')).toHaveValue('');
@@ -474,7 +474,7 @@ describe('ReportForm', () => {
 	it('speichert das Profil erst nach erfolgreicher Validierung und wechselt in den Anzeige-Modus', async () => {
 		setDefaultMocks();
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('button', { name: 'Speichern' })).toBeInTheDocument();
 
 		// Ungültig: Pflichtfelder leer -> Speichern bleibt im Bearbeiten-Modus.
@@ -513,7 +513,7 @@ describe('ReportForm', () => {
 			failed: false
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('button', { name: 'Speichern' })).toBeInTheDocument();
 
 		const streetInput = page.getByRole('combobox', { name: 'Straße und Hausnr.' });
@@ -542,7 +542,7 @@ describe('ReportForm', () => {
 			failed: false
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('button', { name: 'Speichern' })).toBeInTheDocument();
 
 		// PLZ/Ort vorab manuell befüllen — die Auswahl darf diese nicht überschreiben, da die
@@ -568,7 +568,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await new Promise((resolve) => setTimeout(resolve, 900));
@@ -579,7 +579,7 @@ describe('ReportForm', () => {
 		setDefaultMocks();
 		mockedGetDraft.mockResolvedValue(undefined);
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
 
 		await new Promise((resolve) => setTimeout(resolve, 900));
@@ -602,7 +602,7 @@ describe('ReportForm', () => {
 			time: null
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		uploadPhoto(new File(['x'], 'zweites.jpg', { type: 'image/jpeg' }));
@@ -629,7 +629,7 @@ describe('ReportForm', () => {
 			city: null
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
 		uploadPhoto(new File(['x'], 'partial.jpg', { type: 'image/jpeg' }));
 
@@ -654,7 +654,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -677,7 +677,7 @@ describe('ReportForm', () => {
 		});
 		mockedClearDraft.mockRejectedValue(new Error('Löschen fehlgeschlagen'));
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Zurücksetzen', exact: true }).first());
@@ -694,7 +694,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -712,7 +712,7 @@ describe('ReportForm', () => {
 		mockedGetProfile.mockResolvedValue(validProfile);
 		mockedGetDraft.mockResolvedValue({ vehicles: [], photos: [] });
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -731,7 +731,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -748,7 +748,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -783,7 +783,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		// Der Foto-Toggle-Button selbst hat kein aria-label; der zugängliche Name kommt vom
@@ -806,7 +806,7 @@ describe('ReportForm', () => {
 		mockedGetProfile.mockResolvedValue(validProfile);
 		mockedGetDraft.mockResolvedValue({ vehicles: [], photos: [] });
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByText(validProfile.email, { exact: true })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Bearbeiten' }));
@@ -822,7 +822,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Foto photo-1.jpg entfernen' }));
@@ -838,7 +838,7 @@ describe('ReportForm', () => {
 	it('speichert das Profil per Enter-Taste in einem Profil-Feld, statt das ganze Formular abzuschicken', async () => {
 		setDefaultMocks();
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('button', { name: 'Speichern' })).toBeInTheDocument();
 
 		await userEvent.fill(page.getByLabelText('Vorname'), 'Erika');
@@ -858,7 +858,7 @@ describe('ReportForm', () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue({ ...validProfile, phone: '0221 12345678' });
 
-		renderForm();
+		await renderForm();
 
 		await expect.element(page.getByText('0221 12345678')).toBeInTheDocument();
 	});
@@ -907,7 +907,7 @@ describe('ReportForm', () => {
 			city: 'Köln'
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		// Foto zunächst manuell Fahrzeug 1 zuordnen -> erste (echte) Adressauflösung.
@@ -938,7 +938,7 @@ describe('ReportForm', () => {
 			photos: [makePhoto('photo-1')]
 		});
 
-		renderForm();
+		await renderForm();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Zurücksetzen', exact: true }).first());

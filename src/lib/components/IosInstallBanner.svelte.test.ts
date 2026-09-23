@@ -35,7 +35,7 @@ describe('IosInstallBanner', () => {
 		stubMatchMedia(false);
 		mockedIsIosSafari.mockReturnValue(false);
 
-		render(IosInstallBanner);
+		await render(IosInstallBanner);
 
 		expect(page.getByRole('note').elements()).toHaveLength(0);
 	});
@@ -44,7 +44,7 @@ describe('IosInstallBanner', () => {
 		stubMatchMedia(true);
 		mockedIsIosSafari.mockReturnValue(true);
 
-		render(IosInstallBanner);
+		await render(IosInstallBanner);
 
 		expect(page.getByRole('note').elements()).toHaveLength(0);
 	});
@@ -53,7 +53,7 @@ describe('IosInstallBanner', () => {
 		stubMatchMedia(false);
 		mockedIsIosSafari.mockReturnValue(true);
 
-		render(IosInstallBanner);
+		await render(IosInstallBanner);
 
 		const note = page.getByRole('note');
 		await expect.element(note).toBeInTheDocument();

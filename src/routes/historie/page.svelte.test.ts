@@ -37,7 +37,7 @@ describe('Historie-Seite', () => {
 		listEntriesMock.mockResolvedValueOnce([]);
 		const { default: HistoriePage } = await import('./+page.svelte');
 
-		render(HistoriePage);
+		await render(HistoriePage);
 
 		await expect.element(page.getByText('Noch keine Anzeigen versendet.')).toBeInTheDocument();
 		await expect
@@ -50,7 +50,7 @@ describe('Historie-Seite', () => {
 		listEntriesMock.mockResolvedValueOnce([entry]);
 		const { default: HistoriePage } = await import('./+page.svelte');
 
-		render(HistoriePage);
+		await render(HistoriePage);
 
 		await expect.element(page.getByText('K-AB1234 · BMW · Rot')).toBeInTheDocument();
 
@@ -69,7 +69,7 @@ describe('Historie-Seite', () => {
 		listEntriesMock.mockResolvedValueOnce([entry]);
 		const { default: HistoriePage } = await import('./+page.svelte');
 
-		render(HistoriePage);
+		await render(HistoriePage);
 		await expect.element(page.getByText('K-AB1234 · BMW · Rot')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Eintrag löschen' }));
@@ -88,7 +88,7 @@ describe('Historie-Seite', () => {
 		listEntriesMock.mockResolvedValueOnce([entry]);
 		const { default: HistoriePage } = await import('./+page.svelte');
 
-		render(HistoriePage);
+		await render(HistoriePage);
 
 		const thumbButton = page.getByRole('button', { name: 'Beweisfoto 1 von 1 vergrößern' });
 		await expect.element(thumbButton).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe('Historie-Seite', () => {
 		listEntriesMock.mockResolvedValueOnce([entry]);
 		const { default: HistoriePage } = await import('./+page.svelte');
 
-		render(HistoriePage);
+		await render(HistoriePage);
 
 		await userEvent.click(page.getByRole('button', { name: 'Beweisfoto 1 von 1 vergrößern' }));
 		await expect
@@ -119,14 +119,14 @@ describe('Historie-Seite', () => {
 		listEntriesMock.mockResolvedValueOnce([makeEntry(), makeEntry()]);
 		const { default: HistoriePage } = await import('./+page.svelte');
 
-		render(HistoriePage);
+		await render(HistoriePage);
 
 		const deleteAllButton = page.getByRole('button', { name: 'Alle löschen' });
 		await expect.element(deleteAllButton).toBeInTheDocument();
 		await userEvent.click(deleteAllButton);
 
 		const dialog = page.getByRole('dialog', { name: 'Alle Einträge löschen?' });
-		await expect.element(dialog).toHaveTextContent('2 Einträge');
+		await expect.element(dialog).toMatchTextContent('2 Einträge');
 		await userEvent.click(dialog.getByRole('button', { name: 'Alle löschen' }));
 
 		expect(clearEntriesMock).toHaveBeenCalled();
@@ -137,7 +137,7 @@ describe('Historie-Seite', () => {
 		listEntriesMock.mockResolvedValueOnce([makeEntry(), makeEntry()]);
 		const { default: HistoriePage } = await import('./+page.svelte');
 
-		render(HistoriePage);
+		await render(HistoriePage);
 
 		await userEvent.click(page.getByRole('button', { name: 'Alle löschen' }));
 		const dialog = page.getByRole('dialog', { name: 'Alle Einträge löschen?' });
