@@ -2,7 +2,7 @@ import { CITIES } from '$lib/config/cities';
 import type { HistoryEntry } from '$lib/history/db';
 import { createEmptyForm, createEmptyVehicle } from '$lib/validation/emptyForm';
 import type { PhotoEntry, ReportFormData } from '$lib/validation/formSchema';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { submitVehicleReports } from './submitVehicleReports';
 
 const photo = (id: string): PhotoEntry => ({
@@ -50,7 +50,11 @@ const run = (form: ReportFormData, send: (body: FormData) => Promise<boolean>) =
 };
 
 describe('submitVehicleReports', () => {
-	it('sends one report per vehicle and records each success in the history', async () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it('sendet eine Anzeige pro Fahrzeug und schreibt jeden Erfolg in die Historie', async () => {
 		const send = vi.fn().mockResolvedValue(true);
 		const form = formWith(
 			[vehicleWith('v1', 'K AB 1234', ['p1']), vehicleWith('v2', 'K-CD-5678', ['p2'])],
@@ -68,7 +72,7 @@ describe('submitVehicleReports', () => {
 		expect(saved.map((entry) => entry.id)).toEqual(['entry-1', 'entry-2']);
 	});
 
-	it('numbers each vehicle within the total so the recipient can relate the mails', async () => {
+	it('nummeriert jedes Fahrzeug innerhalb der Gesamtzahl, damit der Empfänger die Mails zuordnen kann', async () => {
 		const bodies: FormData[] = [];
 		const send = vi.fn(async (body: FormData) => {
 			bodies.push(body);
@@ -85,7 +89,7 @@ describe('submitVehicleReports', () => {
 		expect(bodies.map((b) => b.get('vehicleTotal'))).toEqual(['2', '2']);
 	});
 
-	it('attaches only the photos assigned to the respective vehicle', async () => {
+	it('hängt nur die dem jeweiligen Fahrzeug zugeordneten Fotos an', async () => {
 		const bodies: FormData[] = [];
 		const send = vi.fn(async (body: FormData) => {
 			bodies.push(body);
@@ -102,7 +106,7 @@ describe('submitVehicleReports', () => {
 		expect(bodies[1].getAll('photos')).toHaveLength(1);
 	});
 
-	it('ignores photo ids that are no longer in the pool', async () => {
+	it('ignoriert Foto-IDs, die nicht mehr im Pool liegen', async () => {
 		const bodies: FormData[] = [];
 		const send = vi.fn(async (body: FormData) => {
 			bodies.push(body);
@@ -115,7 +119,7 @@ describe('submitVehicleReports', () => {
 		expect(bodies[0].getAll('photos')).toHaveLength(1);
 	});
 
-	it('does not write a history entry when sending failed', async () => {
+	it('schreibt keinen Historien-Eintrag, wenn der Versand fehlschlägt', async () => {
 		const send = vi.fn().mockResolvedValue(false);
 		const form = formWith([vehicleWith('v1', 'K-AB1234', ['p1'])], [photo('p1')]);
 
@@ -125,7 +129,7 @@ describe('submitVehicleReports', () => {
 		expect(saved).toEqual([]);
 	});
 
-	it('keeps sending the remaining vehicles after a single failure', async () => {
+	it('sendet nach einem Fehlschlag die übrigen Fahrzeuge weiter', async () => {
 		const send = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
 		const form = formWith(
 			[vehicleWith('v1', 'K-AB1234', []), vehicleWith('v2', 'K-CD5678', [])],
@@ -141,7 +145,7 @@ describe('submitVehicleReports', () => {
 		expect(saved).toHaveLength(1);
 	});
 
-	it('resolves the incident type labels from the city configuration', async () => {
+	it('löst die Bezeichnungen der Verstoßarten aus der Stadt-Konfiguration auf', async () => {
 		const send = vi.fn().mockResolvedValue(true);
 		const form = formWith([vehicleWith('v1', 'K-AB1234', [])], []);
 		const expectedLabel = CITIES.koeln.incidentTypes.find((type) => type.id === 'gehweg')?.label;
@@ -152,7 +156,55 @@ describe('submitVehicleReports', () => {
 		expect(saved[0].incidentTypeLabels).toEqual([expectedLabel]);
 	});
 
-	it('returns an empty result list when there is no vehicle', async () => {
+	it('meldet den Versand als erfolgreich, auch wenn das Schreiben der Historie scheitert', async () => {
+		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const send = vi.fn().mockResolvedValue(true);
+		const form = formWith(
+			[vehicleWith('v1', 'K-AB1234', []), vehicleWith('v2', 'K-CD5678', [])],
+			[]
+		);
+
+		const results = await submitVehicleReports({
+			form,
+			city: CITIES.koeln,
+			mode: 'demo',
+			send,
+			saveHistoryEntry: vi.fn().mockRejectedValue(new Error('QuotaExceededError')),
+			createId: () => 'entry',
+			now: () => 1700000000000
+		});
+
+		expect(results.map((r) => r.ok)).toEqual([true, true]);
+		expect(send).toHaveBeenCalledTimes(2);
+		expect(consoleError).toHaveBeenCalledTimes(2);
+	});
+
+	it('schreibt die Historie direkt nach jedem Versand, vor dem nächsten Fahrzeug', async () => {
+		const calls: string[] = [];
+		const form = formWith(
+			[vehicleWith('v1', 'K-AB1234', []), vehicleWith('v2', 'K-CD5678', [])],
+			[]
+		);
+
+		await submitVehicleReports({
+			form,
+			city: CITIES.koeln,
+			mode: 'demo',
+			send: async (body) => {
+				calls.push(`send:${body.get('vehicleIndex')}`);
+				return true;
+			},
+			saveHistoryEntry: async (entry) => {
+				calls.push(`history:${entry.licensePlate}`);
+			},
+			createId: () => 'entry',
+			now: () => 1700000000000
+		});
+
+		expect(calls).toEqual(['send:1', 'history:K-AB1234', 'send:2', 'history:K-CD5678']);
+	});
+
+	it('liefert eine leere Ergebnisliste ohne Fahrzeug', async () => {
 		const send = vi.fn();
 		const { results, saved } = run(formWith([], []), send);
 

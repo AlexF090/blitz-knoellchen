@@ -1,3 +1,4 @@
+import type { AppMode } from '$lib/appMode.svelte';
 import type { City } from '$lib/config/cities';
 import { resolveVehicleIncidentTypes } from '$lib/email/buildEmailTemplateInput';
 import { buildHistoryEntry } from '$lib/history/buildHistoryEntry';
@@ -11,7 +12,7 @@ import type { VehicleSendResult } from './sendResults';
 export interface SubmitVehicleReportsInput {
 	form: ReportFormData;
 	city: City;
-	mode: string;
+	mode: AppMode;
 	// Netzwerk-, Storage- und Zufallsquellen kommen von außen — analog zu buildHistoryEntry hält
 	// das die Funktion ohne Rendering und ohne Modul-Mocking testbar.
 	send: (body: FormData) => Promise<boolean>;
@@ -22,7 +23,8 @@ export interface SubmitVehicleReportsInput {
 
 /**
  * Sendet jedes Fahrzeug als eigene Anzeige und schreibt jeden Erfolg in die Historie.
- * Liefert pro Fahrzeug ein Ergebnis; ein Fehlschlag bricht die Schleife nicht ab.
+ * Liefert pro Fahrzeug ein Ergebnis; weder ein fehlgeschlagener Versand noch ein Fehler beim
+ * Schreiben der Historie bricht die Schleife ab.
  */
 // Eine E-Mail pro Fahrzeug, weil die Bußgeldstelle pro Vorgang eine erwartet. Sequenziell statt
 // parallel, und die Historie direkt nach jedem Erfolg geschrieben, damit ein Abbruch mitten in
@@ -64,7 +66,11 @@ export const submitVehicleReports = async ({
 			ok
 		});
 
-		if (ok) {
+		if (!ok) continue;
+
+		// Die E-Mail ist bereits raus: Ein Fehler beim Schreiben der Historie darf den Versand nicht
+		// als gescheitert erscheinen lassen, sonst verschickt ein erneuter Klick die Anzeige doppelt.
+		try {
 			await saveHistoryEntry(
 				buildHistoryEntry({
 					id: createId(),
@@ -76,6 +82,8 @@ export const submitVehicleReports = async ({
 					photos: vehiclePhotos
 				})
 			);
+		} catch (error) {
+			console.error('Historien-Eintrag konnte nicht gespeichert werden', error);
 		}
 	}
 
