@@ -35,8 +35,8 @@ export default defineConfig({
 			// Browser ruft nur eigene /api/*-Endpunkte auf. style-src braucht 'unsafe-inline':
 			// dynamische style="..."-Attribute in PullToRefresh.svelte, PhotoLightbox.svelte
 			// (Per-Frame-Transform, nicht hashbar), Wordmark.svelte und app.html. Gilt nur für
-			// HTML-Seiten (SvelteKits Render-Pfad) — X-Frame-Options/COOP für alle Responses
-			// inkl. /api/* liegen in hooks.server.ts.
+			// HTML-Seiten (SvelteKits Render-Pfad) — die übrigen Sicherheits-Header für alle Responses
+			// inkl. /api/* setzt src/lib/server/applySecurityHeaders.ts.
 			csp: {
 				mode: 'auto',
 				directives: {
@@ -140,6 +140,9 @@ export default defineConfig({
 				'src/**/*.d.ts',
 				'src/lib/geocode/geocodeAddress.ts',
 				'src/lib/report/sendResults.ts',
+				// Reine Verdrahtung von applySecurityHeaders (eigene Unit-Tests). Ob die Header wirklich
+				// ankommen, prüft e2e/security-headers.e2e.ts gegen den Production-Build.
+				'src/hooks.server.ts',
 				'src/routes/**/$types.d.ts'
 			],
 			// Provider ist bewusst istanbul, nicht v8. v8 leitet die Coverage aus den Zählern der

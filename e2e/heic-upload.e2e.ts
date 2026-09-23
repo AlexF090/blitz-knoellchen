@@ -23,14 +23,6 @@ test.beforeEach(async ({ page }) => {
 	);
 });
 
-test('liefert die Seite mit Content-Security-Policy aus', async ({ page }) => {
-	const response = await page.goto('/');
-
-	const policy = response?.headers()['content-security-policy'] ?? '';
-	expect(policy).toContain("default-src 'self'");
-	expect(policy).toContain("worker-src 'self' blob:");
-});
-
 // Sichert gegen den Production-Build ab, dass die CSP den Konvertierungs-Worker von heic-to/csp
 // nicht blockiert: Der Worker startet über eine blob:-URL, die nur mit `worker-src blob:` läuft.
 test('konvertiert ein HEIC-Foto ohne CSP-Verstoß', async ({ page }) => {
