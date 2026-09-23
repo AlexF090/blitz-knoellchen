@@ -98,7 +98,7 @@ Client schickt nur `demo` oder `live`, und ein fehlender oder manipulierter Wert
 
 ## Voraussetzungen
 
-- Node.js ≥ 22
+- Node.js ≥ 24 und npm ≥ 11 (Version in [`.nvmrc`](./.nvmrc), mit nvm: `nvm use`)
 - Ein [Brevo](https://brevo.com)-Account (das kostenlose Kontingent reicht zum Ausprobieren)
 - Ein [LocationIQ](https://locationiq.com)-Account (kostenlos, 5.000 Anfragen/Tag)
 

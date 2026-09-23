@@ -6,7 +6,8 @@
 	"version": "1.0.0",
 	"type": "module",
 	"engines": {
-		"node": ">=22"
+		"node": ">=24",
+		"npm": ">=11"
 	},
 	"author": "Alex F",
 	"repository": {

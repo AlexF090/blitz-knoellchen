@@ -24,7 +24,8 @@ export default defineConfig({
 			// Fest @sveltejs/adapter-vercel statt adapter-auto (einziges Deployment-Ziel). runtime
 			// explizit gesetzt, sonst rät adapter-vercel anhand der lokalen (z.B. per nvm neueren,
 			// von Vercel noch nicht unterstützten) Node-Version und bricht den Build sonst ab.
-			adapter: adapter({ runtime: 'nodejs22.x' }),
+			// Version synchron zu .nvmrc und engines.node halten.
+			adapter: adapter({ runtime: 'nodejs24.x' }),
 
 			// CSP über SvelteKits eingebaute Unterstützung statt manuell in hooks.server.ts, damit
 			// SvelteKit das von ihm selbst injizierte Bootstrap-<script> automatisch per Nonce/Hash
