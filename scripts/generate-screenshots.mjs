@@ -5,7 +5,7 @@
 // (s. playwright.config.ts), damit auch der Versand-Screenshot einen echten Durchlauf zeigt,
 // ohne dass eine E-Mail das Haus verlässt.
 import { spawn } from 'node:child_process';
-import { mkdir, rm } from 'node:fs/promises';
+import { mkdir, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, devices } from '@playwright/test';
@@ -13,6 +13,9 @@ import { chromium, devices } from '@playwright/test';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const OUT_DIR = path.join(ROOT, 'docs/screenshots');
+// Die versionierten PNGs werden erst ersetzt, wenn alle Screenshots entstanden sind. Bricht ein
+// Lauf ab, bleiben die bisherigen Bilder unverändert.
+const TEMPORARY_OUT_DIR = `${OUT_DIR}.tmp`;
 // Echtes Foto statt der synthetischen E2E-Fixture (ein blaues Rechteck) — im README soll
 // erkennbar sein, worum es geht. Kennzeichen im Bild überdeckt, Originalmetadaten entfernt;
 // die EXIF-Daten sind nachträglich auf einen Kölner Demo-Ort gesetzt, damit der Auto-Fill im
@@ -46,6 +49,15 @@ const DEMO_DATA = {
 	color: 'Dunkelblau'
 };
 
+const isServerRunning = async (url) => {
+	try {
+		await fetch(url);
+		return true;
+	} catch {
+		return false;
+	}
+};
+
 const waitForServer = async (url, timeoutMs = 180_000) => {
 	const deadline = Date.now() + timeoutMs;
 	while (Date.now() < deadline) {
@@ -66,26 +78,40 @@ const startProcess = (command, args, env) => {
 		stdio: 'inherit',
 		shell: process.platform === 'win32'
 	});
+	// Kein process.exit hier: Das finally in run() soll die übrigen Prozesse noch beenden können.
+	// Startet der Prozess nicht, läuft waitForServer in den Timeout.
 	child.on('error', (error) => {
 		console.error(`Prozess "${command}" fehlgeschlagen:`, error);
-		process.exit(1);
 	});
 	return child;
 };
 
+// Alle gestarteten Hintergrundprozesse. Das finally unten beendet sie auch nach einem Fehler.
+const children = [];
+
 const run = async () => {
-	await rm(OUT_DIR, { recursive: true, force: true });
-	await mkdir(OUT_DIR, { recursive: true });
+	// Ein noch laufender Server aus einem abgebrochenen Lauf würde sonst still antworten, und die
+	// Screenshots entstünden aus einem veralteten Build.
+	for (const port of [APP_PORT, BREVO_MOCK_PORT]) {
+		if (await isServerRunning(`http://localhost:${port}`)) {
+			throw new Error(`Port ${port} ist belegt. Bitte den dort laufenden Prozess beenden.`);
+		}
+	}
+
+	await rm(TEMPORARY_OUT_DIR, { recursive: true, force: true });
+	await mkdir(TEMPORARY_OUT_DIR, { recursive: true });
 
 	const brevoMock = startProcess('node', ['e2e/mocks/brevo-mock-server.mjs'], {
 		BREVO_MOCK_PORT: String(BREVO_MOCK_PORT)
 	});
+	children.push(brevoMock);
 	await waitForServer(`http://localhost:${BREVO_MOCK_PORT}/__mock__/requests?since=0`);
 
 	// Die Empfänger-Adressen MÜSSEN schon beim Build überschrieben werden: sie stammen aus
 	// `$env/static/private` und werden dort fest eingebacken. Ohne das landet die echte Adresse
 	// aus der lokalen .env in der E-Mail-Vorschau — und damit in einem Screenshot im README.
 	const app = startProcess('npm', ['run', 'build'], PLACEHOLDER_ENV);
+	children.push(app);
 	await new Promise((resolve, reject) => {
 		app.on('exit', (code) => (code === 0 ? resolve() : reject(new Error('Build fehlgeschlagen'))));
 	});
@@ -94,9 +120,11 @@ const run = async () => {
 		...PLACEHOLDER_ENV,
 		BREVO_API_URL: `http://localhost:${BREVO_MOCK_PORT}/v3/smtp/email`
 	});
+	children.push(preview);
 	await waitForServer(BASE_URL);
 
 	const browser = await chromium.launch();
+	children.push({ kill: () => void browser.close() });
 	const context = await browser.newContext({ ...devices['Pixel 7'] });
 	const page = await context.newPage();
 
@@ -123,8 +151,12 @@ const run = async () => {
 		} else {
 			await page.evaluate(() => window.scrollTo(0, 0));
 		}
-		await page.waitForTimeout(400); // Ein-/Ausblend-Transitionen ausklingen lassen
-		await page.screenshot({ path: path.join(OUT_DIR, `${name}.png`) });
+		// Svelte-Transitionen und CSS-Transitionen laufen als Web Animations: Erst wenn keine mehr
+		// läuft, zeigt das Bild den Endzustand.
+		await page.waitForFunction(() =>
+			document.getAnimations().every((animation) => animation.playState !== 'running')
+		);
+		await page.screenshot({ path: path.join(TEMPORARY_OUT_DIR, `${name}.png`) });
 		console.log(`✓ ${name}.png`);
 	};
 
@@ -155,6 +187,9 @@ const run = async () => {
 	await shot('02-vorgang-ausgefuellt', page.getByRole('heading', { name: 'Beweisfotos' }));
 
 	await page.getByRole('button', { name: 'Vorschau' }).first().click();
+	// Der eigentliche Schutz vor dem Adress-Leak: Zeigt die Vorschau nicht die Platzhalter-Adresse,
+	// bricht das Skript hier ab, statt eine echte Adresse abzufotografieren.
+	await page.getByText(PLACEHOLDER_ENV.RECIPIENT_EMAIL_DEMO).first().waitFor({ timeout: 5000 });
 	await shot('03-email-vorschau');
 	await page.getByRole('button', { name: 'Schließen' }).click();
 
@@ -166,13 +201,17 @@ const run = async () => {
 	await page.waitForURL('**/historie');
 	await shot('05-historie');
 
-	await browser.close();
-	preview.kill();
-	brevoMock.kill();
+	await rm(OUT_DIR, { recursive: true, force: true });
+	await rename(TEMPORARY_OUT_DIR, OUT_DIR);
 	console.log(`\nScreenshots liegen in ${path.relative(ROOT, OUT_DIR)}/`);
 };
 
-run().catch((error) => {
+try {
+	await run();
+} catch (error) {
 	console.error(error);
-	process.exit(1);
-});
+	process.exitCode = 1;
+} finally {
+	for (const child of children) child.kill();
+	await rm(TEMPORARY_OUT_DIR, { recursive: true, force: true });
+}
