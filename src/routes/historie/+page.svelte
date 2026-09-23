@@ -1,4 +1,8 @@
 <script lang="ts">
+	/**
+	 * Historie der bereits versendeten Anzeigen — alles aus der lokalen IndexedDB, mit Lightbox
+	 * für die Beweisfotos und Löschfunktion je Eintrag bzw. für die gesamte Liste.
+	 */
 	import { onDestroy, onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -41,6 +45,7 @@
 		}
 	});
 
+	/** Das aktuell in der Lightbox angezeigte Foto samt beschreibendem Alternativtext. */
 	const lightboxPhoto = $derived.by((): LightboxPhoto | null => {
 		const target = lightboxTarget;
 		if (!target) return null;
@@ -56,16 +61,19 @@
 		};
 	});
 
+	/** Gibt die Object-URLs eines Eintrags frei, sobald er aus der Liste verschwindet. */
 	const revokeEntryUrls = (entryId: string) => {
 		for (const url of objectUrlsByEntry.get(entryId) ?? []) URL.revokeObjectURL(url);
 		objectUrlsByEntry.delete(entryId);
 	};
 
+	/** Öffnet die Rückfrage vor dem Löschen eines einzelnen Eintrags. */
 	const openEntryDialog = (entry: HistoryEntry) => {
 		entryToDelete = entry;
 		entryDialog?.showModal();
 	};
 
+	/** Löscht den bestätigten Eintrag aus Datenbank und Liste. */
 	const confirmDeleteEntry = async () => {
 		const entry = entryToDelete;
 		if (!entry) return;
@@ -76,6 +84,7 @@
 		entryDialog?.close();
 	};
 
+	/** Leert die gesamte Historie. */
 	const confirmDeleteAll = async () => {
 		await clearEntries();
 		for (const entryId of [...objectUrlsByEntry.keys()]) revokeEntryUrls(entryId);
@@ -143,7 +152,14 @@
 								aria-label="Beweisfoto {index + 1} von {entry.thumbnails.length} vergrößern"
 								class="block aspect-square overflow-hidden rounded-control border border-border"
 							>
-								<img src={url} alt="" class="size-full object-cover" />
+								<img
+									src={url}
+									alt=""
+									width="96"
+									height="96"
+									loading="lazy"
+									class="size-full object-cover"
+								/>
 							</button>
 						{/each}
 					</div>
