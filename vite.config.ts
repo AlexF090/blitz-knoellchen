@@ -135,6 +135,7 @@ export default defineConfig({
 			include: ['src/**/*.{ts,svelte}'],
 			exclude: [
 				'src/**/*.{test,spec}.{ts,js}',
+				'src/vitest-browser-setup.ts',
 				'src/**/*.d.ts',
 				'src/lib/geocode/geocodeAddress.ts',
 				'src/lib/report/sendResults.ts',
@@ -240,10 +241,16 @@ export default defineConfig({
 					browser: {
 						enabled: true,
 						provider: playwright(),
-						instances: [{ browser: 'chromium', headless: true }]
+						instances: [{ browser: 'chromium', headless: true }],
+						// Ab Vitest 5 matchen Text-Locator ohne Option exakt, obwohl der Typ-Kommentar
+						// weiterhin `@default false` nennt. Die Tests suchen Pflichtfelder bewusst über
+						// den sichtbaren Labeltext ohne Pflicht-Sternchen (getByLabelText('Uhrzeit')
+						// für "Uhrzeit *") — deshalb Teilstring-Matching wie bis Vitest 4 global setzen.
+						locators: { exact: false }
 					},
 					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
-					exclude: ['src/lib/server/**']
+					exclude: ['src/lib/server/**'],
+					setupFiles: ['./src/vitest-browser-setup.ts']
 				}
 			},
 

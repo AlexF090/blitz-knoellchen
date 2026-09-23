@@ -73,8 +73,8 @@ const expectedEmail = (vehicle: VehicleEntry, index = 0, total = 1) =>
 
 // Der Dialog rendert seinen Inhalt zwar immer, ein geschlossenes <dialog> ist für die
 // Sichtbarkeitsprüfungen der Locator-API aber nicht vorhanden — daher vor jeder Assertion öffnen.
-const renderOpened = (props: Record<string, unknown>) => {
-	const screen = render(VehiclePreviewDialog, props);
+const renderOpened = async (props: Record<string, unknown>) => {
+	const screen = await render(VehiclePreviewDialog, props);
 	const dialog = screen.container.querySelector('dialog') as HTMLDialogElement;
 	dialog.showModal();
 	return dialog;
@@ -82,7 +82,7 @@ const renderOpened = (props: Record<string, unknown>) => {
 
 describe('VehiclePreviewDialog', () => {
 	it('zeigt die Mängelliste statt der Vorschau, solange Pflichtfelder fehlen', async () => {
-		renderOpened({
+		await renderOpened({
 			...baseProps(),
 			vehicle: createEmptyVehicle('vehicle-1'),
 			missingFieldMessages: ['Kennzeichen fehlt', 'Fahrzeugart fehlt']
@@ -98,7 +98,7 @@ describe('VehiclePreviewDialog', () => {
 
 	it('rendert Empfänger, Betreff und Nachricht der E-Mail bei vollständigen Angaben', async () => {
 		const vehicle = makeCompleteVehicle();
-		const dialog = renderOpened({ ...baseProps(), vehicle });
+		const dialog = await renderOpened({ ...baseProps(), vehicle });
 
 		const email = expectedEmail(vehicle);
 		await expect.element(page.getByText('buergeramt@koeln.de')).toBeInTheDocument();
@@ -107,15 +107,15 @@ describe('VehiclePreviewDialog', () => {
 	});
 
 	it('nennt die eigene E-Mail-Adresse in Klammern in der Kopie-Zeile', async () => {
-		renderOpened({ ...baseProps(), vehicle: makeCompleteVehicle() });
+		await renderOpened({ ...baseProps(), vehicle: makeCompleteVehicle() });
 
 		await expect
 			.element(page.getByText(/Eine Kopie geht zusätzlich an deine eigene Adresse/))
-			.toHaveTextContent('(erika@example.com)');
+			.toMatchTextContent('(erika@example.com)');
 	});
 
 	it('lässt die Klammer in der Kopie-Zeile weg, wenn das Profil keine E-Mail-Adresse hat', async () => {
-		renderOpened({
+		await renderOpened({
 			...baseProps(),
 			profile: { ...profile, email: '' },
 			vehicle: makeCompleteVehicle()
@@ -123,17 +123,17 @@ describe('VehiclePreviewDialog', () => {
 
 		await expect
 			.element(page.getByText(/Eine Kopie geht zusätzlich an deine eigene Adresse/))
-			.not.toHaveTextContent('(');
+			.not.toMatchTextContent('(');
 	});
 
 	it('zeigt bei einem einzelnen Fahrzeug den Titel "Vorschau"', async () => {
-		renderOpened({ ...baseProps(), vehicle: makeCompleteVehicle() });
+		await renderOpened({ ...baseProps(), vehicle: makeCompleteVehicle() });
 
 		await expect.element(page.getByRole('dialog', { name: 'Vorschau' })).toBeInTheDocument();
 	});
 
 	it('nennt bei mehreren Fahrzeugen die Position im Titel', async () => {
-		renderOpened({ ...baseProps(), vehicle: makeCompleteVehicle(), index: 1, total: 3 });
+		await renderOpened({ ...baseProps(), vehicle: makeCompleteVehicle(), index: 1, total: 3 });
 
 		await expect
 			.element(page.getByRole('dialog', { name: 'Vorschau: Fahrzeug 2 von 3' }))
@@ -141,7 +141,7 @@ describe('VehiclePreviewDialog', () => {
 	});
 
 	it('zeigt die Anhang-Vorschau nur für die dem Fahrzeug zugeordneten Fotos', async () => {
-		renderOpened({
+		await renderOpened({
 			...baseProps(),
 			pool: [makePhoto('photo-1'), makePhoto('photo-2')],
 			vehicle: makeCompleteVehicle({ photoIds: ['photo-1'] })
@@ -153,7 +153,7 @@ describe('VehiclePreviewDialog', () => {
 	});
 
 	it('zeigt keine Anhang-Vorschau, wenn dem Fahrzeug kein Foto zugeordnet ist', async () => {
-		renderOpened({
+		await renderOpened({
 			...baseProps(),
 			vehicle: makeCompleteVehicle({ photoIds: [] })
 		});
@@ -162,7 +162,7 @@ describe('VehiclePreviewDialog', () => {
 	});
 
 	it('schließt den Dialog über den Schließen-Button', async () => {
-		const dialog = renderOpened({ ...baseProps(), vehicle: makeCompleteVehicle() });
+		const dialog = await renderOpened({ ...baseProps(), vehicle: makeCompleteVehicle() });
 
 		await userEvent.click(page.getByRole('button', { name: 'Schließen' }));
 

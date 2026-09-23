@@ -78,7 +78,7 @@ describe('VehicleBlock', () => {
 		const pool = [makePhoto('p1'), makePhoto('p2'), makePhoto('p3')];
 		const onPhotoToggled = vi.fn();
 
-		render(VehicleBlock, {
+		await render(VehicleBlock, {
 			...baseProps(),
 			vehicle,
 			pool,
@@ -109,7 +109,7 @@ describe('VehicleBlock', () => {
 		const pool = [makePhoto('p1')];
 		const onPhotoToggled = vi.fn();
 
-		render(VehicleBlock, { ...baseProps(), vehicle, pool, maxPhotos: 2, onPhotoToggled });
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool, maxPhotos: 2, onPhotoToggled });
 
 		const button1 = page.getByRole('button', { name: 'Foto p1.jpg auswählen' });
 		await userEvent.click(button1);
@@ -123,7 +123,7 @@ describe('VehicleBlock', () => {
 
 	it('schreibt das Kennzeichen beim Tippen automatisch groß und erhält die Cursorposition', async () => {
 		const vehicle = $state(makeCompleteVehicle({ licensePlate: '' }));
-		render(VehicleBlock, { ...baseProps(), vehicle });
+		await render(VehicleBlock, { ...baseProps(), vehicle });
 
 		const input = document.getElementById('licensePlate-vehicle-1') as HTMLInputElement;
 		input.focus();
@@ -139,7 +139,7 @@ describe('VehicleBlock', () => {
 
 	it('normalisiert das Kennzeichen beim Verlassen des Feldes', async () => {
 		const vehicle = $state(makeCompleteVehicle({ licensePlate: 'K AB 1234' }));
-		render(VehicleBlock, { ...baseProps(), vehicle });
+		await render(VehicleBlock, { ...baseProps(), vehicle });
 
 		const input = document.getElementById('licensePlate-vehicle-1') as HTMLInputElement;
 		input.focus();
@@ -150,7 +150,7 @@ describe('VehicleBlock', () => {
 
 	it('leert endTime beim Wechsel von Parkverstoß zu Halteverstoß', async () => {
 		const vehicle = $state(makeCompleteVehicle({ timeMode: 'parkverstoss', endTime: '10:30' }));
-		render(VehicleBlock, { ...baseProps(), vehicle });
+		await render(VehicleBlock, { ...baseProps(), vehicle });
 
 		const halteverstossOption = page.getByRole('radio', { name: 'Halteverstoß (Einzelzeitpunkt)' });
 		await userEvent.click(halteverstossOption);
@@ -161,7 +161,7 @@ describe('VehicleBlock', () => {
 
 	it('zeigt bei Parkverstoß zusätzlich das Bis-Feld und den Mindestparkzeit-Hinweis', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		render(VehicleBlock, { ...baseProps(), vehicle });
+		await render(VehicleBlock, { ...baseProps(), vehicle });
 
 		const parkverstossOption = page.getByRole('radio', {
 			name: 'Parkverstoß (Zeitraum, mind. 4 Min.)'
@@ -179,7 +179,7 @@ describe('VehicleBlock', () => {
 
 	it('zeigt die per buildEmailBody generierte Vorschau bei vollständigen Angaben', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		render(VehicleBlock, { ...baseProps(), vehicle });
+		await render(VehicleBlock, { ...baseProps(), vehicle });
 
 		const previewButton = page.getByRole('button', { name: 'Vorschau' });
 		await expect.element(previewButton).not.toBeDisabled();
@@ -202,7 +202,7 @@ describe('VehicleBlock', () => {
 
 	it('deaktiviert die Vorschau, solange Pflichtfelder fehlen', async () => {
 		const vehicle = $state(createEmptyVehicle('v-incomplete'));
-		render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });
 
 		const previewButton = page.getByRole('button', { name: 'Vorschau' });
 		await expect.element(previewButton).toBeDisabled();
@@ -211,7 +211,7 @@ describe('VehicleBlock', () => {
 	it('setzt das Fahrzeug per Reset-Dialog zurück, wenn es das einzige ist', async () => {
 		const vehicle = $state(makeCompleteVehicle());
 		const onReset = vi.fn();
-		render(VehicleBlock, { ...baseProps(), vehicle, total: 1, onReset });
+		await render(VehicleBlock, { ...baseProps(), vehicle, total: 1, onReset });
 
 		const resetButton = page.getByRole('button', { name: 'Vorfall zurücksetzen' });
 		await userEvent.click(resetButton);
@@ -225,7 +225,7 @@ describe('VehicleBlock', () => {
 	it('entfernt das Fahrzeug per Reset-Dialog, wenn weitere Fahrzeuge existieren', async () => {
 		const vehicle = $state(makeCompleteVehicle());
 		const onRemove = vi.fn();
-		render(VehicleBlock, { ...baseProps(), vehicle, total: 2, onRemove });
+		await render(VehicleBlock, { ...baseProps(), vehicle, total: 2, onRemove });
 
 		const removeButton = page.getByRole('button', { name: 'Vorfall entfernen' });
 		await userEvent.click(removeButton);
@@ -239,7 +239,7 @@ describe('VehicleBlock', () => {
 	it('bricht den Reset-Dialog per Abbrechen ohne Callback-Aufruf ab', async () => {
 		const vehicle = $state(makeCompleteVehicle());
 		const onReset = vi.fn();
-		render(VehicleBlock, { ...baseProps(), vehicle, total: 1, onReset });
+		await render(VehicleBlock, { ...baseProps(), vehicle, total: 1, onReset });
 
 		await userEvent.click(page.getByRole('button', { name: 'Vorfall zurücksetzen' }));
 		await userEvent.click(page.getByRole('button', { name: 'Abbrechen' }));
@@ -249,7 +249,7 @@ describe('VehicleBlock', () => {
 
 	it('klappt bei vollständigen Angaben ein und öffnet sich automatisch wieder, wenn Angaben fehlen', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		render(VehicleBlock, { ...baseProps(), vehicle });
+		await render(VehicleBlock, { ...baseProps(), vehicle });
 
 		const finishButton = page.getByRole('button', { name: 'Fertig' });
 		await userEvent.click(finishButton);
@@ -267,7 +267,7 @@ describe('VehicleBlock', () => {
 
 	it('zeigt fehlende Pflichtfelder als Hinweisliste, solange die Karte offen und unvollständig ist', async () => {
 		const vehicle = $state(createEmptyVehicle('v-missing'));
-		render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });
 
 		const status = page.getByRole('status');
 		await expect
@@ -278,7 +278,7 @@ describe('VehicleBlock', () => {
 
 	it('verhindert das Einklappen per Fertig-Button, solange Angaben fehlen', async () => {
 		const vehicle = $state(createEmptyVehicle('v-missing-2'));
-		render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });
 
 		const finishButton = page.getByRole('button', { name: 'Fertig' });
 		await expect.element(finishButton).toBeDisabled();
@@ -286,7 +286,7 @@ describe('VehicleBlock', () => {
 
 	it('zeigt eine Fehlermeldung „Angaben unvollständig“ im eingeklappten Zustand bei vorhandenen errors', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		render(VehicleBlock, {
+		await render(VehicleBlock, {
 			...baseProps(),
 			vehicle,
 			errors: { licensePlate: 'ungültig' }
@@ -299,7 +299,7 @@ describe('VehicleBlock', () => {
 
 	it('zeigt Feldfehler aus dem errors-Prop an', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		render(VehicleBlock, {
+		await render(VehicleBlock, {
 			...baseProps(),
 			vehicle,
 			errors: { licensePlate: 'Kennzeichen wirkt ungültig.' }
@@ -310,7 +310,7 @@ describe('VehicleBlock', () => {
 
 	it('zeigt einen geocodeWarning-Hinweis, wenn gesetzt', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		render(VehicleBlock, {
+		await render(VehicleBlock, {
 			...baseProps(),
 			vehicle,
 			geocodeWarning: 'Adresse konnte nicht ermittelt werden.'
@@ -323,14 +323,14 @@ describe('VehicleBlock', () => {
 
 	it('zeigt einen Hinweis, wenn der Foto-Pool leer ist', async () => {
 		const vehicle = $state(createEmptyVehicle('v-empty-pool'));
-		render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });
 
 		await expect.element(page.getByText('Zuerst oben ein Foto hinzufügen.')).toBeInTheDocument();
 	});
 
 	it('schaltet Verstoßarten per Checkbox um', async () => {
 		const vehicle = $state(makeCompleteVehicle({ incidentTypeIds: [] }));
-		render(VehicleBlock, { ...baseProps(), vehicle });
+		await render(VehicleBlock, { ...baseProps(), vehicle });
 
 		const checkbox = page.getByRole('checkbox', { name: 'Parken im Halteverbot' });
 		await userEvent.click(checkbox);
@@ -342,17 +342,17 @@ describe('VehicleBlock', () => {
 
 	it('zeigt den Titel "Vorfall N" bei mehreren Fahrzeugen und "Vorfall" bei einem einzelnen', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		const { unmount } = render(VehicleBlock, { ...baseProps(), vehicle, total: 1 });
+		const { unmount } = await render(VehicleBlock, { ...baseProps(), vehicle, total: 1 });
 		await expect.element(page.getByRole('heading', { name: 'Vorfall' })).toBeInTheDocument();
-		unmount();
+		await unmount();
 
-		render(VehicleBlock, { ...baseProps(), vehicle, total: 2, index: 1 });
+		await render(VehicleBlock, { ...baseProps(), vehicle, total: 2, index: 1 });
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 	});
 
 	it('schließt die Karte per Enter-Taste in einem Feld, sofern vollständig', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		render(VehicleBlock, { ...baseProps(), vehicle });
+		await render(VehicleBlock, { ...baseProps(), vehicle });
 
 		const notesField = document.getElementById(`notes-${vehicle.id}`) as HTMLTextAreaElement;
 		notesField.focus();
@@ -363,7 +363,7 @@ describe('VehicleBlock', () => {
 
 	it('lässt die Karte bei Enter-Taste in einem Feld offen, solange Angaben fehlen', async () => {
 		const vehicle = $state(createEmptyVehicle('vehicle-incomplete-enter'));
-		render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });
 
 		const notesField = document.getElementById(`notes-${vehicle.id}`) as HTMLTextAreaElement;
 		notesField.focus();
@@ -375,7 +375,7 @@ describe('VehicleBlock', () => {
 
 	it('schließt den Vorschau-Dialog über den Schließen-Button', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		render(VehicleBlock, { ...baseProps(), vehicle });
+		await render(VehicleBlock, { ...baseProps(), vehicle });
 
 		await userEvent.click(page.getByRole('button', { name: 'Vorschau' }));
 		const previewDialog = document
@@ -389,7 +389,7 @@ describe('VehicleBlock', () => {
 
 	it('zeigt einen Fehler zur Foto-Auswahl aus dem errors-Prop an', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		render(VehicleBlock, {
+		await render(VehicleBlock, {
 			...baseProps(),
 			vehicle,
 			errors: { photoIds: 'Bitte mindestens ein Foto für dieses Fahrzeug auswählen.' }
@@ -402,7 +402,7 @@ describe('VehicleBlock', () => {
 
 	it('zeigt einen Fehler zur Verstoßart aus dem errors-Prop an', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		render(VehicleBlock, {
+		await render(VehicleBlock, {
 			...baseProps(),
 			vehicle,
 			errors: { incidentTypeIds: 'Mindestens eine Verstoßart ist erforderlich.' }
@@ -434,7 +434,7 @@ describe('VehicleBlock', () => {
 				locationCity: ''
 			})
 		);
-		render(VehicleBlock, { ...baseProps(), vehicle });
+		await render(VehicleBlock, { ...baseProps(), vehicle });
 
 		const streetInput = page.getByRole('combobox', { name: 'Straße' });
 		await userEvent.fill(streetInput, 'Domklo');
@@ -451,7 +451,7 @@ describe('VehicleBlock', () => {
 
 	it('öffnet die Karte über den Bearbeiten-Button wieder', async () => {
 		const vehicle = $state(makeCompleteVehicle());
-		render(VehicleBlock, { ...baseProps(), vehicle });
+		await render(VehicleBlock, { ...baseProps(), vehicle });
 
 		await userEvent.click(page.getByRole('button', { name: 'Fertig' }));
 		await expect.element(page.getByRole('button', { name: 'Bearbeiten' })).toBeInTheDocument();

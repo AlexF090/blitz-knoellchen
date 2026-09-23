@@ -5,7 +5,7 @@ import SegmentedControl from './SegmentedControl.svelte';
 
 describe('SegmentedControl', () => {
 	it('markiert die Option als checked, deren Value dem aktuellen Value entspricht', async () => {
-		render(SegmentedControl, {
+		await render(SegmentedControl, {
 			name: 'mode',
 			value: 'b',
 			options: [
@@ -21,7 +21,7 @@ describe('SegmentedControl', () => {
 
 	it('ruft onChange mit dem korrekten Value beim Klick auf eine Option auf', async () => {
 		const onChange = vi.fn();
-		render(SegmentedControl, {
+		await render(SegmentedControl, {
 			name: 'mode',
 			value: 'a',
 			options: [
@@ -40,7 +40,7 @@ describe('SegmentedControl', () => {
 		// label ist laut Typ ein Pflichtfeld; Svelte kompiliert den Text-Node dennoch mit einem
 		// `?? ''`-Fallback. Nur ein zur Laufzeit fehlendes label (hier bewusst per null erzwungen)
 		// deckt diesen Fallback-Zweig ab.
-		const { container } = render(SegmentedControl, {
+		const { container } = await render(SegmentedControl, {
 			name: 'mode',
 			value: 'a',
 			options: [{ value: 'a', label: null as unknown as string, ariaLabel: 'Option A' }],

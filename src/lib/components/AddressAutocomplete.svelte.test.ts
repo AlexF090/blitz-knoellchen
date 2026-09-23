@@ -36,7 +36,7 @@ describe('AddressAutocomplete', () => {
 	it('öffnet die Vorschlagsliste nach Eingabe und wartet den Debounce ab', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
-		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+		await render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
 		const input = page.getByRole('combobox', { name: 'Adresse' });
 		await userEvent.fill(input, 'Domklo');
@@ -50,7 +50,7 @@ describe('AddressAutocomplete', () => {
 	it('navigiert mit den Pfeiltasten und aktualisiert aria-activedescendant', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
-		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+		await render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
 		const input = page.getByRole('combobox', { name: 'Adresse' });
 		await userEvent.fill(input, 'Domklo');
@@ -71,7 +71,7 @@ describe('AddressAutocomplete', () => {
 	it('wählt mit Enter den aktiven Vorschlag aus und ruft onSelect korrekt auf', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
-		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+		await render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
 		const input = page.getByRole('combobox', { name: 'Adresse' });
 		await userEvent.fill(input, 'Domklo');
@@ -89,7 +89,7 @@ describe('AddressAutocomplete', () => {
 	it('ignoriert Enter ohne aktiven Vorschlag', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
-		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+		await render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
 		const input = page.getByRole('combobox', { name: 'Adresse' });
 		await userEvent.fill(input, 'Domklo');
@@ -105,7 +105,7 @@ describe('AddressAutocomplete', () => {
 	it('schließt die Liste mit Escape', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
-		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+		await render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
 		const input = page.getByRole('combobox', { name: 'Adresse' });
 		await userEvent.fill(input, 'Domklo');
@@ -125,7 +125,13 @@ describe('AddressAutocomplete', () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
 		const onBlur = vi.fn();
-		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect, onBlur });
+		await render(AddressAutocomplete, {
+			id: 'addr',
+			value: '',
+			label: 'Adresse',
+			onSelect,
+			onBlur
+		});
 
 		const input = page.getByRole('combobox', { name: 'Adresse' });
 		await userEvent.fill(input, 'Domklo');
@@ -141,7 +147,7 @@ describe('AddressAutocomplete', () => {
 
 	it('ignoriert Tastaturnavigation, solange die Liste geschlossen ist', async () => {
 		const onSelect = vi.fn();
-		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+		await render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
 		const input = page.getByRole('combobox', { name: 'Adresse' });
 		await userEvent.click(input);
@@ -155,7 +161,7 @@ describe('AddressAutocomplete', () => {
 	it('ignoriert andere Tasten, während die Liste geöffnet ist', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
-		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+		await render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
 		const input = page.getByRole('combobox', { name: 'Adresse' });
 		await userEvent.fill(input, 'Domklo');
@@ -171,7 +177,7 @@ describe('AddressAutocomplete', () => {
 
 	it('zeigt eine Fehlermeldung an, wenn das error-Prop gesetzt ist', async () => {
 		const onSelect = vi.fn();
-		render(AddressAutocomplete, {
+		await render(AddressAutocomplete, {
 			id: 'addr',
 			value: '',
 			label: 'Adresse',
@@ -188,7 +194,7 @@ describe('AddressAutocomplete', () => {
 	it('zeigt eine Fehlermeldung, wenn die Adresssuche fehlschlägt', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions: [], failed: true });
 		const onSelect = vi.fn();
-		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+		await render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
 		const input = page.getByRole('combobox', { name: 'Adresse' });
 		await userEvent.fill(input, 'Domklo');
@@ -200,7 +206,7 @@ describe('AddressAutocomplete', () => {
 
 	it('zeigt keine Fehlermeldung, wenn die Query nur zu kurz ist (keine echten Treffer)', async () => {
 		const onSelect = vi.fn();
-		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+		await render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
 		const input = page.getByRole('combobox', { name: 'Adresse' });
 		await userEvent.fill(input, 'Do');
@@ -213,7 +219,7 @@ describe('AddressAutocomplete', () => {
 	it('ein Klick innerhalb des Containers (ohne Fokuswechsel) schließt die Liste nicht', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
-		const { container } = render(AddressAutocomplete, {
+		const { container } = await render(AddressAutocomplete, {
 			id: 'addr',
 			value: '',
 			label: 'Adresse',
@@ -238,7 +244,7 @@ describe('AddressAutocomplete', () => {
 	it('ein Klick außerhalb des Containers (ohne Fokuswechsel) schließt die Liste', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
-		const { container } = render(AddressAutocomplete, {
+		const { container } = await render(AddressAutocomplete, {
 			id: 'addr',
 			value: '',
 			label: 'Adresse',
@@ -263,7 +269,7 @@ describe('AddressAutocomplete', () => {
 	it('wählt einen Vorschlag per Klick aus und schließt die Liste', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({ suggestions, failed: false });
 		const onSelect = vi.fn();
-		render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
+		await render(AddressAutocomplete, { id: 'addr', value: '', label: 'Adresse', onSelect });
 
 		const input = page.getByRole('combobox', { name: 'Adresse' });
 		await userEvent.fill(input, 'Domklo');

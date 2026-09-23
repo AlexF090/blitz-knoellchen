@@ -16,7 +16,7 @@ const items: AccordionItem[] = [
 
 describe('Accordion', () => {
 	it('öffnet eine Frage und schließt die zuvor geöffnete automatisch', async () => {
-		render(Accordion, { items });
+		await render(Accordion, { items });
 
 		const buttonA = page.getByRole('button', { name: 'Frage A' });
 		const buttonB = page.getByRole('button', { name: 'Frage B' });
@@ -35,7 +35,7 @@ describe('Accordion', () => {
 	});
 
 	it('schließt eine offene Frage erneut beim Klick auf dieselbe Frage', async () => {
-		render(Accordion, { items });
+		await render(Accordion, { items });
 		const buttonA = page.getByRole('button', { name: 'Frage A' });
 
 		await userEvent.click(buttonA);
@@ -46,7 +46,7 @@ describe('Accordion', () => {
 	});
 
 	it('rendert nichts bei leerem items-Array', async () => {
-		const { container } = render(Accordion, { items: [] });
+		const { container } = await render(Accordion, { items: [] });
 
 		expect(container.querySelectorAll('button')).toHaveLength(0);
 	});
@@ -60,7 +60,7 @@ describe('Accordion', () => {
 			{ id: undefined, question: undefined, answer: textSnippet('Antwort ohne ID') }
 		] as unknown as AccordionItem[];
 
-		const { container } = render(Accordion, { items: itemsWithMissingFields });
+		const { container } = await render(Accordion, { items: itemsWithMissingFields });
 		const button = container.querySelector('button') as HTMLButtonElement;
 
 		expect(button.id).toBe('-button');

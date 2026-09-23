@@ -17,7 +17,7 @@ const makeVehicle = (id: string, overrides: Partial<VehicleEntry> = {}): Vehicle
 describe('VehicleDetailsFieldset', () => {
 	it('schreibt das Kennzeichen beim Tippen groß und erhält die Cursorposition', async () => {
 		const vehicle = makeVehicle('v-1');
-		render(VehicleDetailsFieldset, { vehicle });
+		await render(VehicleDetailsFieldset, { vehicle });
 
 		const input = document.getElementById('licensePlate-v-1') as HTMLInputElement;
 		input.focus();
@@ -33,7 +33,7 @@ describe('VehicleDetailsFieldset', () => {
 
 	it('normalisiert das Kennzeichen beim Verlassen des Feldes ins kanonische Format', async () => {
 		const vehicle = makeVehicle('v-2', { licensePlate: 'K AB 1234' });
-		render(VehicleDetailsFieldset, { vehicle });
+		await render(VehicleDetailsFieldset, { vehicle });
 
 		const input = document.getElementById('licensePlate-v-2') as HTMLInputElement;
 		input.focus();
@@ -44,7 +44,7 @@ describe('VehicleDetailsFieldset', () => {
 
 	it('bietet alle Fahrzeugarten aus VEHICLE_TYPES zur Auswahl an', async () => {
 		const vehicle = makeVehicle('v-3');
-		render(VehicleDetailsFieldset, { vehicle });
+		await render(VehicleDetailsFieldset, { vehicle });
 
 		const select = document.getElementById('vehicleType-v-3') as HTMLSelectElement;
 		const values = Array.from(select.options).map((option) => option.value);
@@ -55,7 +55,7 @@ describe('VehicleDetailsFieldset', () => {
 	});
 
 	it('bietet alle Marken aus VEHICLE_MAKES als Datalist-Vorschläge an', async () => {
-		render(VehicleDetailsFieldset, { vehicle: makeVehicle('v-4') });
+		await render(VehicleDetailsFieldset, { vehicle: makeVehicle('v-4') });
 
 		const datalist = document.getElementById('vehicle-makes-v-4') as HTMLDataListElement;
 		const values = Array.from(datalist.options).map((option) => option.value);
@@ -64,7 +64,7 @@ describe('VehicleDetailsFieldset', () => {
 
 	it('übernimmt Länderkennzeichen, Marke und Farbe in das Fahrzeug', async () => {
 		const vehicle = makeVehicle('v-5');
-		render(VehicleDetailsFieldset, { vehicle });
+		await render(VehicleDetailsFieldset, { vehicle });
 
 		await userEvent.fill(page.getByLabelText('Länderkennz.'), 'NL');
 		await userEvent.fill(page.getByLabelText('Marke'), 'VW');
@@ -74,7 +74,7 @@ describe('VehicleDetailsFieldset', () => {
 	});
 
 	it('zeigt Feldfehler aus dem errors-Prop an', async () => {
-		render(VehicleDetailsFieldset, {
+		await render(VehicleDetailsFieldset, {
 			vehicle: makeVehicle('v-6'),
 			errors: {
 				licensePlate: 'Bitte Kennzeichen angeben.',

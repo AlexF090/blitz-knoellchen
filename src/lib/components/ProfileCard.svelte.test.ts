@@ -38,7 +38,7 @@ const makeFilledForm = (overrides: Partial<ReportFormData> = {}): ReportFormData
 
 describe('ProfileCard', () => {
 	it('zeigt im Lese-Modus Name, Adresse und E-Mail-Adresse an', async () => {
-		render(ProfileCard, {
+		await render(ProfileCard, {
 			form: makeFilledForm(),
 			errors: {} as FormErrors,
 			isEditing: false,
@@ -52,7 +52,7 @@ describe('ProfileCard', () => {
 	});
 
 	it('zeigt die optionale Telefonnummer im Lese-Modus nur, wenn sie gesetzt ist', async () => {
-		const withoutPhone = render(ProfileCard, {
+		const withoutPhone = await render(ProfileCard, {
 			form: makeFilledForm(),
 			errors: {} as FormErrors,
 			isEditing: false,
@@ -60,9 +60,9 @@ describe('ProfileCard', () => {
 		});
 
 		await expect.element(page.getByText('0221 12345678')).not.toBeInTheDocument();
-		withoutPhone.unmount();
+		await withoutPhone.unmount();
 
-		render(ProfileCard, {
+		await render(ProfileCard, {
 			form: makeFilledForm({ phone: '0221 12345678' }),
 			errors: {} as FormErrors,
 			isEditing: false,
@@ -74,7 +74,7 @@ describe('ProfileCard', () => {
 
 	it('übernimmt nachträglich geänderte Profildaten in die Lese-Ansicht', async () => {
 		const form = makeFilledForm();
-		render(ProfileCard, {
+		await render(ProfileCard, {
 			form,
 			errors: {} as FormErrors,
 			isEditing: false,
@@ -89,7 +89,7 @@ describe('ProfileCard', () => {
 	});
 
 	it('schaltet über "Bearbeiten" in den Bearbeiten-Modus', async () => {
-		render(ProfileCard, {
+		await render(ProfileCard, {
 			form: makeFilledForm(),
 			errors: {} as FormErrors,
 			isEditing: false,
@@ -105,7 +105,7 @@ describe('ProfileCard', () => {
 	it('setzt Fehler und bleibt im Bearbeiten-Modus, wenn beim Speichern Pflichtfelder fehlen', async () => {
 		const errors = $state({} as FormErrors);
 		const onPersist = vi.fn();
-		render(ProfileCard, {
+		await render(ProfileCard, {
 			form: makeEmptyForm(),
 			errors,
 			isEditing: true,
@@ -122,7 +122,7 @@ describe('ProfileCard', () => {
 	it('ruft onPersist auf und wechselt in den Lese-Modus, wenn alle Pflichtfelder ausgefüllt sind', async () => {
 		const form = makeEmptyForm();
 		const onPersist = vi.fn().mockResolvedValue(undefined);
-		render(ProfileCard, {
+		await render(ProfileCard, {
 			form,
 			errors: {} as FormErrors,
 			isEditing: true,
@@ -154,7 +154,7 @@ describe('ProfileCard', () => {
 
 	it('ruft onPersist beim Verlassen eines Feldes auf', async () => {
 		const onPersist = vi.fn().mockResolvedValue(undefined);
-		render(ProfileCard, {
+		await render(ProfileCard, {
 			form: makeFilledForm(),
 			errors: {} as FormErrors,
 			isEditing: true,
@@ -170,7 +170,7 @@ describe('ProfileCard', () => {
 
 	it('speichert das Profil per Enter-Taste, statt das umgebende Formular abzuschicken', async () => {
 		const onPersist = vi.fn().mockResolvedValue(undefined);
-		render(ProfileCard, {
+		await render(ProfileCard, {
 			form: makeFilledForm(),
 			errors: {} as FormErrors,
 			isEditing: true,
@@ -199,7 +199,7 @@ describe('ProfileCard', () => {
 			],
 			failed: false
 		});
-		render(ProfileCard, {
+		await render(ProfileCard, {
 			form: makeEmptyForm(),
 			errors: {} as FormErrors,
 			isEditing: true,
@@ -227,7 +227,7 @@ describe('ProfileCard', () => {
 			],
 			failed: false
 		});
-		render(ProfileCard, {
+		await render(ProfileCard, {
 			form: makeFilledForm(),
 			errors: {} as FormErrors,
 			isEditing: true,
@@ -243,7 +243,7 @@ describe('ProfileCard', () => {
 	});
 
 	it('zeigt Feldfehler aus dem errors-Prop an', async () => {
-		render(ProfileCard, {
+		await render(ProfileCard, {
 			form: makeEmptyForm(),
 			errors: {
 				firstName: 'Vorname ist erforderlich.',

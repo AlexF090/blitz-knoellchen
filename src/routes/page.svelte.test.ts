@@ -11,7 +11,7 @@ vi.mock('virtual:pwa-info', () => ({
 describe('+page.svelte (Startseite)', () => {
 	it('rendert Header-Link zur Historie und das Meldeformular', async () => {
 		const { default: HomePage } = await import('./+page.svelte');
-		render(HomePage, {
+		await render(HomePage, {
 			data: {
 				demoRecipientEmail: 'demo@example.com',
 				liveRecipientEmail: 'live@example.com',

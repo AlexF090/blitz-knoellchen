@@ -11,7 +11,7 @@ describe('SummaryList', () => {
 			{ label: 'Kennzeichen', value: 'K-AB 123' },
 			{ label: 'Farbe', value: 'Rot' }
 		];
-		render(SummaryList, { rows });
+		await render(SummaryList, { rows });
 
 		await expect.element(page.getByText('Kennzeichen')).toBeInTheDocument();
 		await expect.element(page.getByText('K-AB 123')).toBeInTheDocument();
@@ -20,7 +20,7 @@ describe('SummaryList', () => {
 	});
 
 	it('rendert nichts bei leerem rows-Array', async () => {
-		const { container } = render(SummaryList, { rows: [] });
+		const { container } = await render(SummaryList, { rows: [] });
 
 		const dl = container.querySelector('dl');
 		expect(dl?.children).toHaveLength(0);
@@ -32,7 +32,7 @@ describe('SummaryList', () => {
 			render: () => `<div data-testid="leading-slot">Fotos</div>`
 		}));
 
-		const { container } = render(SummaryList, { rows, leading });
+		const { container } = await render(SummaryList, { rows, leading });
 
 		const dl = container.querySelector('dl');
 		const firstChild = dl?.firstElementChild;

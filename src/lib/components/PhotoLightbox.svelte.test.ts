@@ -24,7 +24,7 @@ const waitForImageLoad = async (img: HTMLImageElement | null | undefined) => {
 describe('PhotoLightbox', () => {
 	it('öffnet den Dialog nicht, wenn photo null ist', async () => {
 		const onClose = vi.fn();
-		const { container } = render(PhotoLightbox, { photo: null, onClose });
+		const { container } = await render(PhotoLightbox, { photo: null, onClose });
 		await expect.poll(() => container.querySelector('dialog')?.open).toBe(false);
 	});
 

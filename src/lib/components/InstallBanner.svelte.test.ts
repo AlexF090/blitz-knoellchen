@@ -15,7 +15,7 @@ const dispatchBeforeInstallPrompt = (promptFn: () => Promise<void>) => {
 
 describe('InstallBanner', () => {
 	it('ist unsichtbar, solange installPrompt.canInstall false ist', async () => {
-		render(InstallBanner);
+		await render(InstallBanner);
 
 		expect(page.getByRole('note').elements()).toHaveLength(0);
 	});
@@ -24,7 +24,7 @@ describe('InstallBanner', () => {
 		const promptFn = vi.fn().mockResolvedValue(undefined);
 		dispatchBeforeInstallPrompt(promptFn);
 
-		render(InstallBanner);
+		await render(InstallBanner);
 
 		const note = page.getByRole('note');
 		await expect.element(note).toBeInTheDocument();
@@ -37,7 +37,7 @@ describe('InstallBanner', () => {
 		const promptFn = vi.fn().mockResolvedValue(undefined);
 		dispatchBeforeInstallPrompt(promptFn);
 
-		render(InstallBanner);
+		await render(InstallBanner);
 
 		const note = page.getByRole('note');
 		await expect.element(note).toBeInTheDocument();

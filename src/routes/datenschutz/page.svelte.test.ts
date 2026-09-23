@@ -5,7 +5,7 @@ import DatenschutzPage from './+page.svelte';
 
 describe('Datenschutz-Seite', () => {
 	it('rendert die Überschrift und einen Zurück-Link im Header', async () => {
-		render(DatenschutzPage);
+		await render(DatenschutzPage);
 
 		await expect
 			.element(page.getByRole('heading', { level: 1, name: 'Datenschutzerklärung' }))

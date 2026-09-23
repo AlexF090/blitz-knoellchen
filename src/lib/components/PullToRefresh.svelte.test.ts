@@ -50,7 +50,7 @@ afterEach(() => {
 
 describe('PullToRefresh', () => {
 	it('löst kein Reload aus, wenn unterhalb des Thresholds losgelassen wird', async () => {
-		const { container } = render(PullToRefresh, { children: childrenSnippet });
+		const { container } = await render(PullToRefresh, { children: childrenSnippet });
 		const target = container.querySelector('[role="presentation"]');
 		expect(target).not.toBeNull();
 
@@ -63,7 +63,7 @@ describe('PullToRefresh', () => {
 	});
 
 	it('löst reloadWithLatestVersion aus, wenn über dem Threshold losgelassen wird, und zeigt den Refreshing-State', async () => {
-		const { container } = render(PullToRefresh, { children: childrenSnippet });
+		const { container } = await render(PullToRefresh, { children: childrenSnippet });
 		const target = container.querySelector('[role="presentation"]');
 		const overlay = container.querySelector<HTMLDivElement>('.pointer-events-none');
 		const spinnerWrapper = overlay?.querySelector<HTMLDivElement>('.rounded-full');
@@ -81,7 +81,7 @@ describe('PullToRefresh', () => {
 	});
 
 	it('aktualisiert die sichtbare Zug-Anzeige proportional zum pullDistance-Fortschritt', async () => {
-		const { container } = render(PullToRefresh, { children: childrenSnippet });
+		const { container } = await render(PullToRefresh, { children: childrenSnippet });
 		const target = container.querySelector('[role="presentation"]');
 		const overlay = container.querySelector<HTMLDivElement>('.pointer-events-none');
 		expect(overlay).not.toBeNull();
@@ -98,7 +98,7 @@ describe('PullToRefresh', () => {
 	});
 
 	it('bricht den Pull ab, wenn die Bewegung nach oben statt unten geht', async () => {
-		const { container } = render(PullToRefresh, { children: childrenSnippet });
+		const { container } = await render(PullToRefresh, { children: childrenSnippet });
 		const target = container.querySelector('[role="presentation"]');
 		const overlay = container.querySelector<HTMLDivElement>('.pointer-events-none');
 
@@ -112,7 +112,7 @@ describe('PullToRefresh', () => {
 	});
 
 	it('ignoriert einen weiteren touchstart, während bereits refreshing=true ist', async () => {
-		const { container } = render(PullToRefresh, { children: childrenSnippet });
+		const { container } = await render(PullToRefresh, { children: childrenSnippet });
 		const target = container.querySelector('[role="presentation"]');
 		const overlay = container.querySelector<HTMLDivElement>('.pointer-events-none');
 
@@ -133,7 +133,7 @@ describe('PullToRefresh', () => {
 	});
 
 	it('ignoriert touchstart, wenn die Seite nicht am oberen Rand ist (scrollTop > 0)', async () => {
-		const { container } = render(PullToRefresh, { children: childrenSnippet });
+		const { container } = await render(PullToRefresh, { children: childrenSnippet });
 		const target = container.querySelector('[role="presentation"]');
 		const overlay = container.querySelector<HTMLDivElement>('.pointer-events-none');
 		const scrollingElement = document.scrollingElement as HTMLElement;
@@ -151,7 +151,7 @@ describe('PullToRefresh', () => {
 	});
 
 	it('ignoriert touchmove ohne vorherigen touchstart (pulling === false)', async () => {
-		const { container } = render(PullToRefresh, { children: childrenSnippet });
+		const { container } = await render(PullToRefresh, { children: childrenSnippet });
 		const target = container.querySelector('[role="presentation"]');
 		const overlay = container.querySelector<HTMLDivElement>('.pointer-events-none');
 
@@ -163,7 +163,7 @@ describe('PullToRefresh', () => {
 	});
 
 	it('rendert die übergebenen children', async () => {
-		const { container } = render(PullToRefresh, { children: childrenSnippet });
+		const { container } = await render(PullToRefresh, { children: childrenSnippet });
 		expect(container.textContent).toContain('Inhalt');
 	});
 });
