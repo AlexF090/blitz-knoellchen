@@ -1,12 +1,16 @@
-// LocationIQs Rate-Limit gilt prozessweit für Reverse-Geocode und Autocomplete zusammen — beide
+/** Mindestabstand zwischen zwei LocationIQ-Anfragen. */
+// Das Rate-Limit gilt prozessweit für Reverse-Geocode und Autocomplete zusammen — beide
 // Endpunkte teilen sich deshalb sowohl diese Konstante als auch den Modul-Timestamp unten.
 export const LOCATIONIQ_MIN_INTERVAL_MS = 1000;
 
 // Modul-State: gilt pro Server-Prozess, gemeinsam für alle Aufrufer dieses Moduls.
 let lastRequestAt = 0;
 
-// Non-blocking Soft-Limit für Endpunkte, die bei Überschreitung lieber sofort ein leeres/
-// neutrales Ergebnis liefern, statt Anfragen zu stauen (z. B. Autocomplete während des Tippens).
+/**
+ * Meldet `true`, wenn der letzte Aufruf noch keine `minIntervalMs` zurückliegt, und reserviert
+ * andernfalls den Slot. Non-blocking Soft-Limit für Endpunkte, die bei Überschreitung lieber
+ * sofort ein leeres Ergebnis liefern, statt Anfragen zu stauen (z. B. Autocomplete beim Tippen).
+ */
 export const shouldThrottle = (minIntervalMs: number): boolean => {
 	const now = Date.now();
 	if (now - lastRequestAt < minIntervalMs) return true;
@@ -14,8 +18,11 @@ export const shouldThrottle = (minIntervalMs: number): boolean => {
 	return false;
 };
 
-// Blocking Wartemuster für Endpunkte mit nur einem Call pro Vorgang (Reverse-Geocode) — dort ist
-// ein kurzes Warten unmerklich und einfacher als ein Retry auf Client-Seite.
+/**
+ * Wartet, bis der nächste Anfrage-Slot frei ist. Blockierendes Gegenstück zu `shouldThrottle`
+ * für Endpunkte mit nur einem Call pro Vorgang (Reverse-Geocode) — dort ist ein kurzes Warten
+ * unmerklich und einfacher als ein Retry auf Client-Seite.
+ */
 export const waitForSlot = async (minIntervalMs: number): Promise<void> => {
 	const now = Date.now();
 	const elapsed = now - lastRequestAt;

@@ -1,4 +1,8 @@
 <script lang="ts">
+	/**
+	 * Adressfeld mit Vorschlagsliste (ARIA-Combobox): tippen, per Pfeiltasten oder Tap auswählen.
+	 * Die Suche selbst liegt im addressSuggestionsController.
+	 */
 	import { fly } from 'svelte/transition';
 	import { createAddressSuggestionsController } from '$lib/geocode/addressSuggestionsController';
 	import type { AddressSuggestion } from '$lib/geocode/autocomplete';
@@ -15,6 +19,7 @@
 		autocompleteAttr?: string;
 		placeholder?: string;
 		error?: string;
+		/** Übernimmt einen ausgewählten Vorschlag — auch PLZ und Ort liegen darin. */
 		onSelect: (suggestion: AddressSuggestion) => void;
 		onBlur?: () => void;
 	}
@@ -46,8 +51,10 @@
 	});
 
 	let listboxId = $derived(`${id}-suggestions`);
+	/** Id einer Option, auf die `aria-activedescendant` zeigen kann. */
 	const optionId = (index: number) => `${id}-suggestion-${index}`;
 
+	/** Schließt die Vorschlagsliste und verwirft ihren gesamten Zustand. */
 	const closeList = () => {
 		open = false;
 		activeIndex = -1;
@@ -58,14 +65,17 @@
 		suggestionsController.cancel();
 	};
 
+	/** Stößt die (intern entprellte) Suche zum aktuellen Eingabetext an. */
 	const scheduleSearch = () => suggestionsController.search(value);
 
+	/** Übernimmt einen Vorschlag und gibt den Fokus zurück ins Eingabefeld. */
 	const selectSuggestion = (suggestion: AddressSuggestion) => {
 		onSelect(suggestion);
 		closeList();
 		inputElement?.focus();
 	};
 
+	/** Tastaturbedienung der Liste: Pfeile (umlaufend), Enter übernimmt, Escape schließt. */
 	const onKeydown = (event: KeyboardEvent) => {
 		if (!open || suggestions.length === 0) return;
 		if (event.key === 'ArrowDown') {
@@ -84,15 +94,19 @@
 		}
 	};
 
+	/** Schließt die Liste bei einem Klick außerhalb der Komponente. */
 	const onDocumentClick = (event: MouseEvent) => {
 		if (!containerElement?.contains(event.target as Node)) closeList();
 	};
 
+	/**
+	 * Schließt die Liste, wenn das Feld ohne Auswahl verlassen wird (z.B. per Tab).
+	 * Ein Tap/Klick auf eine Option bleibt davon unberührt: deren `onpointerdown` verhindert per
+	 * preventDefault() das Blur-Event. Bewusst pointerdown statt mousedown — iOS Safari kann bei
+	 * Touch sonst blur vor dem synthetisierten mousedown auslösen und die Liste schließen, bevor
+	 * die Auswahl verarbeitet ist.
+	 */
 	const handleBlur = () => {
-		// Tastatur-Tab ohne Auswahl schließt die Liste — ein Tap/Klick auf eine Option ist davon
-		// unberührt, da dort onpointerdown preventDefault() das Blur-Event verhindert. pointerdown
-		// statt mousedown, weil iOS Safari bei Touch sonst blur vor dem synthetisierten mousedown
-		// auslösen kann — die Liste schließt sich dann, bevor die Auswahl verarbeitet wird.
 		closeList();
 		onBlur?.();
 	};

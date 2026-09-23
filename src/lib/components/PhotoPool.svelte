@@ -1,13 +1,22 @@
 <script lang="ts">
+	/**
+	 * Der gemeinsame Foto-Pool der Anzeige: Auswahl neuer Dateien, Vorschau-Grid und Lightbox.
+	 * Die Zuordnung einzelner Fotos zu Fahrzeugen passiert nicht hier, sondern in VehicleBlock.
+	 */
 	import { MAX_PHOTOS_PER_BATCH, type PhotoEntry } from '$lib/validation/formSchema';
 	import PhotoLightbox from './PhotoLightbox.svelte';
 
 	interface Props {
 		photos: PhotoEntry[];
+		/** Wie oft ein Foto Fahrzeugen zugeordnet ist — ab 2 erscheint ein Zähler-Badge. */
 		usageCounts?: Record<string, number>;
+		/** Validierungsfehler des Pools (z.B. „mindestens ein Foto nötig“). */
 		error?: string | null;
+		/** Fehler beim Verarbeiten einer einzelnen Datei, z.B. gescheiterte HEIC-Konvertierung. */
 		processingError?: string | null;
+		/** Zeigt statt des Add-Felds einen Platzhalter mit Spinner. */
 		processing?: boolean;
+		/** Gesamtlimit über alle Fahrzeuge hinweg. */
 		maxPhotos: number;
 		maxPhotosPerVehicle: number;
 		onAdd: (file: File) => void | Promise<void>;
@@ -30,17 +39,20 @@
 	let lightboxPhoto: PhotoEntry | null = $state(null);
 	let batchError = $state<string | null>(null);
 
+	/** Macht einen Foto-Blob als `src` verwendbar. */
 	const objectUrl = (blob: Blob) => URL.createObjectURL(blob);
 
+	/** Übernimmt die ausgewählten Dateien der Reihe nach, begrenzt auf die freien Plätze. */
 	const onFileSelected = async (event: Event) => {
 		const input = event.target as HTMLInputElement;
 		const files = Array.from(input.files ?? []);
+		// Leeren, damit dieselbe Datei direkt danach erneut ausgewählt werden kann.
 		input.value = '';
 		if (files.length === 0) return;
 
-		// Das sichtbare Label wird zwar ab maxPhotos ausgeblendet, das versteckte <input
-		// type="file"> bleibt aber im DOM bedienbar (Tastatur/AT) — deshalb hier zusätzlich auf
-		// das Gesamtlimit clampen, nicht nur auf MAX_PHOTOS_PER_BATCH.
+		// Das sichtbare Label verschwindet ab maxPhotos, das versteckte File-Input bleibt aber im
+		// DOM bedienbar (Tastatur/AT) — deshalb hier zusätzlich auf das Gesamtlimit clampen, nicht
+		// nur auf MAX_PHOTOS_PER_BATCH.
 		const remainingSlots = Math.max(0, maxPhotos - photos.length);
 		const allowedCount = Math.min(MAX_PHOTOS_PER_BATCH, remainingSlots);
 

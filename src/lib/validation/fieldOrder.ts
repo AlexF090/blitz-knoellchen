@@ -1,5 +1,7 @@
 import type { FormErrors } from './formSchema';
 
+// Beide Listen folgen der visuellen Reihenfolge des Formulars von oben nach unten und
+// entscheiden dadurch, welcher von mehreren gleichzeitigen Fehlern zuerst fokussiert wird.
 const PROFILE_FIELD_ORDER: (keyof FormErrors)[] = [
 	'firstName',
 	'lastName',
@@ -23,6 +25,7 @@ const VEHICLE_FIELD_ORDER: (keyof NonNullable<FormErrors['vehicles']>[number])[]
 	'incidentTypeIds'
 ];
 
+/** Wohin bei einem Validierungsfehler gescrollt und fokussiert werden soll. */
 export type ErrorTarget =
 	| { type: 'photos' }
 	| { type: 'profileField'; elementId: string }
@@ -31,8 +34,7 @@ export type ErrorTarget =
 	// nicht existiert (der Aufrufer entscheidet das, da nur er das DOM kennt).
 	| { type: 'vehicleField'; fieldElementId: string; blockElementId: string };
 
-// Welches Feld bei mehreren gleichzeitigen Fehlern zuerst fokussiert wird — folgt der
-// visuellen Reihenfolge des Formulars von oben nach unten.
+/** Ermittelt den in der Formularreihenfolge obersten Fehler, oder `null`, wenn es keinen gibt. */
 export const findFirstErrorTarget = (
 	formErrors: FormErrors,
 	vehicleIds: string[]
@@ -46,6 +48,8 @@ export const findFirstErrorTarget = (
 		const field = VEHICLE_FIELD_ORDER.find((f) => vehicleErrors[f]);
 		if (!field) continue;
 		const vehicleId = vehicleIds[index];
+		// Fehlerliste und Fahrzeugliste sind auseinandergelaufen — ohne id lässt sich kein
+		// Element adressieren, also lieber gar nicht springen als an die falsche Stelle.
 		if (!vehicleId) return null;
 		return {
 			type: 'vehicleField',

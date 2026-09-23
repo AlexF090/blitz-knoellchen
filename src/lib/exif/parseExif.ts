@@ -1,5 +1,6 @@
 import ExifReader from 'exifreader';
 
+/** Aus einem Foto gelesene Aufnahmedaten; jedes Feld ist `null`, wenn es nicht vorhanden war. */
 export interface ParsedExif {
 	date: string | null;
 	time: string | null;
@@ -14,14 +15,17 @@ const parseExifDateTime = (value: string): Date | null => {
 	if (!match) return null;
 	const [, year, month, day, hour, minute, second] = match.map(Number);
 	const date = new Date(year, month - 1, day, hour, minute, second);
-	// Die Regex erzwingt max. 4-stellige Jahres- und 2-stellige Monats-/Tages-/Zeit-Anteile;
-	// selbst mit den größtmöglichen Werten (Jahr 9999, Monat/Tag/Zeit je 99) bleibt das
-	// Ergebnis innerhalb des von Date darstellbaren Bereichs (±275760) — der Invalid-Date-Fall
-	// ist mit diesem Eingabeformat nicht erreichbar, bleibt aber als Absicherung bestehen.
+	// Die Regex begrenzt alle Anteile so, dass selbst die Maximalwerte (Jahr 9999, Monat/Tag/Zeit
+	// je 99) im darstellbaren Date-Bereich bleiben — der Invalid-Date-Fall ist mit diesem
+	// Eingabeformat unerreichbar, bleibt aber als Absicherung stehen.
 	/* v8 ignore next */
 	return isNaN(date.getTime()) ? null : date;
 };
 
+/**
+ * Liest Aufnahmedatum, -uhrzeit und GPS-Position aus den EXIF-Daten eines Fotos.
+ * Liefert bei Lesefehlern ein durchgehend leeres Ergebnis statt zu werfen.
+ */
 export const parseExif = async (file: Blob): Promise<ParsedExif> => {
 	try {
 		const buffer = await file.arrayBuffer();

@@ -1,3 +1,4 @@
+/** Die Tatort-Adressfelder eines Fahrzeug-Eintrags. */
 export interface LocationAddressFields {
 	locationStreet: string;
 	locationHouseNumber?: string;
@@ -5,6 +6,7 @@ export interface LocationAddressFields {
 	locationCity: string;
 }
 
+/** Adresse aus einer externen Quelle, bei der jeder Bestandteil fehlen kann. */
 export interface PartialAddress {
 	street?: string | null;
 	houseNumber?: string | null;
@@ -14,9 +16,10 @@ export interface PartialAddress {
 
 /**
  * Überträgt eine Adresse (Autocomplete-Auswahl oder Reverse-Geocoding-Ergebnis) in die
- * location*-Felder eines Fahrzeugs. `overwrite` unterscheidet die beiden Aufrufsituationen:
- * eine explizite Dropdown-Auswahl ersetzt vorhandene Werte, ein automatischer EXIF-Fund
- * überschreibt nie bereits vorhandene (auch manuell eingegebene) Werte.
+ * location*-Felder eines Fahrzeugs.
+ *
+ * @param overwrite `true` für eine explizite Dropdown-Auswahl, die vorhandene Werte ersetzt;
+ * `false` für einen automatischen EXIF-Fund, der nie bereits eingegebene Werte überschreibt.
  */
 export const applyAddressSuggestion = (
 	target: LocationAddressFields,

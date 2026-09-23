@@ -8,6 +8,10 @@ import {
 } from '$lib/geocode/reverseGeocode';
 import type { RequestHandler } from './$types';
 
+/**
+ * Reverse-Geocoding-Proxy: liefert die Adresse zu `lat`/`lon`.
+ * Läuft serverseitig, damit der LocationIQ-API-Schlüssel nicht an den Client gelangt.
+ */
 export const GET: RequestHandler = async ({ url, fetch }) => {
 	const lat = Number(url.searchParams.get('lat'));
 	const lon = Number(url.searchParams.get('lon'));
@@ -15,6 +19,8 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 		return json({ error: 'lat/lon fehlen oder sind ungültig.' }, { status: 400 });
 	}
 
+	// Blockierend warten statt drosseln: pro Foto fällt nur ein Lookup an, das kurze Warten
+	// ist unmerklich (s. rateLimiter.ts).
 	await waitForSlot(LOCATIONIQ_MIN_INTERVAL_MS);
 
 	const providers = [

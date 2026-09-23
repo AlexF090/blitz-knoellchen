@@ -5,7 +5,9 @@
 	import LogoLockup from '$lib/components/branding/LogoLockup.svelte';
 
 	interface Props {
+		/** Ziel des Icon-Links rechts; muss vom Aufrufer bereits per `resolve()` aufgelöst sein. */
 		linkHref: string;
+		/** Beschriftung des Icon-Links für Screenreader und Tooltip. */
 		linkLabel: string;
 		linkIcon: 'history' | 'back';
 	}

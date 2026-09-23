@@ -1,5 +1,6 @@
 import { describeHttpError } from './httpErrors';
 
+/** Ein Adressvorschlag: `label` für die Anzeige, die übrigen Felder zum Befüllen des Formulars. */
 export interface AddressSuggestion {
 	label: string;
 	street: string | null;
@@ -11,10 +12,10 @@ export interface AddressSuggestion {
 const REQUEST_TIMEOUT_MS = 5000;
 const MIN_QUERY_LENGTH = 3;
 
-// Ersetzt LocationIQs `display_name` (Reihenfolge Hausnr./Straße/Stadtteil/Stadt/Bundesland/Land,
-// nicht per API-Parameter anpassbar) durch ein an deutsche Postadressen angelehntes Format
-// ("Straße Hausnr., PLZ Stadt-Stadtteil"). Fällt auf `display_name` zurück, wenn kein Straßenname
-// vorliegt (z.B. Treffer ist selbst ein Stadtteil/POI).
+/** Baut das Anzeige-Label im deutschen Postadressformat „Straße Hausnr., PLZ Stadt-Stadtteil". */
+// LocationIQs `display_name` sortiert abweichend (Hausnr./Straße/Stadtteil/Stadt/Bundesland/
+// Land) und ist nicht per API-Parameter anpassbar. Ohne Straßenname (Treffer ist selbst ein
+// Stadtteil/POI) bleibt nur der Rückfall auf `display_name`.
 const buildSuggestionLabel = (item: {
 	display_name?: unknown;
 	address?: {
@@ -45,6 +46,7 @@ const buildSuggestionLabel = (item: {
 // diese Bounding-Box begrenzt (`bounded=1`). Format: viewbox=left,top,right,bottom.
 const KOELN_VIEWBOX = '6.7728,51.0839,7.1620,50.8304';
 
+/** Adress-Autocomplete über LocationIQ, auf das Kölner Stadtgebiet begrenzt. */
 export const createLocationIqAutocompleteProvider = (apiKey: string, fetchFn: typeof fetch) => {
 	return {
 		async search(query: string): Promise<AddressSuggestion[]> {

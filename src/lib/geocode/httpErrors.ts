@@ -1,3 +1,4 @@
+/** Übersetzt einen HTTP-Fehlerstatus eines Geocoding-Anbieters in eine Log-Meldung. */
 export const describeHttpError = (providerName: string, status: number): string => {
 	if (status === 429) return `${providerName} hat Rate-Limiting gemeldet (HTTP 429)`;
 	if (status === 403) return `${providerName} hat die Anfrage blockiert (HTTP 403)`;

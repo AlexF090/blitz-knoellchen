@@ -1,4 +1,8 @@
 <script lang="ts">
+	/**
+	 * Installationshinweis für iOS Safari, das keinen nativen Installations-Prompt kennt und
+	 * stattdessen eine Anleitung über „Teilen“ → „Zum Home-Bildschirm“ braucht.
+	 */
 	import { Share, SquarePlus } from '@lucide/svelte';
 	import { fly } from 'svelte/transition';
 	import { browser } from '$app/environment';
@@ -7,6 +11,8 @@
 	import { installPrompt } from '$lib/pwa/installPrompt.svelte';
 
 	let isIosSafariUser = $state(false);
+	// Bewusst kein dauerhaftes Ausblenden per localStorage — solange die App nicht installiert
+	// ist, soll der Hinweis bei jedem Öffnen wiederkommen.
 	let dismissed = $state(false);
 
 	if (browser) {
@@ -14,15 +20,13 @@
 		isIosSafariUser = !isStandalone && isIosSafari(navigator.userAgent);
 	}
 
-	// installPrompt.canInstall hat Vorrang: Der native Chromium-Weg (InstallBanner.svelte) ist
-	// zuverlässiger als diese UA-Heuristik. Ohne diesen Ausschluss könnten in Browser-Edge-Fällen
-	// (UA, die von isIosSafari fälschlich erkannt wird, aber dennoch beforeinstallprompt feuert)
-	// beide role="note"-Banner gleichzeitig sichtbar sein.
+	// installPrompt.canInstall hat Vorrang: der native Chromium-Weg (InstallBanner.svelte) ist
+	// zuverlässiger als diese UA-Heuristik. Ohne den Ausschluss wären in Edge-Fällen (UA, die
+	// isIosSafari fälschlich erkennt, aber dennoch beforeinstallprompt feuert) beide
+	// role="note"-Banner gleichzeitig sichtbar.
 	const visible = $derived(isIosSafariUser && !installPrompt.canInstall && !dismissed);
 
-	// Bewusst kein "dauerhaft ausblenden" per localStorage — solange die App nicht als PWA
-	// installiert ist, soll der Hinweis bei jedem Öffnen wieder erscheinen. Das Kreuz schließt
-	// ihn nur für die aktuelle Ansicht.
+	/** Blendet den Hinweis nur für die aktuelle Ansicht aus. */
 	const dismiss = () => {
 		dismissed = true;
 	};

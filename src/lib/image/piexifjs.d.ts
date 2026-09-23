@@ -1,3 +1,5 @@
+// piexifjs bringt keine eigenen Typen mit — deklariert ist nur der in embedExif.ts tatsächlich
+// genutzte Ausschnitt der API, nicht der volle Funktionsumfang.
 declare module 'piexifjs' {
 	type Rational = [number, number];
 	type ExifDict = Record<string, Record<number, string | number | Rational[]>>;

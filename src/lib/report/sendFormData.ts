@@ -1,6 +1,7 @@
 import type { AppMode } from '$lib/appMode.svelte';
 import type { VehicleEntry } from '$lib/validation/formSchema';
 
+/** Die Melderdaten, die mit jeder einzelnen Fahrzeug-Anzeige übertragen werden. */
 export interface SendFormProfile {
 	firstName: string;
 	lastName: string;
@@ -11,10 +12,12 @@ export interface SendFormProfile {
 	phone?: string;
 }
 
-// id/photoIds gehören nicht zur übertragenen Nutzlast: der Server vergibt eine eigene
-// id ('0') und leitet photoIds aus der Reihenfolge der empfangenen Foto-Dateien ab.
+/** Ein Fahrzeug ohne die clientseitigen Schlüsselfelder. */
+// id/photoIds gehören nicht zur Nutzlast: der Server vergibt eine eigene id ('0') und leitet
+// photoIds aus der Reihenfolge der empfangenen Foto-Dateien ab.
 export type SendableVehicle = Omit<VehicleEntry, 'id' | 'photoIds'>;
 
+/** Alles, was in die FormData einer einzelnen Fahrzeug-Anzeige einfließt. */
 export interface BuildSendFormDataInput {
 	profile: SendFormProfile;
 	vehicle: SendableVehicle;
@@ -26,7 +29,8 @@ export interface BuildSendFormDataInput {
 	photos: { blob: Blob; fileName: string }[];
 }
 
-// Die 26 Feldnamen-Stringliterale hier und in parseSendFormData existierten zuvor doppelt
+/** Serialisiert die Anzeige eines Fahrzeugs als FormData für POST /api/send. */
+// Die Feldnamen-Stringliterale hier und in parseSendFormData existierten zuvor doppelt
 // (ReportForm.svelte `set` vs. api/send/+server.ts `get`) — als Paar in einer Datei mit
 // Round-Trip-Test können sie nicht mehr auseinanderdriften.
 export const buildSendFormData = ({
@@ -67,6 +71,7 @@ export const buildSendFormData = ({
 	return body;
 };
 
+/** Das aus der FormData zurückgewonnene, noch unvalidierte Gegenstück zu BuildSendFormDataInput. */
 export interface ParsedSendFormData {
 	profile: SendFormProfile;
 	vehicle: SendableVehicle;
@@ -76,6 +81,10 @@ export interface ParsedSendFormData {
 	photoBlobs: File[];
 }
 
+/**
+ * Liest eine von `buildSendFormData` erzeugte FormData zurück. Sichert nur die Trust-Boundary
+ * ab (Typen, sicherer Modus-Fallback) — die inhaltliche Prüfung macht `validateReportForm`.
+ */
 export const parseSendFormData = (formData: FormData): ParsedSendFormData => {
 	const photoBlobs = formData.getAll('photos').filter((p): p is File => p instanceof File);
 	const timeMode = formData.get('timeMode') === 'parkverstoss' ? 'parkverstoss' : 'halteverstoss';

@@ -1,3 +1,4 @@
+/** Adressbestandteile für die einzeilige Darstellung. */
 export interface FormattableAddress {
 	street: string;
 	houseNumber?: string;
@@ -5,6 +6,7 @@ export interface FormattableAddress {
 	city: string;
 }
 
+/** Formatiert eine Adresse einzeilig als „Straße Hausnr., PLZ Ort". */
 export const formatAddress = ({
 	street,
 	houseNumber,

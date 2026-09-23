@@ -135,7 +135,6 @@ export default defineConfig({
 			exclude: [
 				'src/**/*.{test,spec}.{ts,js}',
 				'src/**/*.d.ts',
-				'src/lib/index.ts',
 				'src/lib/geocode/geocodeAddress.ts',
 				'src/lib/report/sendResults.ts',
 				'src/routes/**/$types.d.ts'

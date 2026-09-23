@@ -18,6 +18,7 @@
 
 	let openId = $state<string | null>(null);
 
+	/** Öffnet ein Panel und schließt das zuvor offene — es ist stets höchstens eines offen. */
 	const toggle = (id: string) => {
 		openId = openId === id ? null : id;
 	};

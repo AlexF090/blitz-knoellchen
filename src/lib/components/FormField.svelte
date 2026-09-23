@@ -1,11 +1,17 @@
 <script lang="ts">
+	/**
+	 * Ein beschriftetes Eingabefeld mit Pflichtstern, ARIA-Verdrahtung und Fehlermeldung.
+	 * Rendert standardmäßig ein `input`; Sonderfälle liefern ihr Control per Snippet.
+	 */
 	import type { Snippet } from 'svelte';
 	import { fieldErrorBase, inputBase, labelBase, requiredMark } from '$lib/ui/inputStyles';
 	import { ariaFieldProps } from '$lib/validation/ariaField';
 
 	interface Props {
+		/** Dient zugleich als `name` des Eingabefelds und als Basis der Fehler-Id. */
 		id: string;
 		label: string;
+		/** Nur für das eingebaute `input` relevant; eigene Controls binden selbst. */
 		value?: string;
 		type?: string;
 		required?: boolean;
@@ -17,21 +23,23 @@
 		spellcheck?: boolean;
 		onblur?: () => void;
 		wrapperClass?: string;
-		// Escape-Hatch für Controls, die FormField nicht selbst abbildet (select/textarea,
-		// Sonderfälle wie licensePlate mit Cursor-Erhalt) — Label/Pflichtstern/Fehler-<p> kommen
-		// weiterhin von FormField, nur das eigentliche Eingabeelement wird selbst gerendert.
+		/**
+		 * Escape-Hatch für Controls, die FormField nicht selbst abbildet (select/textarea,
+		 * Sonderfälle wie licensePlate mit Cursor-Erhalt) — Label, Pflichtstern und Fehlertext
+		 * kommen weiterhin von FormField, nur das Eingabeelement wird selbst gerendert.
+		 */
 		control?: Snippet;
-		// Für zusätzliches Markup zwischen Control und Fehlermeldung (z.B. <datalist>).
+		/** Für zusätzliches Markup zwischen Control und Fehlermeldung (z.B. `datalist`). */
 		after?: Snippet;
 	}
 
 	let {
 		id,
 		label,
-		// Kein Default-Fallback hier: einige Felder (z.B. VehicleEntry.endTime) sind bewusst nur
-		// optional und bleiben bis zur ersten Eingabe `undefined` — ein `$bindable('')` würde bei
-		// `bind:value={vehicle.endTime}` mit `props_invalid_value` abstürzen ("Cannot do
-		// bind:value={undefined} when value has a fallback value").
+		// Bewusst ohne Fallback: optionale Felder (z.B. VehicleEntry.endTime) bleiben bis zur
+		// ersten Eingabe `undefined`, und `$bindable('')` würde bei `bind:value={vehicle.endTime}`
+		// mit `props_invalid_value` abstürzen („Cannot do bind:value={undefined} when value has a
+		// fallback value“).
 		value = $bindable(),
 		type = 'text',
 		required = false,

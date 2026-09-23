@@ -1,10 +1,14 @@
 <script lang="ts">
+	/** Zeigt Label/Wert-Paare als Definitionsliste, z.B. die Zusammenfassung eines Fahrzeugs. */
 	import type { Snippet } from 'svelte';
 	import type { SummaryRow } from '$lib/report/vehicleSummary';
 
 	interface Props {
 		rows: SummaryRow[];
-		// Für Zeilen, die keine reine Label/Value-Zeile sind (z.B. Foto-Thumbnails statt Anzahl).
+		/**
+		 * Vorangestellte Zeilen, die keine reinen Label/Wert-Paare sind (z.B. Foto-Thumbnails
+		 * statt einer Anzahl).
+		 */
 		leading?: Snippet;
 		class?: string;
 	}

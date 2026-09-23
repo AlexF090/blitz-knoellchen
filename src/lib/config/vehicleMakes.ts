@@ -1,5 +1,6 @@
-// Kuratierte Liste gängiger Marken für die Datalist-Vorschlagsliste im Formular — Freitext
-// bleibt über das <input list="..."> trotzdem möglich, deckt also auch nicht gelistete Marken ab.
+/** Kuratierte Marken für die Datalist-Vorschlagsliste im Formular. */
+// Freitext bleibt über das <input list="..."> trotzdem möglich, nicht gelistete Marken sind
+// also ebenfalls eingebbar.
 export const VEHICLE_MAKES: string[] = [
 	'Unbekannt',
 	'Audi',

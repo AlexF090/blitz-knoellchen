@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 
+/** Das noch nicht standardisierte `beforeinstallprompt`-Event, das die PWA-Installation anbietet. */
 export interface BeforeInstallPromptEvent extends Event {
 	readonly platforms: string[];
 	readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
@@ -26,10 +27,12 @@ if (browser) {
 	});
 }
 
+/** Reaktiver Zugriff auf den PWA-Installationsdialog des Browsers. */
 export const installPrompt = {
 	get canInstall() {
 		return deferredEvent !== null && !installed;
 	},
+	/** Zeigt den Installationsdialog und liefert die Entscheidung, oder `null` bei Fehlschlag. */
 	async prompt() {
 		// Event sofort lokal zwischenspeichern UND global auf null setzen, bevor await läuft —
 		// verhindert, dass ein zweiter, überlappender Aufruf (z.B. Doppelklick) dasselbe,

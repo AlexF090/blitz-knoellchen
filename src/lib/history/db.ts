@@ -1,6 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
 
+/** Eine abgesendete Anzeige, wie sie in der lokalen Historie gespeichert wird. */
 export interface HistoryEntry {
 	id: string;
 	timestamp: number;
@@ -17,6 +18,7 @@ export interface HistoryEntry {
 	thumbnails: Blob[];
 }
 
+/** Die wiederverwendeten Stammdaten des Melders. */
 export interface UserProfile {
 	firstName: string;
 	lastName: string;
@@ -31,6 +33,7 @@ interface StoredUserProfile extends UserProfile {
 	id: string;
 }
 
+/** Der zwischengespeicherte, noch nicht abgesendete Formularstand. */
 export interface DraftFormData {
 	vehicles: VehicleEntry[];
 	photos: PhotoEntry[];
@@ -64,8 +67,9 @@ const PROFILE_KEY = 'default';
 const DRAFT_STORE_NAME = 'draft';
 const DRAFT_KEY = 'default';
 
+/** Höchstalter eines Entwurfs; ältere werden beim nächsten Laden verworfen. */
 // Ein nie abgesendeter Entwurf soll nicht unbegrenzt als Datenschutz-Altlast in der IndexedDB
-// liegen bleiben — nach dieser Zeit wird er beim nächsten Laden verworfen.
+// liegen bleiben.
 export const DRAFT_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 
 let dbPromise: Promise<IDBPDatabase<BlitzKnoellchenDB>> | undefined;
@@ -88,36 +92,44 @@ const getDb = () => {
 	return dbPromise;
 };
 
+/** Speichert einen Historie-Eintrag; ein Eintrag mit gleicher id wird ersetzt. */
 export const addEntry = async (entry: HistoryEntry): Promise<void> => {
 	const db = await getDb();
 	await db.put(STORE_NAME, entry);
 };
 
+/** Liefert alle Historie-Einträge, neueste zuerst. */
 export const listEntries = async (): Promise<HistoryEntry[]> => {
 	const db = await getDb();
 	const entries = await db.getAllFromIndex(STORE_NAME, 'by-timestamp');
+	// Der Index liefert aufsteigend; die Anzeige beginnt mit dem jüngsten Eintrag.
 	return entries.reverse();
 };
 
+/** Liest einen einzelnen Historie-Eintrag, oder `undefined`, wenn es ihn nicht gibt. */
 export const getEntry = async (id: string): Promise<HistoryEntry | undefined> => {
 	const db = await getDb();
 	return db.get(STORE_NAME, id);
 };
 
+/** Löscht einen einzelnen Historie-Eintrag. */
 export const deleteEntry = async (id: string): Promise<void> => {
 	const db = await getDb();
 	await db.delete(STORE_NAME, id);
 };
 
+/** Löscht die gesamte Historie. */
 export const clearEntries = async (): Promise<void> => {
 	const db = await getDb();
 	await db.clear(STORE_NAME);
 };
 
+/** Liest das gespeicherte Melderprofil, oder `undefined`, wenn noch keines angelegt wurde. */
 export const getProfile = async (): Promise<UserProfile | undefined> => {
 	const db = await getDb();
 	const stored = await db.get(PROFILE_STORE_NAME, PROFILE_KEY);
 	if (!stored) return undefined;
+	// Felder einzeln übernehmen, damit der interne Store-Key `id` nicht nach außen dringt.
 	const { firstName, lastName, addressStreet, addressPostcode, addressCity, email, phone } = stored;
 	return {
 		firstName,
@@ -130,6 +142,7 @@ export const getProfile = async (): Promise<UserProfile | undefined> => {
 	};
 };
 
+/** Speichert das Melderprofil und überschreibt dabei das bisherige. */
 export const saveProfile = async (profile: UserProfile): Promise<void> => {
 	const db = await getDb();
 	await db.put(PROFILE_STORE_NAME, { ...profile, id: PROFILE_KEY });
@@ -163,9 +176,9 @@ const isValidPhoto = (value: unknown): value is PhotoEntry => {
 	);
 };
 
-// Ein Entwurf kann aus einer älteren App-Version mit abweichendem Schema stammen — ungültige
-// Entwürfe werden verworfen statt ungeprüft übernommen (sonst TypeError beim Rendering, App
-// hängt dauerhaft im Lade-Skeleton).
+// Ein Entwurf kann aus einer älteren App-Version mit abweichendem Schema stammen. Ungeprüft
+// übernommen gäbe das einen TypeError beim Rendering und die App hinge dauerhaft im
+// Lade-Skeleton.
 const isValidDraft = (stored: StoredDraft): boolean =>
 	Number.isFinite(stored.savedAt) &&
 	Array.isArray(stored.vehicles) &&
@@ -173,6 +186,10 @@ const isValidDraft = (stored: StoredDraft): boolean =>
 	Array.isArray(stored.photos) &&
 	stored.photos.every(isValidPhoto);
 
+/**
+ * Liest den zwischengespeicherten Entwurf. Ein ungültiger oder zu alter Entwurf wird gelöscht
+ * und als `undefined` gemeldet.
+ */
 export const getDraft = async (): Promise<DraftFormData | undefined> => {
 	const db = await getDb();
 	const stored = await db.get(DRAFT_STORE_NAME, DRAFT_KEY);
@@ -186,11 +203,13 @@ export const getDraft = async (): Promise<DraftFormData | undefined> => {
 	return { vehicles: stored.vehicles, photos: stored.photos };
 };
 
+/** Speichert den aktuellen Formularstand als Entwurf und aktualisiert dessen Zeitstempel. */
 export const saveDraft = async (vehicles: VehicleEntry[], photos: PhotoEntry[]): Promise<void> => {
 	const db = await getDb();
 	await db.put(DRAFT_STORE_NAME, { id: DRAFT_KEY, vehicles, photos, savedAt: Date.now() });
 };
 
+/** Verwirft den gespeicherten Entwurf. */
 export const clearDraft = async (): Promise<void> => {
 	const db = await getDb();
 	await db.delete(DRAFT_STORE_NAME, DRAFT_KEY);

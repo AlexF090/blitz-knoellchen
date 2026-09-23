@@ -4,6 +4,7 @@ import { normalizeLicensePlate } from '$lib/validation/formSchema';
 import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
 import type { HistoryEntry } from './db';
 
+/** Rohdaten einer gerade versendeten Anzeige. */
 export interface BuildHistoryEntryInput {
 	// id/timestamp als Parameter statt intern per crypto.randomUUID()/Date.now() erzeugt — hält
 	// die Funktion rein und ohne Mocking testbar.
@@ -16,6 +17,7 @@ export interface BuildHistoryEntryInput {
 	photos: PhotoEntry[];
 }
 
+/** Verdichtet eine versendete Anzeige zu dem in der Historie gespeicherten Eintrag. */
 export const buildHistoryEntry = ({
 	id,
 	timestamp,

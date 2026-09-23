@@ -1,6 +1,6 @@
-// Feste Fahrzeugart-Liste, wie im Original-Formular der Bußgeldstelle Köln vorgegeben —
-// bewusst kein Freitext/keine Datalist, da die Bußgeldstelle hier eine geschlossene Auswahl
-// erwartet (anders als bei Marke, s. vehicleMakes.ts).
+/** Geschlossene Auswahl der Fahrzeugarten, wie vom Original-Formular der Stadt Köln vorgegeben. */
+// Bewusst kein Freitext/keine Datalist — die Bußgeldstelle erwartet hier eine feste Auswahl
+// (anders als bei der Marke, s. vehicleMakes.ts).
 export const VEHICLE_TYPES = [
 	'PKW',
 	'LKW',
@@ -11,4 +11,5 @@ export const VEHICLE_TYPES = [
 	'Sonstiges'
 ] as const;
 
+/** Eine der in VEHICLE_TYPES zugelassenen Fahrzeugarten. */
 export type VehicleType = (typeof VEHICLE_TYPES)[number];

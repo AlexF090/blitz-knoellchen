@@ -1,11 +1,13 @@
 import { describeHttpError } from './httpErrors';
 import type { GeocodeAddress } from './geocodeAddress';
 
+/** Adresse oder — wenn alle Anbieter erfolglos blieben — eine anzeigbare Fehlermeldung. */
 export interface ReverseGeocodeResult {
 	address: GeocodeAddress | null;
 	error: string | null;
 }
 
+/** Ein austauschbarer Reverse-Geocoding-Anbieter; `name` dient nur der Fehlerdiagnose im Log. */
 export interface GeocodeProvider {
 	name: string;
 	lookup: (lat: number, lon: number) => Promise<GeocodeAddress | null>;
@@ -13,12 +15,12 @@ export interface GeocodeProvider {
 
 const REQUEST_TIMEOUT_MS = 5000;
 
-// Nichtssagende Ergebnisse (kein Straßenname und keine Ortsangabe) sind nutzlos für die
-// Anzeige und werden wie ein "kein Ergebnis" behandelt, damit der nächste Provider versucht wird.
+/** Verwirft nichtssagende Treffer (weder Straße noch Ort), damit der nächste Provider drankommt. */
 const toAddressOrNull = (address: GeocodeAddress): GeocodeAddress | null => {
 	return address.street || address.city ? address : null;
 };
 
+/** Reverse-Geocoding über LocationIQ — liefert als einziger Anbieter Straße und Hausnummer. */
 export const createLocationIqProvider = (
 	apiKey: string,
 	fetchFn: typeof fetch
@@ -43,6 +45,7 @@ export const createLocationIqProvider = (
 	};
 };
 
+/** Reverse-Geocoding über BigDataCloud, als Fallback ohne API-Schlüssel. */
 export const createBigDataCloudProvider = (fetchFn: typeof fetch): GeocodeProvider => {
 	return {
 		name: 'bigdatacloud',
@@ -62,6 +65,7 @@ export const createBigDataCloudProvider = (fetchFn: typeof fetch): GeocodeProvid
 	};
 };
 
+/** Fragt die Anbieter der Reihe nach ab und liefert den ersten brauchbaren Treffer. */
 export const reverseGeocode = async (
 	lat: number,
 	lon: number,
@@ -72,8 +76,8 @@ export const reverseGeocode = async (
 			const address = await provider.lookup(lat, lon);
 			if (address) return { address, error: null };
 		} catch (error) {
-			// nächsten Provider in der Kette versuchen; Fehler nur server-seitig sichtbar
-			// machen (Diagnose), da der Client ohnehin nur "beide fehlgeschlagen" braucht.
+			// Fehler bleiben server-seitig: der Client braucht nur „alle fehlgeschlagen" und
+			// die Schleife versucht ohnehin den nächsten Provider.
 			console.error(`[geocode] Provider "${provider.name}" fehlgeschlagen:`, error);
 		}
 	}

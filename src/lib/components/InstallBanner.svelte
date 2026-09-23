@@ -1,19 +1,24 @@
 <script lang="ts">
+	/**
+	 * Installationshinweis für Browser mit nativem Installations-Prompt (Chromium).
+	 * Für iOS Safari übernimmt stattdessen IosInstallBanner.svelte.
+	 */
 	import { SquarePlus } from '@lucide/svelte';
 	import { fly } from 'svelte/transition';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { installPrompt } from '$lib/pwa/installPrompt.svelte';
 
-	// Bewusst kein "dauerhaft ausblenden" per localStorage — solange die App nicht als PWA
-	// installiert ist (installPrompt.canInstall wird erst durch das appinstalled-Event false),
-	// soll der Hinweis bei jedem Öffnen wieder erscheinen. Das Kreuz schließt ihn nur für die
-	// aktuelle Ansicht.
+	// Bewusst kein dauerhaftes Ausblenden per localStorage — solange die App nicht installiert ist
+	// (installPrompt.canInstall wird erst durch das appinstalled-Event false), soll der Hinweis
+	// bei jedem Öffnen wiederkommen.
 	let dismissed = $state(false);
 
+	/** Blendet den Hinweis nur für die aktuelle Ansicht aus. */
 	const dismiss = () => {
 		dismissed = true;
 	};
 
+	/** Öffnet den nativen Installations-Dialog des Browsers. */
 	const install = async () => {
 		await installPrompt.prompt();
 	};
