@@ -1,35 +1,32 @@
 <script lang="ts">
+	/**
+	 * Eine auf- und zuklappbare Karte pro gemeldetem Fahrzeug: Fotoauswahl, Tatort, Fahrzeugdaten
+	 * und Verstöße. Zugeklappt zeigt sie nur noch die Zusammenfassung.
+	 */
 	import type { City, IncidentType } from '$lib/config/cities';
 	import { INCIDENT_TYPE_ICONS } from '$lib/config/incidentTypeIcons';
 	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
-	import { VEHICLE_MAKES } from '$lib/config/vehicleMakes';
-	import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
-	import {
-		buildEmailTemplateInput,
-		resolveVehicleIncidentTypes
-	} from '$lib/email/buildEmailTemplateInput';
-	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { buildVehicleSummaryRows } from '$lib/report/vehicleSummary';
 	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
 	import { inputBase } from '$lib/ui/inputStyles';
 	import { onEnterKey } from '$lib/ui/onEnterKey';
-	import { ariaFieldProps } from '$lib/validation/ariaField';
 	import type {
 		PhotoEntry,
 		ProfileFields,
 		VehicleEntry,
 		VehicleErrors
 	} from '$lib/validation/formSchema';
-	import { normalizeLicensePlate, validateVehicle } from '$lib/validation/formSchema';
+	import { validateVehicle } from '$lib/validation/formSchema';
 	import { Eye, RotateCcw, Trash2 } from '@lucide/svelte';
 	import { fade } from 'svelte/transition';
-	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import FormField from './FormField.svelte';
-	import SegmentedControl from './SegmentedControl.svelte';
+	import IncidentLocationFieldset from './IncidentLocationFieldset.svelte';
 	import SummaryList from './SummaryList.svelte';
+	import VehicleDetailsFieldset from './VehicleDetailsFieldset.svelte';
+	import VehiclePreviewDialog from './VehiclePreviewDialog.svelte';
 
 	interface Props {
 		vehicle: VehicleEntry;
@@ -39,17 +36,20 @@
 		pool: PhotoEntry[];
 		incidentTypes: IncidentType[];
 		maxPhotos: number;
+		/** Hinweis, wenn sich der Tatort nicht vollständig aus dem Foto ableiten ließ. */
 		geocodeWarning?: string;
+		/** „Deine Angaben“ — nur für die E-Mail-Vorschau, wird hier nicht bearbeitet. */
 		profile: ProfileFields;
 		city: City;
 		recipientEmail: string;
 		onRemove: () => void;
 		onReset: () => void;
+		/** Meldet jede Änderung der Fotoauswahl, damit der Aufrufer EXIF-Daten übernehmen kann. */
 		onPhotoToggled?: (photoId: string, selected: boolean) => void;
 	}
 
 	let {
-		vehicle,
+		vehicle = $bindable(),
 		index,
 		total,
 		errors,
@@ -69,29 +69,13 @@
 	let resetDialog = $state<HTMLDialogElement | undefined>(undefined);
 	let previewDialog = $state<HTMLDialogElement | undefined>(undefined);
 
+	/** Öffnet die Rückfrage vor dem Entfernen bzw. Zurücksetzen dieser Karte. */
 	const openResetDialog = () => resetDialog?.showModal();
+
+	/** Öffnet die E-Mail-Vorschau, sobald alle Pflichtfelder ausgefüllt sind. */
 	const openPreviewDialog = () => isComplete && previewDialog?.showModal();
 
-	const previewPhotos = $derived(
-		vehicle.photoIds
-			.map((id) => pool.find((p) => p.id === id))
-			.filter((photo): photo is PhotoEntry => photo !== undefined)
-	);
-
-	const previewEmail = $derived.by(() => {
-		if (!isComplete) return null;
-		return city.buildEmailBody(
-			buildEmailTemplateInput({
-				profile,
-				vehicle,
-				incidentTypes: resolveVehicleIncidentTypes(city, vehicle),
-				photoCount: vehicle.photoIds.length,
-				vehicleIndex: index + 1,
-				vehicleTotal: total
-			})
-		);
-	});
-
+	/** Entfernt die Karte, solange es weitere gibt — sonst wird die letzte nur geleert. */
 	const confirmReset = () => {
 		resetDialog?.close();
 		triggerHaptic('warning');
@@ -99,49 +83,20 @@
 		else onReset();
 	};
 
-	// Kennzeichen bestehen international nur aus Großbuchstaben — kleingeschriebene Eingaben
-	// werden beim Tippen live großgeschrieben. `toUpperCase()` ändert die String-Länge nicht,
-	// daher muss die Cursorposition nur nach dem manuellen Setzen von `input.value` (das den
-	// Cursor sonst ans Ende springen lassen würde) wiederhergestellt werden.
-	const handleLicensePlateInput = (event: Event & { currentTarget: HTMLInputElement }) => {
-		const input = event.currentTarget;
-		const { selectionStart, selectionEnd } = input;
-		const uppercased = input.value.toUpperCase();
-		input.value = uppercased;
-		input.setSelectionRange(selectionStart, selectionEnd);
-		vehicle.licensePlate = uppercased;
-	};
-
-	// Beim Verlassen des Feldes zusätzlich ins kanonische Format bringen (z. B. "K AB 1234" ->
-	// "K-AB1234") — dieselbe Funktion, die auch beim Absenden genutzt wird, hier nur schon
-	// vorab für sichtbares Feedback.
-	const handleLicensePlateBlur = () => {
-		vehicle.licensePlate = normalizeLicensePlate(vehicle.licensePlate, vehicle.licensePlateCountry);
-	};
-
+	/** Macht einen Foto-Blob als `src` verwendbar. */
 	const objectUrl = (blob: Blob) => URL.createObjectURL(blob);
-
-	const selectHalteverstoss = () => {
-		vehicle.timeMode = 'halteverstoss';
-		vehicle.endTime = '';
-		triggerHaptic('selection');
-	};
-	const selectParkverstoss = () => {
-		vehicle.timeMode = 'parkverstoss';
-		triggerHaptic('selection');
-	};
 
 	const missingFieldMessages = $derived(Object.values(validateVehicle(vehicle, pool)));
 
 	const isComplete = $derived(missingFieldMessages.length === 0);
 
-	// Falls sich Angaben nachträglich als unvollständig herausstellen (z.B. ein Foto wird
-	// andernorts aus dem Pool entfernt), zwingt das die zugeklappte Karte wieder auf, statt
-	// unvollständige Angaben unsichtbar zu lassen.
+	// Werden Angaben nachträglich unvollständig (z.B. ein Foto wird andernorts aus dem Pool
+	// entfernt), klappt die Karte wieder auf — sonst bliebe der Mangel unsichtbar.
 	$effect(() => {
 		if (!isComplete && !open) open = true;
 	});
 
+	/** Nimmt ein Foto in die Auswahl dieses Fahrzeugs auf oder entfernt es wieder. */
 	const togglePhoto = (photoId: string) => {
 		if (vehicle.photoIds.includes(photoId)) {
 			vehicle.photoIds = vehicle.photoIds.filter((id) => id !== photoId);
@@ -152,15 +107,18 @@
 		}
 	};
 
+	/** Setzt oder entfernt eine Verstoßart in der Mehrfachauswahl. */
 	const toggleIncidentType = (id: string, checked: boolean) => {
 		vehicle.incidentTypeIds = checked
 			? [...vehicle.incidentTypeIds, id]
 			: vehicle.incidentTypeIds.filter((existing) => existing !== id);
 	};
 
-	// Die Fahrzeug-Felder liegen im selben <form> wie der eigentliche Absenden-Button —
-	// ohne diesen Handler würde Enter in einem Feld das gesamte Formular abschicken statt nur
-	// diese Karte in den Lese-Modus zu klappen (analog zu "Fertig" oben).
+	/**
+	 * Klappt die Karte bei Enter in den Lese-Modus (analog zu „Fertig“). Ohne diesen Handler
+	 * würde Enter die gesamte Anzeige abschicken — die Felder liegen im selben `form`-Element wie
+	 * der Absenden-Button.
+	 */
 	const onVehicleFieldKeydown = onEnterKey(() => {
 		if (isComplete) open = false;
 	});
@@ -271,190 +229,9 @@
 					</p>{/if}
 			</div>
 
-			<fieldset class="mt-3 rounded-control border border-border p-3">
-				<legend class="px-1 text-lg font-medium text-ink">Tatort</legend>
+			<IncidentLocationFieldset bind:vehicle {errors} {geocodeWarning} />
 
-				<fieldset class="mt-2">
-					<legend class="text-lg font-medium text-ink">Art der Zeitangabe</legend>
-					<SegmentedControl
-						name="timeMode-{vehicle.id}"
-						value={vehicle.timeMode}
-						onChange={(mode) =>
-							mode === 'parkverstoss' ? selectParkverstoss() : selectHalteverstoss()}
-						options={[
-							{
-								value: 'halteverstoss',
-								label: 'Halteverstoß',
-								ariaLabel: 'Halteverstoß (Einzelzeitpunkt)'
-							},
-							{
-								value: 'parkverstoss',
-								label: 'Parkverstoß',
-								ariaLabel: 'Parkverstoß (Zeitraum, mind. 4 Min.)'
-							}
-						]}
-					/>
-					{#if vehicle.timeMode === 'parkverstoss'}
-						<p class="mt-1 text-base text-ink-muted">
-							Für die Ahndung eines Parkverstoßes muss das Fahrzeug mindestens 4 Minuten durchgängig
-							geparkt gewesen sein.
-						</p>
-					{/if}
-				</fieldset>
-
-				<div
-					class={`mt-2 grid grid-cols-1 gap-3 ${vehicle.timeMode === 'parkverstoss' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
-				>
-					<FormField
-						id="date-{vehicle.id}"
-						label="Datum"
-						type="date"
-						required
-						error={errors?.date}
-						bind:value={vehicle.date}
-					/>
-					<FormField
-						id="time-{vehicle.id}"
-						label={vehicle.timeMode === 'parkverstoss' ? 'Von' : 'Uhrzeit'}
-						type="time"
-						required
-						error={errors?.time}
-						bind:value={vehicle.time}
-					/>
-					{#if vehicle.timeMode === 'parkverstoss'}
-						<FormField
-							id="endTime-{vehicle.id}"
-							label="Bis"
-							type="time"
-							required
-							error={errors?.endTime}
-							bind:value={vehicle.endTime}
-						/>
-					{/if}
-				</div>
-				<div class="mt-2 grid grid-cols-[2fr_1fr] gap-3">
-					<AddressAutocomplete
-						id="locationStreet-{vehicle.id}"
-						label="Straße"
-						required
-						error={errors?.locationStreet}
-						bind:value={vehicle.locationStreet}
-						onSelect={(suggestion) => applyAddressSuggestion(vehicle, suggestion, true)}
-					/>
-					<FormField
-						id="locationHouseNumber-{vehicle.id}"
-						label="Hausnr."
-						bind:value={vehicle.locationHouseNumber}
-					/>
-				</div>
-				{#if geocodeWarning}<p role="status" class="mt-1 text-lg text-warning-fg">
-						{geocodeWarning}
-					</p>{/if}
-				<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
-					<FormField
-						id="locationPostcode-{vehicle.id}"
-						label="PLZ"
-						required
-						inputmode="numeric"
-						error={errors?.locationPostcode}
-						bind:value={vehicle.locationPostcode}
-					/>
-					<FormField
-						id="locationCity-{vehicle.id}"
-						label="Ort"
-						required
-						error={errors?.locationCity}
-						bind:value={vehicle.locationCity}
-					/>
-				</div>
-			</fieldset>
-
-			<fieldset class="mt-3 rounded-control border border-border p-3">
-				<legend class="px-1 text-lg font-medium text-ink">Fahrzeug</legend>
-
-				<div class="mt-2 grid grid-cols-[1fr_2fr] gap-3">
-					<FormField
-						id="licensePlateCountry-{vehicle.id}"
-						label="Länderkennz."
-						bind:value={vehicle.licensePlateCountry}
-					/>
-					<FormField
-						id="licensePlate-{vehicle.id}"
-						label="Kennzeichen"
-						required
-						error={errors?.licensePlate}
-					>
-						{#snippet control()}
-							<input
-								id="licensePlate-{vehicle.id}"
-								name="licensePlate-{vehicle.id}"
-								value={vehicle.licensePlate}
-								oninput={handleLicensePlateInput}
-								onblur={handleLicensePlateBlur}
-								required
-								aria-required="true"
-								autocapitalize="characters"
-								spellcheck="false"
-								{...ariaFieldProps(`licensePlate-${vehicle.id}`, errors?.licensePlate)}
-								class={inputBase}
-							/>
-						{/snippet}
-					</FormField>
-				</div>
-
-				<div class="mt-2">
-					<FormField
-						id="vehicleType-{vehicle.id}"
-						label="Fahrzeugart"
-						required
-						error={errors?.vehicleType}
-						wrapperClass=""
-					>
-						{#snippet control()}
-							<select
-								id="vehicleType-{vehicle.id}"
-								name="vehicleType-{vehicle.id}"
-								bind:value={vehicle.vehicleType}
-								required
-								aria-required="true"
-								{...ariaFieldProps(`vehicleType-${vehicle.id}`, errors?.vehicleType)}
-								class="{inputBase} bg-surface text-ink"
-							>
-								<option value="" disabled>Bitte wählen</option>
-								{#each VEHICLE_TYPES as type (type)}<option value={type}>{type}</option>{/each}
-							</select>
-						{/snippet}
-					</FormField>
-				</div>
-
-				<div class="mt-2 grid grid-cols-2 gap-3">
-					<FormField
-						id="make-{vehicle.id}"
-						label="Marke"
-						required
-						error={errors?.make}
-						list="vehicle-makes-{vehicle.id}"
-						bind:value={vehicle.make}
-					>
-						{#snippet after()}
-							<datalist id="vehicle-makes-{vehicle.id}">
-								{#each VEHICLE_MAKES as make (make)}<option value={make}></option>{/each}
-							</datalist>
-						{/snippet}
-					</FormField>
-					<FormField
-						id="color-{vehicle.id}"
-						label="Farbe"
-						required
-						error={errors?.color}
-						placeholder="z. B. Rot, hell, dunkel"
-						bind:value={vehicle.color}
-					/>
-				</div>
-				<p class="mt-1 text-base text-ink-muted">
-					Genaue Farbe unbekannt? Auch Beschreibungen wie „hell" oder „dunkel" reichen aus.
-				</p>
-			</fieldset>
+			<VehicleDetailsFieldset bind:vehicle {errors} />
 
 			<fieldset class="mt-3 rounded-control border border-border p-3">
 				<legend class="px-1 text-lg font-medium text-ink">
@@ -580,58 +357,14 @@
 	{/snippet}
 </ConfirmDialog>
 
-<ConfirmDialog
+<VehiclePreviewDialog
 	bind:dialog={previewDialog}
-	titleId="preview-dialog-title-{vehicle.id}"
-	title={total > 1 ? `Vorschau: Fahrzeug ${index + 1} von ${total}` : 'Vorschau'}
-	desktopMaxWidthClass="sm:max-w-2xl"
->
-	{#if !previewEmail}
-		<p class="mt-1 text-lg text-ink-muted">Noch nicht einklappbar, bitte prüfen:</p>
-		<ul class="mt-1 list-disc pl-5 text-lg text-ink-muted">
-			{#each missingFieldMessages as message (message)}
-				<li>{message}</li>
-			{/each}
-		</ul>
-	{:else}
-		<div class="mt-3 flex flex-col gap-3 text-lg">
-			<div>
-				<p class="text-base font-medium text-ink-muted">An</p>
-				<p class="text-ink">{recipientEmail}</p>
-			</div>
-			<p class="text-base text-ink-muted">
-				Eine Kopie geht zusätzlich an deine eigene Adresse{profile.email
-					? ` (${profile.email})`
-					: ''} — als Antwort-Adresse und BCC.
-			</p>
-			<div>
-				<p class="text-base font-medium text-ink-muted">Betreff</p>
-				<p class="text-ink">{previewEmail.subject}</p>
-			</div>
-			<div>
-				<p class="text-base font-medium text-ink-muted">Nachricht</p>
-				<pre
-					class="mt-1 max-h-64 overflow-y-auto rounded-control border border-border bg-surface-sunken p-2 text-base whitespace-pre-wrap text-ink">{previewEmail.body}</pre>
-			</div>
-			{#if previewPhotos.length > 0}
-				<div>
-					<p class="text-base font-medium text-ink-muted">Anhang</p>
-					<div class="mt-1 flex flex-wrap gap-2">
-						{#each previewPhotos as photo, photoIndex (photo.id)}
-							<img
-								src={objectUrl(photo.blob)}
-								alt="Beweisfoto {photoIndex + 1} von {previewPhotos.length}"
-								class="max-h-48 w-auto max-w-full rounded-control border border-border object-contain"
-							/>
-						{/each}
-					</div>
-				</div>
-			{/if}
-		</div>
-	{/if}
-	{#snippet actions()}
-		<button type="button" onclick={() => previewDialog?.close()} class="flex-1 {buttonSecondary}">
-			Schließen
-		</button>
-	{/snippet}
-</ConfirmDialog>
+	{vehicle}
+	{index}
+	{total}
+	{pool}
+	{city}
+	{profile}
+	{recipientEmail}
+	{missingFieldMessages}
+/>

@@ -1,45 +1,46 @@
 <script lang="ts">
+	/**
+	 * Das gesamte Anzeige-Formular: „Deine Angaben“, Foto-Pool und beliebig viele Fahrzeug-Karten.
+	 * Hält Entwurf (IndexedDB-Autosave), Validierung und Versand zusammen.
+	 */
 	import { resolve } from '$app/paths';
 	import { appMode } from '$lib/appMode.svelte';
 	import { CITIES } from '$lib/config/cities';
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
 	import { fetchAddress } from '$lib/geocode/client';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
-	import { buildHistoryEntry } from '$lib/history/buildHistoryEntry';
 	import { addEntry, clearDraft, getDraft, saveDraft } from '$lib/history/db';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { createPhotoEntry, HeicConversionError } from '$lib/photo/createPhotoEntry';
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
 	import { PHOTO_WARNINGS, pruneWarnings } from '$lib/report/photoWarnings';
 	import { sendVehicleReport } from '$lib/report/sendClient';
-	import { buildSendFormData } from '$lib/report/sendFormData';
 	import type { VehicleSendResult } from '$lib/report/sendResults';
+	import { submitVehicleReports } from '$lib/report/submitVehicleReports';
 	import {
 		buttonDestructive,
 		buttonDestructiveSecondary,
 		buttonPrimary,
 		buttonSecondary
 	} from '$lib/ui/buttonStyles';
-	import { onEnterKey } from '$lib/ui/onEnterKey';
 	import { createEmptyForm, createEmptyVehicle } from '$lib/validation/emptyForm';
 	import { findFirstErrorTarget } from '$lib/validation/fieldOrder';
 	import {
 		getMaxPoolPhotos,
 		isFormValid,
 		MAX_PHOTOS_PER_VEHICLE,
-		normalizeLicensePlate,
 		validateProfileFields,
 		validateReportForm,
+		type FormErrors,
 		type PhotoEntry,
 		type ReportFormData,
 		type VehicleEntry
 	} from '$lib/validation/formSchema';
 	import { tick } from 'svelte';
 	import { fly } from 'svelte/transition';
-	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
-	import FormField from './FormField.svelte';
 	import PhotoPool from './PhotoPool.svelte';
+	import ProfileCard from './ProfileCard.svelte';
 	import VehicleBlock from './VehicleBlock.svelte';
 
 	interface Props {
@@ -58,7 +59,7 @@
 	const profileStore = createProfileStore();
 
 	let form = $state<ReportFormData>(createEmptyForm());
-	let errors = $state<ReturnType<typeof validateReportForm>>({});
+	let errors = $state<FormErrors>({});
 	let photosCardElement = $state<HTMLDivElement | undefined>(undefined);
 	let photoProcessing = $state(false);
 	let photoProcessingError = $state<string | null>(null);
@@ -72,9 +73,9 @@
 	let successDialog = $state<HTMLDialogElement | undefined>(undefined);
 	let successCount = $state(0);
 
-	// Profil und Entwurf werden gemeinsam geladen, bevor überhaupt etwas vom Formular gerendert
-	// wird (s. formReady-Gate im Markup) — verhindert, dass "Deine Angaben" erst leer im
-	// Bearbeiten-Modus aufblitzt und dann auf den Lese-Modus umschaltet.
+	// Profil und Entwurf laden gemeinsam, bevor irgendetwas vom Formular gerendert wird (s.
+	// formReady-Gate im Markup) — sonst blitzt „Deine Angaben“ erst leer im Bearbeiten-Modus auf
+	// und schaltet dann auf den Lese-Modus um.
 	$effect(() => {
 		(async () => {
 			try {
@@ -105,8 +106,8 @@
 		})();
 	});
 
-	// Debounced Autosave des Entwurfs (Fahrzeuge + Fotos) in die IndexedDB, solange noch nicht
-	// abgesendet wurde — überlebt so ein Schließen von Tab/PWA mitten im Ausfüllen.
+	// Debounced Autosave des Entwurfs in die IndexedDB — überlebt ein Schließen von Tab/PWA
+	// mitten im Ausfüllen.
 	$effect(() => {
 		if (!formReady) return;
 		JSON.stringify(form.vehicles); // erzwingt Tracking aller verschachtelten Fahrzeug-Felder
@@ -124,6 +125,7 @@
 		return () => clearTimeout(timer);
 	});
 
+	/** Übernimmt die aktuellen „Deine Angaben“-Felder in das dauerhaft gespeicherte Profil. */
 	const saveProfileFields = async () => {
 		await profileStore.save({
 			firstName: form.firstName,
@@ -136,24 +138,6 @@
 		});
 	};
 
-	const onSaveProfile = async () => {
-		const profileErrors = validateProfileFields(form);
-		errors = { ...errors, ...profileErrors };
-		if (Object.keys(profileErrors).length > 0) return;
-
-		await saveProfileFields();
-		isEditingProfile = false;
-	};
-
-	const onEditProfile = () => {
-		isEditingProfile = true;
-	};
-
-	// Die Profil-Felder liegen im selben <form> wie der eigentliche Absenden-Button (s. u.) —
-	// ohne diesen Handler würde Enter in einem Profil-Feld das gesamte Formular abschicken statt
-	// nur das Profil zu speichern.
-	const onProfileFieldKeydown = onEnterKey(() => void onSaveProfile());
-
 	let usageCounts = $derived.by(() => {
 		const counts: Record<string, number> = {};
 		for (const vehicle of form.vehicles) {
@@ -162,10 +146,10 @@
 		return counts;
 	});
 
-	// Cache: löst das GPS eines Fotos per Reverse-Geocoding auf und merkt sich das Ergebnis
-	// auf dem Pool-Eintrag, damit eine Mehrfachzuordnung zu Fahrzeugen keinen erneuten
-	// Netzwerkaufruf auslöst.
+	/** Löst das GPS eines Fotos per Reverse-Geocoding in eine Adresse auf. */
 	const resolvePhotoAddress = async (photo: PhotoEntry) => {
+		// Ergebnis liegt am Pool-Eintrag, damit eine Mehrfachzuordnung zu Fahrzeugen keinen
+		// erneuten Netzwerkaufruf auslöst.
 		if (photo.resolvedAddress !== undefined) return photo.resolvedAddress;
 		if (!photo.gps) return null;
 		const address = await fetchAddress(photo.gps.lat, photo.gps.lon);
@@ -173,8 +157,10 @@
 		return address;
 	};
 
-	// Befüllt Datum/Uhrzeit/Tatort eines Fahrzeugs aus dem EXIF eines ihm zugeordneten
-	// Fotos — überschreibt nie bereits vorhandene (auch manuell eingegebene) Werte.
+	/**
+	 * Befüllt Datum/Uhrzeit/Tatort eines Fahrzeugs aus dem EXIF eines ihm zugeordneten Fotos —
+	 * überschreibt nie bereits vorhandene (auch manuell eingegebene) Werte.
+	 */
 	const applyPhotoExifToVehicle = async (vehicle: VehicleEntry, photoId: string) => {
 		const photo = form.photos.find((p) => p.id === photoId);
 		if (!photo) return;
@@ -204,6 +190,10 @@
 		}
 	};
 
+	/**
+	 * Legt aus einer ausgewählten Datei einen Pool-Eintrag an und ordnet ihn — soweit eindeutig —
+	 * direkt einem Fahrzeug zu.
+	 */
 	const onAddPhoto = async (file: File) => {
 		photoProcessingError = null;
 		photoProcessing = true;
@@ -217,9 +207,9 @@
 			photoProcessingError = error.message;
 			return;
 		} finally {
-			// Das Bild selbst ist ab hier fertig prozessiert und im Grid sichtbar — die
+			// Schon hier freigeben: das Bild ist fertig prozessiert und im Grid sichtbar, die
 			// nachfolgende Adressauflösung (Netzwerk-Geocoding) darf das Add-Label nicht länger
-			// blockieren, sonst "hängt" der Spinner sichtbar an dessen Stelle weiter.
+			// blockieren — sonst „hängt“ der Spinner sichtbar an dessen Stelle weiter.
 			photoProcessing = false;
 		}
 
@@ -241,6 +231,7 @@
 		}
 	};
 
+	/** Entfernt ein Foto aus dem Pool und aus der Auswahl aller Fahrzeuge. */
 	const onRemovePhoto = (photoId: string) => {
 		form.photos = form.photos.filter((photo) => photo.id !== photoId);
 		for (const vehicle of form.vehicles) {
@@ -248,6 +239,7 @@
 		}
 	};
 
+	/** Hängt eine leere Fahrzeug-Karte an und scrollt sie in den sichtbaren Bereich. */
 	const addVehicle = async () => {
 		const entry = createEmptyVehicle();
 		form.vehicles = [...form.vehicles, entry];
@@ -257,15 +249,15 @@
 			?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	};
 
+	/** Entfernt eine Fahrzeug-Karte; die letzte verbleibende bleibt bestehen. */
 	const removeVehicle = (id: string) => {
 		if (form.vehicles.length <= 1) return;
 		const removedIndex = form.vehicles.findIndex((vehicle) => vehicle.id === id);
 		form.vehicles = form.vehicles.filter((vehicle) => vehicle.id !== id);
 		vehicleGeocodeWarnings = pruneWarnings(vehicleGeocodeWarnings, form.vehicles);
-		// errors.vehicles ist index-basiert an die Fahrzeug-POSITION gebunden (nicht an die id,
-		// s. VehicleBlock errors={errors.vehicles?.[index]}) — muss beim Entfernen analog zu
-		// vehicleGeocodeWarnings neu indiziert werden, sonst verschieben sich die Fehler auf die
-		// verbleibenden Fahrzeuge.
+		// errors.vehicles hängt an der Fahrzeug-POSITION, nicht an der id (s. VehicleBlock
+		// errors={errors.vehicles?.[index]}) — ohne Neuindizierung verschieben sich die Fehler
+		// auf die verbleibenden Fahrzeuge.
 		if (removedIndex !== -1 && errors.vehicles) {
 			errors = {
 				...errors,
@@ -274,6 +266,7 @@
 		}
 	};
 
+	/** Leert eine Fahrzeug-Karte, ohne sie zu entfernen. */
 	const resetVehicle = (id: string) => {
 		const resetIndex = form.vehicles.findIndex((vehicle) => vehicle.id === id);
 		form.vehicles = form.vehicles.map((vehicle) =>
@@ -289,8 +282,10 @@
 		}
 	};
 
-	// Setzt das komplette Formular inkl. "Deine Angaben" zurück, lässt das gespeicherte Profil
-	// aber unangetastet (bleibt für die nächste Anzeige als Autofill erhalten).
+	/**
+	 * Setzt das komplette Formular inkl. „Deine Angaben“ zurück, lässt das gespeicherte Profil
+	 * aber unangetastet (bleibt für die nächste Anzeige als Autofill erhalten).
+	 */
 	const resetAll = async () => {
 		form = createEmptyForm();
 		errors = {};
@@ -308,22 +303,25 @@
 		}
 	};
 
+	/** Öffnet die Rückfrage vor dem Zurücksetzen des gesamten Formulars. */
 	const openResetDialog = () => resetDialog?.showModal();
 
+	/** Führt das bestätigte Zurücksetzen aus. */
 	const confirmReset = async () => {
 		resetDialog?.close();
 		triggerHaptic('warning');
 		await resetAll();
 	};
 
+	/** Schließt die Erfolgsmeldung nach einem Versand. */
 	const closeSuccessDialog = () => successDialog?.close();
 
-	// Reihenfolge bestimmt, welches Feld bei mehreren gleichzeitigen Fehlern fokussiert wird —
-	// folgt der visuellen Reihenfolge des Formulars von oben nach unten.
-	// Fokussiert das erste fehlerhafte Feld nach einem gescheiterten Absenden — Bildschirmleser
-	// erfahren so direkt, welches Feld korrigiert werden muss, statt nur einen visuellen Scroll
-	// (der sehende Maus-Nutzer hilft, aber Tastatur-/Screenreader-Nutzer nicht weiterbringt).
-	const focusFirstError = async (formErrors: ReturnType<typeof validateReportForm>) => {
+	/**
+	 * Fokussiert nach einem gescheiterten Absenden das erste fehlerhafte Feld — Bildschirmleser
+	 * erfahren so direkt, welches Feld zu korrigieren ist, statt nur einen visuellen Scroll zu
+	 * bekommen. Bei mehreren Fehlern gewinnt das visuell oberste Feld.
+	 */
+	const focusFirstError = async (formErrors: FormErrors) => {
 		await tick();
 		const target = findFirstErrorTarget(
 			formErrors,
@@ -346,6 +344,10 @@
 		}
 	};
 
+	/**
+	 * Validiert und versendet eine eigene Anzeige pro Fahrzeug. Erfolgreiche Fahrzeuge fallen aus
+	 * dem Formular, fehlgeschlagene bleiben für einen erneuten Versuch stehen.
+	 */
 	const onSubmit = async (event: SubmitEvent) => {
 		event.preventDefault();
 		errors = validateReportForm(form);
@@ -361,50 +363,15 @@
 		try {
 			await saveProfileFields();
 
-			const photoById = new Map(form.photos.map((photo) => [photo.id, photo]));
-			const results: VehicleSendResult[] = [];
-
-			for (const [index, vehicle] of form.vehicles.entries()) {
-				const incidentTypes = city.incidentTypes.filter((t) =>
-					vehicle.incidentTypeIds.includes(t.id)
-				);
-				const vehiclePhotos = vehicle.photoIds
-					.map((id) => photoById.get(id))
-					.filter((photo): photo is PhotoEntry => photo !== undefined);
-
-				const body = buildSendFormData({
-					profile: form,
-					vehicle,
-					vehicleIndex: index + 1,
-					vehicleTotal: form.vehicles.length,
-					mode: appMode.current ?? 'demo',
-					photos: vehiclePhotos.map((photo, pIdx) => ({
-						blob: photo.blob,
-						fileName: `beweisfoto-${pIdx + 1}.jpg`
-					}))
-				});
-
-				const ok = await sendVehicleReport(body);
-				results.push({
-					vehicleId: vehicle.id,
-					licensePlate: normalizeLicensePlate(vehicle.licensePlate, vehicle.licensePlateCountry),
-					ok
-				});
-
-				if (ok) {
-					await addEntry(
-						buildHistoryEntry({
-							id: crypto.randomUUID(),
-							timestamp: Date.now(),
-							firstName: form.firstName,
-							lastName: form.lastName,
-							vehicle,
-							incidentTypes,
-							photos: vehiclePhotos
-						})
-					);
-				}
-			}
+			const results = await submitVehicleReports({
+				form,
+				city,
+				mode: appMode.current ?? 'demo',
+				send: sendVehicleReport,
+				saveHistoryEntry: addEntry,
+				createId: () => crypto.randomUUID(),
+				now: Date.now
+			});
 
 			sendResults = results;
 
@@ -477,123 +444,12 @@
 			</div>
 		</div>
 	{:else}
-		<div class="rounded-card bg-surface p-4 shadow-card sm:p-6">
-			<h2 class="text-lg font-semibold text-ink md:text-xl">Deine Angaben</h2>
-
-			{#if isEditingProfile}
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div onkeydown={onProfileFieldKeydown}>
-					<p class="mt-1 text-lg text-ink-muted">
-						Mit <span class="text-error-fg">*</span> markierte Felder sind Pflichtfelder.
-					</p>
-
-					<div class="mt-3 grid grid-cols-2 gap-3">
-						<FormField
-							id="firstName"
-							label="Vorname"
-							required
-							autocompleteAttr="given-name"
-							error={errors.firstName}
-							bind:value={form.firstName}
-							onblur={saveProfileFields}
-						/>
-						<FormField
-							id="lastName"
-							label="Nachname"
-							required
-							autocompleteAttr="family-name"
-							error={errors.lastName}
-							bind:value={form.lastName}
-							onblur={saveProfileFields}
-						/>
-					</div>
-
-					<div class="mt-3">
-						<AddressAutocomplete
-							id="addressStreet"
-							label="Straße und Hausnr."
-							required
-							autocompleteAttr="address-line1"
-							placeholder="z. B. Musterstraße 12"
-							error={errors.addressStreet}
-							bind:value={form.addressStreet}
-							onBlur={saveProfileFields}
-							onSelect={(suggestion) => {
-								form.addressStreet = [suggestion.street, suggestion.houseNumber]
-									.filter(Boolean)
-									.join(' ');
-								if (suggestion.postcode) form.addressPostcode = suggestion.postcode;
-								if (suggestion.city) form.addressCity = suggestion.city;
-							}}
-						/>
-					</div>
-
-					<div class="mt-3 grid grid-cols-[1fr_2fr] gap-3">
-						<FormField
-							id="addressPostcode"
-							label="PLZ"
-							required
-							inputmode="numeric"
-							autocompleteAttr="postal-code"
-							error={errors.addressPostcode}
-							bind:value={form.addressPostcode}
-							onblur={saveProfileFields}
-						/>
-						<FormField
-							id="addressCity"
-							label="Ort"
-							required
-							autocompleteAttr="address-level2"
-							error={errors.addressCity}
-							bind:value={form.addressCity}
-							onblur={saveProfileFields}
-						/>
-					</div>
-
-					<div class="mt-3">
-						<FormField
-							id="email"
-							label="Deine E-Mail-Adresse"
-							type="email"
-							required
-							autocompleteAttr="email"
-							spellcheck={false}
-							error={errors.email}
-							bind:value={form.email}
-							onblur={saveProfileFields}
-						/>
-					</div>
-
-					<div class="mt-3">
-						<FormField
-							id="phone"
-							label="Telefonnummer"
-							type="tel"
-							autocompleteAttr="tel"
-							placeholder="z. B. 0221 12345678"
-							bind:value={form.phone}
-							onblur={saveProfileFields}
-						/>
-					</div>
-
-					<button type="button" onclick={onSaveProfile} class="mt-4 ml-auto block {buttonPrimary}">
-						Speichern
-					</button>
-				</div>
-			{:else}
-				<div class="mt-3 text-lg text-ink">
-					<p>{form.firstName} {form.lastName}</p>
-					<p>{form.addressStreet}</p>
-					<p>{form.addressPostcode} {form.addressCity}</p>
-					<p>{form.email}</p>
-					{#if form.phone}<p>{form.phone}</p>{/if}
-				</div>
-
-				<button type="button" onclick={onEditProfile} class="mt-4 ml-auto block {buttonSecondary}">
-					Bearbeiten
-				</button>
-			{/if}
-		</div>
+		<ProfileCard
+			bind:form
+			bind:errors
+			bind:isEditing={isEditingProfile}
+			onPersist={saveProfileFields}
+		/>
 
 		<div bind:this={photosCardElement}>
 			<PhotoPool
@@ -616,7 +472,7 @@
 				{#each form.vehicles as vehicle, index (vehicle.id)}
 					<div id="vehicle-block-{vehicle.id}">
 						<VehicleBlock
-							{vehicle}
+							bind:vehicle={form.vehicles[index]}
 							{index}
 							total={form.vehicles.length}
 							errors={errors.vehicles?.[index]}
