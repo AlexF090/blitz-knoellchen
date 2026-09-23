@@ -129,7 +129,7 @@ export default defineConfig({
 	test: {
 		expect: { requireAssertions: true },
 		coverage: {
-			provider: 'v8',
+			provider: 'istanbul',
 			reporter: ['text', 'html'],
 			include: ['src/**/*.{ts,svelte}'],
 			exclude: [
@@ -139,38 +139,36 @@ export default defineConfig({
 				'src/lib/report/sendResults.ts',
 				'src/routes/**/$types.d.ts'
 			],
+			// Provider ist bewusst istanbul, nicht v8. v8 leitet die Coverage aus den Zählern der
+			// JS-Engine ab und führt sie über die parallel laufenden Testdateien zusammen; dabei
+			// gingen im Browser-Projekt reproduzierbar Informationen verloren. Belegbar an
+			// src/lib/history/db.ts: v8 meldete dort die Top-Level-Konstante DRAFT_MAX_AGE_MS als
+			// nicht abgedeckt, obwohl ein Test sie importiert und an vi.setSystemTime() übergibt —
+			// ohne ihre Ausführung könnte dieser Test nicht grün sein. Wie stark der Verlust
+			// ausfiel, hing an der Anzahl parallel laufender Dateien und damit an der Kernzahl der
+			// Maschine, weshalb dieselbe Suite lokal und auf den CI-Runnern verschiedene Werte
+			// lieferte. Istanbul instrumentiert stattdessen den Code selbst und hat das Problem
+			// nicht: db.ts steigt damit von gemeldeten 86.66% auf 93.75% Funktionen, ohne dass sich
+			// an einer einzigen Testzeile etwas geändert hätte.
+			//
 			// Ziel ist 100% — praktisch jede Datei erreicht das auch. Für den Rest gibt es zwei
 			// begründete, einzeln recherchierte Ausnahme-Kategorien (kein pauschaler Freifahrtschein):
-			// (a) Svelte-Compiler/v8-Instrumentierungsartefakt: `bind:value`, Template-Interpolationen
-			//     (z.B. `{buttonPrimary}`) und `$props()`-Default-Destrukturierung erzeugen kompilierten
-			//     Code, den v8 als zusätzliche Branch/Function zählt, obwohl es keine echte Verzweigung
-			//     im Quellcode gibt — verifiziert an mehreren bereits vollständig getesteten Stellen
-			//     (z.B. beide Zweige von Props mit Default explizit getestet, trotzdem 0% Branch).
-			//     Sonderfall davon: `bind:value={obj.feld}` auf einem `$bindable()`-Objekt-Prop
-			//     kompiliert zu einem `get value()`/`set value()`-Paar; v8 meldet davon pro Binding
-			//     genau eine Funktion als nie aufgerufen, obwohl Tests sowohl das Rendern des Werts
-			//     als auch das Zurückschreiben bei Eingabe nachweisen. Betrifft nur Bindings an
-			//     Kind-Komponenten — `bind:value` auf einem echten DOM-Element (z.B. das <select>
-			//     in VehicleDetailsFieldset) wird korrekt als abgedeckt gezählt.
-			//     Gegenprobe, falls die Zahlen später erneut hinterfragt werden: In
-			//     IncidentLocationFieldset.svelte meldet v8 genau 7 unabgedeckte Funktionen, eine pro
-			//     `bind:value` — obwohl der Test "übernimmt Datum, Uhrzeit und Adressfelder in das
-			//     Fahrzeug" nachweislich in jedes einzelne dieser 7 Felder schreibt und das Ergebnis
-			//     am Fahrzeug-Objekt assertiert. Insgesamt gehen 17 solcher Phantom-Funktionen auf
-			//     dieses Muster zurück; sie sind der einzige Grund, warum `functions` unten bei 97
-			//     statt bei 99.5 steht. Wer das Budget prüfen will: coverage/index.html öffnen und
-			//     die als `fstat-no` markierten Stellen ansehen — sie liegen alle auf einem
-			//     `bind:`-Ziel, nie auf echtem Funktionsrumpf.
+			// (a) Svelte-Compiler-Artefakt: `bind:value`, Template-Interpolationen (z.B.
+			//     `{buttonPrimary}`) und `$props()`-Default-Destrukturierung erzeugen kompilierten
+			//     Code, der als zusätzliche Branch/Function gezählt wird, obwohl es im Quellcode
+			//     keine solche Verzweigung gibt — verifiziert an mehreren bereits vollständig
+			//     getesteten Stellen (z.B. beide Zweige von Props mit Default explizit getestet,
+			//     trotzdem 0% Branch). Häufigster Fall: `bind:value={obj.feld}` an eine
+			//     Kind-Komponente kompiliert zu einem `get`/`set`-Paar, von dem eine Hälfte als nie
+			//     aufgerufen gilt. Gegenprobe in IncidentLocationFieldset.svelte: genau sieben
+			//     unabgedeckte Funktionen bei sieben Bindings — obwohl der Test "übernimmt Datum,
+			//     Uhrzeit und Adressfelder in das Fahrzeug" in jedes dieser sieben Felder schreibt
+			//     und das Ergebnis am Fahrzeug-Objekt assertiert. Anders als das v8-Merge-Problem
+			//     bleibt dieser Effekt unter istanbul bestehen: der generierte Code existiert real.
 			// (b) Echter, aber über die öffentliche Komponenten-/Modul-API nie erreichbarer Defensiv-Code
 			//     (z.B. `if (!container) return;` bei einem `bind:this`, das nie vor dem ersten Event
 			//     ungebunden ist; ein `if (oldVersion < 3)`-Zweig, den `idb` laut eigener Semantik nie
 			//     falsch aufruft; ein SSR-Guard, der im Browser-Testprojekt strukturell immer true ist).
-			// (c) @vitest/coverage-v8-Merge-Artefakt im Browser-Modus bei vielen parallel laufenden
-			//     Testdateien: db.svelte.test.ts erreicht isoliert 100%/93% (Funktionen/Branches),
-			//     im Gesamtlauf werden für genau diese Datei jedoch auch triviale, nachweislich
-			//     ausgeführte Top-Level-Statements (z.B. die Konstante DRAFT_MAX_AGE_MS) als nicht
-			//     abgedeckt gemeldet, obwohl alle 21 Tests der Datei grün durchlaufen — reproduzierbar
-			//     auch mit `--no-file-parallelism`, also kein echtes Test-/Isolationsproblem.
 			//
 			// WICHTIG: vitest wendet die globalen Thresholds unten IMMER auf die Gesamtsumme aller
 			// Dateien an, auch wenn einzelne Dateien per Glob unten eigene (niedrigere) Werte haben —
@@ -179,10 +177,10 @@ export default defineConfig({
 			// für genau die betroffenen Dateien; jede Datei, die hier nicht explizit gelistet ist, bleibt
 			// implizit bei 100% gefordert (jede Regression drückt sofort den Gesamtwert unter den Floor).
 			thresholds: {
-				lines: 99.2,
-				branches: 88,
+				lines: 99.6,
+				branches: 88.5,
 				functions: 97,
-				statements: 98.2,
+				statements: 98.5,
 				'src/lib/components/Footer.svelte': { branches: 70 }, // (a) __APP_VERSION__ Vite-Define
 				'src/lib/components/IncidentLocationFieldset.svelte': {
 					statements: 91,
@@ -216,7 +214,17 @@ export default defineConfig({
 				}, // (a) drei `bind:value` an FormField + Interpolation der VEHICLE_TYPES/VEHICLE_MAKES-Listen
 				'src/lib/components/VehiclePreviewDialog.svelte': { branches: 80 }, // (a) Interpolation in Titel-/alt-Attributen
 				'src/lib/components/icons/*.svelte': { branches: 0 }, // (a) $props()-Default
-				'src/lib/history/db.ts': { statements: 88, branches: 88, functions: 85, lines: 88 }, // (b)+(c)
+				// (b) — `if (oldVersion < 3)` wird von idb nie mit einer neueren Schemaversion
+				// aufgerufen, der false-Zweig ist über die öffentliche API nicht erreichbar; dazu
+				// der `every`-Callback in isValidVehicle, den ein leeres photoIds-Array nie aufruft.
+				//
+				// Die Werte liegen auf dem CI-Ergebnis, das um ein Statement und einen Branch unter
+				// dem lokalen liegt (97.18/90.9 statt 98.59/93.18). Der Rest stammt aus den
+				// &&-Kurzschlussketten der beiden Validierungsfunktionen: wie weit sie ausgewertet
+				// werden, hängt daran, welches Feld zuerst nicht passt. Funktionen und Zeilen sind
+				// seit dem Wechsel auf istanbul in beiden Umgebungen identisch — unter v8 wichen
+				// zusätzlich sie ab (86.66% statt 93.75%).
+				'src/lib/history/db.ts': { statements: 97, branches: 90, functions: 93, lines: 98 },
 				'src/lib/pwa/installPrompt.svelte.ts': { branches: 80 }, // (b) `if (browser)`-SSR-Guard
 				'src/routes/+layout.svelte': { branches: 45 }, // (a) `dev`-Build-Time-Konstante
 				'src/routes/+page.svelte': { statements: 80, branches: 45, lines: 75 }, // (a) Prop-Weitergabe an ReportForm

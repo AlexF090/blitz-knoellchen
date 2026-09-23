@@ -18,7 +18,7 @@ const parseExifDateTime = (value: string): Date | null => {
 	// Die Regex begrenzt alle Anteile so, dass selbst die Maximalwerte (Jahr 9999, Monat/Tag/Zeit
 	// je 99) im darstellbaren Date-Bereich bleiben — der Invalid-Date-Fall ist mit diesem
 	// Eingabeformat unerreichbar, bleibt aber als Absicherung stehen.
-	/* v8 ignore next */
+	/* istanbul ignore next */
 	return isNaN(date.getTime()) ? null : date;
 };
 
