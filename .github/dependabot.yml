@@ -5,6 +5,19 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # Hebt ein PR esbuild, exifreader oder fsevents an, passt der versionsgenaue Eintrag in
+    # allowScripts (package.json) nicht mehr, und npm ci scheitert mit ESTRICTALLOWSCRIPTS.
+    # Dann den Eintrag im PR mitziehen: npm install-scripts approve.
+    ignore:
+      # Peer-Grenzen: svelte-check, typescript-eslint und @sveltejs/kit erlauben höchstens TS 6.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # @vite-pwa/sveltekit verlangt ^1.0.0.
+      - dependency-name: '@vite-pwa/assets-generator'
+        update-types: [version-update:semver-major]
+      # Die Typen folgen der Runtime (.nvmrc), nicht dem neuesten Node.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
     groups:
       # Sammel-PRs statt einer pro Paket — die Testsuite entscheidet ohnehin gemeinsam, und
       # Patch-Updates einzeln zu reviewen lohnt den Aufwand nicht.

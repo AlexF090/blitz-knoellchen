@@ -5,23 +5,35 @@ on:
     branches: [main]
   pull_request:
 
+# Das Token darf nur lesen, unabhängig von der Standard-Einstellung des Repos.
+permissions:
+  contents: read
+
+# Ein neuer Push auf denselben PR bricht den überholten Lauf ab. Auf main läuft jeder Push durch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# svelte-kit sync leitet die Typen für $env/static/private aus den tatsächlich gesetzten
+# Variablen ab. Ohne sie meldet svelte-check jeden Import daraus als fehlenden Export —
+# lokal unsichtbar, weil dort eine .env liegt. Build und E2E brauchen dieselben Werte.
+env:
+  BREVO_API_KEY: ci-dummy-key
+  EMAIL_FROM: ci@example.com
+  RECIPIENT_EMAIL_DEMO: ci-demo@example.com
+  RECIPIENT_EMAIL_LIVE: ci-live@example.com
+  LOCATIONIQ_API_KEY: ci-dummy-key
+
+# Actions per Commit-SHA gepinnt, der Kommentar nennt die Version. Dependabot hält beides aktuell.
 jobs:
   quality:
     name: Lint & Typecheck
     runs-on: ubuntu-latest
-    # svelte-kit sync leitet die Typen für $env/static/private aus den tatsächlich gesetzten
-    # Variablen ab. Ohne sie meldet svelte-check jeden Import daraus als fehlenden Export —
-    # lokal unsichtbar, weil dort eine .env liegt.
-    env:
-      BREVO_API_KEY: ci-dummy-key
-      EMAIL_FROM: ci@example.com
-      RECIPIENT_EMAIL_DEMO: ci-demo@example.com
-      RECIPIENT_EMAIL_LIVE: ci-live@example.com
-      LOCATIONIQ_API_KEY: ci-dummy-key
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -38,10 +50,11 @@ jobs:
   unit:
     name: Unit-Tests & Coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -54,7 +67,7 @@ jobs:
         run: echo "version=$(npm ls @playwright/test --json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).dependencies["@playwright/test"].version')" >> "$GITHUB_OUTPUT"
 
       - name: Playwright-Browser-Cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -73,55 +86,32 @@ jobs:
       - name: Unit-Tests mit Coverage
         run: npm run test:unit -- --run --coverage
 
-  build:
-    name: Production-Build
-    runs-on: ubuntu-latest
-    env:
-      BREVO_API_KEY: ci-dummy-key
-      EMAIL_FROM: ci@example.com
-      RECIPIENT_EMAIL_DEMO: ci-demo@example.com
-      RECIPIENT_EMAIL_LIVE: ci-live@example.com
-      LOCATIONIQ_API_KEY: ci-dummy-key
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
   e2e:
-    name: E2E-Tests
+    name: Production-Build & E2E-Tests
     runs-on: ubuntu-latest
-    env:
-      BREVO_API_KEY: ci-dummy-key
-      EMAIL_FROM: ci@example.com
-      RECIPIENT_EMAIL_DEMO: ci-demo@example.com
-      RECIPIENT_EMAIL_LIVE: ci-live@example.com
-      LOCATIONIQ_API_KEY: ci-dummy-key
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      # Eigener Schritt statt über den webServer in playwright.config.ts: Ein Build-Fehler steht
+      # so klar im Log, und die E2E-Tests laufen gegen genau diesen Build.
+      - name: Production-Build
+        run: npm run build
 
       - name: Playwright-Browser-Version ermitteln
         id: playwright-version
         run: echo "version=$(npm ls @playwright/test --json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).dependencies["@playwright/test"].version')" >> "$GITHUB_OUTPUT"
 
       - name: Playwright-Browser-Cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -140,8 +130,10 @@ jobs:
 
       - name: Playwright-Report bei Fehlschlag sichern
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report
-          path: playwright-report/
+          path: |
+            playwright-report/
+            test-results/
           retention-days: 7
