@@ -180,13 +180,16 @@ export default defineConfig({
 			// Dateien an, auch wenn einzelne Dateien per Glob unten eigene (niedrigere) Werte haben —
 			// die globalen Werte sind daher bewusst knapp unter dem aktuell tatsächlich erreichten
 			// Gesamtwert gesetzt, nicht 100. Die Glob-Einträge sind zusätzliche, engere Regressions-Floors
-			// für genau die betroffenen Dateien; jede Datei, die hier nicht explizit gelistet ist, bleibt
-			// implizit bei 100% gefordert (jede Regression drückt sofort den Gesamtwert unter den Floor).
+			// für genau die betroffenen Dateien. Für nicht gelistete Dateien gibt es damit KEINE harte
+			// 100%-Grenze: Der Spielraum bis zum globalen Floor ist klein (je etwa ein Branch oder eine
+			// Funktion), eine einzelne ungetestete Stelle kann aber durchrutschen. `perFile: true` ist
+			// keine Lösung: vitest prüft damit auch die per Glob gelisteten Dateien gegen die globalen
+			// Werte. Neue Lücken zeigt ein Probelauf mit `perFile: true` und globalen 100%.
 			thresholds: {
-				lines: 99.6,
-				branches: 88.5,
-				functions: 97,
-				statements: 98.5,
+				lines: 99.7,
+				branches: 89,
+				functions: 97.3,
+				statements: 98.6,
 				'src/lib/components/Footer.svelte': { branches: 70 }, // (a) __APP_VERSION__ Vite-Define
 				'src/lib/components/IncidentLocationFieldset.svelte': {
 					statements: 91,
@@ -194,6 +197,7 @@ export default defineConfig({
 					functions: 82
 				}, // (a) sieben `bind:value` an FormField/AddressAutocomplete
 				'src/lib/components/InstallBanner.svelte': { branches: 85 }, // (a)
+				'src/lib/components/IosInstallBanner.svelte': { branches: 85 }, // (b) `if (browser)`-SSR-Guard
 				'src/lib/components/PhotoLightbox.svelte': {
 					statements: 95,
 					branches: 80,
@@ -206,7 +210,12 @@ export default defineConfig({
 					functions: 81
 				}, // (a) sieben `bind:value` an FormField/AddressAutocomplete
 				'src/lib/components/PullToRefresh.svelte': { statements: 95, branches: 90 }, // (a)+(b)
-				'src/lib/components/ReportForm.svelte': { statements: 95, branches: 75 }, // (b) vier Defensiv-Guards, s. PR-Beschreibung
+				// (b) vier Defensiv-Guards, deren Abbruchzweig über die UI nicht erreichbar ist:
+				// `!photo.gps` in resolvePhotoAddress (nur für Fotos mit GPS aufgerufen), `!photo` in
+				// applyPhotoExifToVehicle (die ID stammt aus dem Pool), `form.vehicles.length <= 1` in
+				// removeVehicle (der Button fehlt bei nur einer Karte) und `!target` beim Scrollen zum
+				// ersten Fehler (läuft nur, wenn es einen Fehler gibt).
+				'src/lib/components/ReportForm.svelte': { statements: 95, branches: 75 },
 				'src/lib/components/VehicleBlock.svelte': {
 					statements: 95,
 					branches: 70,
@@ -221,16 +230,10 @@ export default defineConfig({
 				'src/lib/components/VehiclePreviewDialog.svelte': { branches: 80 }, // (a) Interpolation in Titel-/alt-Attributen
 				'src/lib/components/icons/*.svelte': { branches: 0 }, // (a) $props()-Default
 				// (b) — `if (oldVersion < 3)` wird von idb nie mit einer neueren Schemaversion
-				// aufgerufen, der false-Zweig ist über die öffentliche API nicht erreichbar; dazu
-				// der `every`-Callback in isValidVehicle, den ein leeres photoIds-Array nie aufruft.
-				//
-				// Die Werte liegen auf dem CI-Ergebnis, das um ein Statement und einen Branch unter
-				// dem lokalen liegt (97.18/90.9 statt 98.59/93.18). Der Rest stammt aus den
-				// &&-Kurzschlussketten der beiden Validierungsfunktionen: wie weit sie ausgewertet
-				// werden, hängt daran, welches Feld zuerst nicht passt. Funktionen und Zeilen sind
-				// seit dem Wechsel auf istanbul in beiden Umgebungen identisch — unter v8 wichen
-				// zusätzlich sie ab (86.66% statt 93.75%).
-				'src/lib/history/db.ts': { statements: 97, branches: 90, functions: 93, lines: 98 },
+				// aufgerufen, der false-Zweig ist über die öffentliche API nicht erreichbar. Frühere
+				// Abweichungen zwischen CI und lokal kamen von einer IndexedDB, die sich mehrere
+				// Testdateien teilten. Heute spricht nur noch db.svelte.test.ts die echte Datenbank an.
+				'src/lib/history/db.ts': { branches: 97 },
 				'src/lib/pwa/installPrompt.svelte.ts': { branches: 80 }, // (b) `if (browser)`-SSR-Guard
 				'src/routes/+layout.svelte': { branches: 45 }, // (a) `dev`-Build-Time-Konstante
 				'src/routes/+page.svelte': { statements: 80, branches: 45, lines: 75 }, // (a) Prop-Weitergabe an ReportForm
