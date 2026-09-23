@@ -354,19 +354,29 @@ describe('VehicleBlock', () => {
 		const vehicle = $state(makeCompleteVehicle());
 		await render(VehicleBlock, { ...baseProps(), vehicle });
 
-		const notesField = document.getElementById(`notes-${vehicle.id}`) as HTMLTextAreaElement;
-		notesField.focus();
+		document.getElementById(`licensePlate-${vehicle.id}`)?.focus();
 		await userEvent.keyboard('{Enter}');
 
 		await expect.element(page.getByRole('button', { name: 'Bearbeiten' })).toBeInTheDocument();
+	});
+
+	it('fügt bei Enter in „Weitere Angaben“ einen Zeilenumbruch ein, statt die Karte zu schließen', async () => {
+		const vehicle = $state(makeCompleteVehicle());
+		await render(VehicleBlock, { ...baseProps(), vehicle });
+
+		const notesField = document.getElementById(`notes-${vehicle.id}`) as HTMLTextAreaElement;
+		notesField.focus();
+		await userEvent.keyboard('Zeile 1{Enter}Zeile 2');
+
+		expect(vehicle.notes).toBe('Zeile 1\nZeile 2');
+		await expect.element(page.getByRole('button', { name: 'Fertig' })).toBeInTheDocument();
 	});
 
 	it('lässt die Karte bei Enter-Taste in einem Feld offen, solange Angaben fehlen', async () => {
 		const vehicle = $state(createEmptyVehicle('vehicle-incomplete-enter'));
 		await render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });
 
-		const notesField = document.getElementById(`notes-${vehicle.id}`) as HTMLTextAreaElement;
-		notesField.focus();
+		document.getElementById(`licensePlate-${vehicle.id}`)?.focus();
 		await userEvent.keyboard('{Enter}');
 
 		await expect.element(page.getByRole('button', { name: 'Fertig' })).toBeInTheDocument();
