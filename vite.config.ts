@@ -46,7 +46,8 @@ export default defineConfig({
 					'img-src': ['self', 'blob:'],
 					'font-src': ['self'],
 					'connect-src': ['self'],
-					'worker-src': ['self'],
+					// blob: für den HEIC-Konvertierungs-Worker von heic-to/csp (URL.createObjectURL).
+					'worker-src': ['self', 'blob:'],
 					'manifest-src': ['self'],
 					'object-src': ['none'],
 					'base-uri': ['self'],
