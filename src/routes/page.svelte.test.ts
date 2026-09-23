@@ -8,6 +8,17 @@ vi.mock('virtual:pwa-info', () => ({
 	pwaInfo: { webManifest: { href: '/manifest.webmanifest', useCredentials: false } }
 }));
 
+// Die echte IndexedDB gehört db.svelte.test.ts; ein paralleler Zugriff von hier machte dessen
+// Ergebnisse (und die Coverage von db.ts) abhängig von der Reihenfolge der Testdateien.
+vi.mock('$lib/history/db', () => ({
+	getDraft: vi.fn(async () => undefined),
+	saveDraft: vi.fn(),
+	clearDraft: vi.fn(),
+	addEntry: vi.fn(),
+	getProfile: vi.fn(async () => undefined),
+	saveProfile: vi.fn()
+}));
+
 describe('+page.svelte (Startseite)', () => {
 	it('rendert Header-Link zur Historie und das Meldeformular', async () => {
 		const { default: HomePage } = await import('./+page.svelte');
