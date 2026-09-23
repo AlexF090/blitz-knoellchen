@@ -87,6 +87,14 @@ const getDb = () => {
 			if (oldVersion < 3) {
 				db.createObjectStore(DRAFT_STORE_NAME, { keyPath: 'id' });
 			}
+		},
+		// Eine andere Verbindung will die Datenbank upgraden oder löschen, z.B. eine neuere
+		// App-Version in einem zweiten Tab. Ohne Freigabe wartet sie unbegrenzt auf diese hier.
+		// Der nächste Zugriff öffnet die Datenbank neu.
+		blocking() {
+			const openConnection = dbPromise;
+			dbPromise = undefined;
+			void openConnection?.then((db) => db.close());
 		}
 	});
 	return dbPromise;

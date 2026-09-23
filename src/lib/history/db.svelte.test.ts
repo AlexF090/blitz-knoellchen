@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { openDB } from 'idb';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { deleteDB, openDB } from 'idb';
 import {
 	addEntry,
 	getEntry,
@@ -69,6 +69,59 @@ const makeEntry = (overrides: Partial<HistoryEntry> = {}): HistoryEntry => {
 	};
 };
 
+// Diese Datei ist der einzige Test, der die echte IndexedDB anspricht; alle anderen mocken
+// $lib/history/db. Sonst hinge das Ergebnis davon ab, welche Datei zuerst läuft.
+const LEGACY_ENTRY_ID = 'eintrag-aus-version-2';
+let entriesAfterMigration: HistoryEntry[] = [];
+let profileAfterMigration: UserProfile | undefined;
+
+beforeAll(async () => {
+	// Legt die Datenbank im Stand von Version 2 an (Historie und Profil, noch ohne Entwurf), bevor
+	// db.ts sie zum ersten Mal öffnet. Der erste Zugriff unten läuft damit über den echten
+	// Migrationspfad; das Neuanlegen im Test „gibt die Verbindung frei“ deckt den Pfad ab Version 0 ab.
+	await deleteDB('blitz-knoellchen');
+	const legacyDb = await openDB('blitz-knoellchen', 2, {
+		upgrade(db) {
+			const store = db.createObjectStore('entries', { keyPath: 'id' });
+			store.createIndex('by-timestamp', 'timestamp');
+			db.createObjectStore('profile', { keyPath: 'id' });
+		}
+	});
+	await legacyDb.put('entries', makeEntry({ id: LEGACY_ENTRY_ID }));
+	legacyDb.close();
+
+	entriesAfterMigration = await listEntries();
+	profileAfterMigration = await getProfile();
+});
+
+beforeEach(async () => {
+	await clearEntries();
+	await clearDraft();
+	const db = await openDB('blitz-knoellchen', 3);
+	await db.clear('profile');
+	db.close();
+});
+
+describe('Migration', () => {
+	it('übernimmt beim Upgrade von Version 2 die Einträge und legt den Entwurfs-Store an', async () => {
+		expect(entriesAfterMigration.map((entry) => entry.id)).toEqual([LEGACY_ENTRY_ID]);
+		expect(profileAfterMigration).toBeUndefined();
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('gibt die Verbindung frei, wenn eine andere Verbindung die Datenbank löschen will', async () => {
+		await listEntries();
+
+		// Ohne Freigabe bliebe deleteDB hängen und der Test liefe in den Timeout.
+		await deleteDB('blitz-knoellchen');
+
+		// Der nächste Zugriff legt die Datenbank frisch an.
+		const entry = makeEntry();
+		await addEntry(entry);
+		expect(await listEntries()).toEqual([expect.objectContaining({ id: entry.id })]);
+	});
+});
+
 describe('history db', () => {
 	it('speichert und liest einen Eintrag', async () => {
 		const entry = makeEntry();
@@ -126,6 +179,10 @@ describe('user profile', () => {
 		};
 		await saveProfile(profile);
 		expect(await getProfile()).toEqual(profile);
+	});
+
+	it('liefert undefined, wenn noch kein Profil gespeichert ist', async () => {
+		expect(await getProfile()).toBeUndefined();
 	});
 
 	it('überschreibt ein bestehendes Profil beim erneuten Speichern', async () => {
@@ -200,6 +257,13 @@ describe('draft', () => {
 
 	it('verwirft einen Entwurf mit fehlendem savedAt statt ihn als frisch zu behandeln', async () => {
 		await writeRawDraft({ vehicles: [makeVehicle()], photos: [] });
+
+		expect(await getDraft()).toBeUndefined();
+	});
+
+	it('verwirft einen Entwurf mit nicht-stringwertiger Foto-ID am Fahrzeug', async () => {
+		const vehicle = { ...makeVehicle(), photoIds: [123] };
+		await writeRawDraft({ vehicles: [vehicle], photos: [], savedAt: Date.now() });
 
 		expect(await getDraft()).toBeUndefined();
 	});
