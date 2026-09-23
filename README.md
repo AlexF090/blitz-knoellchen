@@ -75,7 +75,7 @@ Acht Runtime-Dependencies insgesamt — jede einzelne ist in den Architekturents
 begründet. Die 13 ADRs, die Ordnerstruktur und die Coding-Konventionen stehen in
 [`docs/architektur.md`](./docs/architektur.md).
 
-### Was hier vielleicht interessant ist
+### Umsetzungsdetails
 
 - **Kein Mocking-Framework.** E2E-Tests laufen gegen einen selbst geschriebenen Brevo-Mock
   (`e2e/mocks/brevo-mock-server.mjs`), sodass der echte Versand-Endpunkt inklusive Validierung und
@@ -187,9 +187,9 @@ Schwachstellen bitte nicht als öffentliches Issue melden — siehe [`SECURITY.m
 
 ## Lizenz
 
-Siehe [`LICENSE`](./LICENSE) — alle Rechte vorbehalten. Der Quelltext ist zur Einsichtnahme und
-Begutachtung öffentlich zugänglich; Nutzungs-, Kopier- oder Weiterentwicklungsrechte werden damit
-nicht eingeräumt.
+Siehe [`LICENSE`](./LICENSE) — alle Rechte vorbehalten. Der Quelltext ist zur Einsichtnahme
+öffentlich zugänglich; Nutzungs-, Kopier- oder Weiterentwicklungsrechte werden damit nicht
+eingeräumt.
 
 ## Asset-Attribution
 
