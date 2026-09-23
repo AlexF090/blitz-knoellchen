@@ -36,3 +36,10 @@ Relevant sind insbesondere:
 - `require-trusted-types-for: 'script'` ist bewusst nicht aktiv — der Chunk-Loader von
   SvelteKit weist `script.src` dynamisch zu, was die Hydration blockieren würde. Begründung im
   CSP-Block in `vite.config.ts`.
+- `npm audit` meldet vier Befunde der Stufe _low_, alle aus derselben Quelle:
+  [GHSA-pxg6-pf52-xh8x](https://github.com/advisories/GHSA-pxg6-pf52-xh8x) in `cookie@0.6.0`,
+  das `@sveltejs/kit` mit der Range `^0.6.0` mitbringt (`npm ls cookie`). Die Lücke betrifft nur
+  `serialize()` mit Cookie-Name, -Pfad oder -Domain aus Nutzereingaben. Diese App setzt keine
+  Cookies, der Pfad ist nicht erreichbar. Bewusst kein `overrides`-Eintrag auf `cookie@0.7`: Er
+  würde die von SvelteKit deklarierte Range verletzen, für eine Lücke ohne Angriffsfläche. Erledigt
+  sich mit einem SvelteKit-Release auf `cookie` ≥ 0.7.
