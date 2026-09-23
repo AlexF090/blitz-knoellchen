@@ -138,8 +138,12 @@ body {
 	color: var(--color-ink);
 	font-family: var(--font-sans);
 	overscroll-behavior-y: none;
-	/* Entfernt die ~300 ms Verzögerung, die mobile Browser vor einem Tap abwarten, um auf einen
-	   möglichen Doppeltipp-Zoom zu prüfen. Pinch-Zoom bleibt erhalten. */
+}
+
+/* Nur auf Bedienelementen: Schnelle Folge-Taps (z.B. Stepper, Foto-Auswahl) gelten dort nicht als
+   Doppeltipp-Zoom. Auf Text bleibt der Doppeltipp-Zoom für Menschen mit Sehbeeinträchtigung
+   erhalten, Pinch-Zoom überall. */
+:where(button, a, label, input, select, textarea, summary) {
 	touch-action: manipulation;
 }
 
