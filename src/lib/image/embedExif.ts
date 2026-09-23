@@ -20,9 +20,12 @@ const blobToDataUrl = (blob: Blob): Promise<string> => {
 	});
 };
 
-const dataUrlToBlob = async (dataUrl: string): Promise<Blob> => {
-	const response = await fetch(dataUrl);
-	return response.blob();
+// Dekodiert von Hand statt per fetch(dataUrl): Die CSP erlaubt `connect-src` nur für 'self',
+// ein fetch auf eine data:-URL würde im Production-Build blockiert.
+const jpegDataUrlToBlob = (dataUrl: string): Blob => {
+	const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+	const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+	return new Blob([bytes], { type: 'image/jpeg' });
 };
 
 /**
@@ -55,7 +58,7 @@ export const embedExifMetadata = async (jpegBlob: Blob, exif: ParsedExif): Promi
 
 		const dataUrl = await blobToDataUrl(jpegBlob);
 		const withExif = piexif.insert(piexif.dump(exifDict), dataUrl);
-		return await dataUrlToBlob(withExif);
+		return jpegDataUrlToBlob(withExif);
 	} catch {
 		// Metadaten sind ein Zusatz, kein Muss — lieber das Foto ohne EXIF senden als den
 		// Upload wegen eines Encoding-Fehlers ganz scheitern zu lassen.
