@@ -3,7 +3,7 @@
 	"description": "Progressive Web App zur Meldung von Falschparkern an die Bußgeldstelle Köln per E-Mail.",
 	"private": true,
 	"license": "UNLICENSED",
-	"version": "1.0.120",
+	"version": "1.0.0",
 	"type": "module",
 	"engines": {
 		"node": ">=22"
@@ -24,7 +24,8 @@
 		"format": "prettier --write .",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
-		"test:e2e": "playwright install && playwright test"
+		"test:e2e": "playwright install && playwright test",
+		"screenshots": "node scripts/generate-screenshots.mjs"
 	},
 	"lint-staged": {
 		"*.{js,ts,svelte,json,md,css}": "prettier --write",

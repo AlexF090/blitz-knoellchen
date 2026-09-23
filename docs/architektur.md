@@ -1,8 +1,7 @@
 # Architektur
 
 Vollständige Architekturentscheidungen (ADRs), Ordnerstruktur und Umgebungsvariablen für
-Blitz-Knöllchen. Kurzreferenz mit Kommandos und den wichtigsten Konventionen:
-[`../CLAUDE.md`](../CLAUDE.md).
+Blitz-Knöllchen. Einstieg, Setup und Kommandos: [`../README.md`](../README.md).
 
 ## Projektüberblick
 
@@ -283,12 +282,10 @@ Footer.svelte`) wird nicht hartcodiert, sondern zur Build-Zeit aus `package.json
 typisiert in `src/app.d.ts`. So gibt es nur eine Stelle, an der die Version gepflegt wird; ein
 manuelles Nachziehen der UI-Anzeige entfällt.
 
-**Die Patch-Version wird bei jedem Commit automatisch hochgezählt** — ein Husky-Pre-Commit-Hook
-(`.husky/pre-commit`) führt `npm version patch --no-git-tag-version --allow-same-version` aus
-und staged `package.json`/`package-lock.json`, bevor der Commit abgeschlossen wird. Der Bump
-landet dadurch atomar im selben Commit, kein separater Versions-Commit, kein `--amend` nötig.
-Für Minor-/Major-Sprünge (Breaking Changes, größere Features) den Patch-Bump danach manuell per
-`npm version minor|major --no-git-tag-version` korrigieren.
+Die Version wird manuell per `npm version patch|minor|major --no-git-tag-version` gepflegt.
+Zuvor zählte ein Husky-Pre-Commit-Hook die Patch-Version bei jedem Commit automatisch hoch; das
+erzeugte eine Versionsnummer, die die Anzahl der Commits statt den Auslieferungsstand abbildete,
+und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch `lint-staged` aus.
 
 ## Ordnerstruktur
 
@@ -352,6 +349,14 @@ npm run test                  # test:unit + test:e2e
   externes State-Management nötig.
 - `interface` für Objektformen, `type` nur für Union/Intersection; `import type` für reine
   Typ-Importe.
+- **Kommentare in zwei klar getrennten Rollen.** Ein JSDoc-Block (`/** … */`) über einer Funktion,
+  Konstante, Komponente oder Prop beschreibt in ein bis zwei Sätzen, **was** sie tut — VS Code
+  zeigt das beim Hover und in der Autocomplete an. Ein Inline-Kommentar (`//`) steht direkt an der
+  betroffenen Zeile und erklärt das **Warum**: Workarounds, Browser-Eigenheiten, Svelte-Runes-
+  Besonderheiten, bewusste Abweichungen. Keine Typ-Tags (`@param {string}`, `@returns {boolean}`) —
+  die Typen liefert TypeScript bereits, redundante Tags veralten still. `@param` nur, wenn es
+  Semantik ergänzt, die der Parametername nicht hergibt. Kommentare, die den Code lediglich
+  paraphrasieren, gehören nicht in die Codebase.
 - Kein Mocking-Framework (kein MSW): Netzwerkaufrufe in Vitest über `vi.fn()`/`vi.mock()`,
   in Playwright über `page.route()`.
 - Jede zusätzliche Dependency muss begründet werden — vor dem Hinzufügen prüfen, ob
