@@ -57,6 +57,8 @@ export const embedExifMetadata = async (jpegBlob: Blob, exif: ParsedExif): Promi
 		const withExif = piexif.insert(piexif.dump(exifDict), dataUrl);
 		return await dataUrlToBlob(withExif);
 	} catch {
+		// Metadaten sind ein Zusatz, kein Muss — lieber das Foto ohne EXIF senden als den
+		// Upload wegen eines Encoding-Fehlers ganz scheitern zu lassen.
 		return jpegBlob;
 	}
 };

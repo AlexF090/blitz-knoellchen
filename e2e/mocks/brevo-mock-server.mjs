@@ -4,7 +4,8 @@
 // E-Mail-Aufbau, Anhang-Encoding), aber keine echte E-Mail verschickt wird.
 //
 // Bewusst plain Node (`node:http`), keine neue Dependency — der Server ist trivial genug, dass
-// Express/Fastify o.ä. keinen Mehrwert böte (s. CLAUDE.md, "jede Dependency muss begründet werden").
+// Express/Fastify o.ä. keinen Mehrwert böte (s. docs/architektur.md, Coding-Konventionen:
+// "jede zusätzliche Dependency muss begründet werden").
 import { createServer } from 'node:http';
 
 const PORT = Number(process.env.BREVO_MOCK_PORT ?? 4175);

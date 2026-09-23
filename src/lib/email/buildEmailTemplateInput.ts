@@ -1,6 +1,7 @@
 import type { City, EmailTemplateInput, IncidentType } from '$lib/config/cities';
 import type { ProfileFields, VehicleEntry } from '$lib/validation/formSchema';
 
+/** Bausteine einer Anzeige: Melderprofil, Fahrzeug und dessen Position in der Gesamtmeldung. */
 export interface BuildEmailTemplateInputOptions {
 	profile: Pick<
 		ProfileFields,
@@ -13,6 +14,7 @@ export interface BuildEmailTemplateInputOptions {
 	vehicleTotal: number;
 }
 
+/** Flacht Profil- und Fahrzeugdaten zu der von der E-Mail-Vorlage erwarteten Struktur ab. */
 export const buildEmailTemplateInput = (
 	opts: BuildEmailTemplateInputOptions
 ): EmailTemplateInput => ({
@@ -41,6 +43,7 @@ export const buildEmailTemplateInput = (
 	vehicleTotal: opts.vehicleTotal
 });
 
+/** Löst die am Fahrzeug gespeicherten Verstoßart-Ids zu den Verstoßarten der Stadt auf. */
 export const resolveVehicleIncidentTypes = (
 	city: Pick<City, 'incidentTypes'>,
 	vehicle: VehicleEntry

@@ -1,12 +1,15 @@
 <script lang="ts">
+	/**
+	 * Hüllt den Seiteninhalt in eine eigene Pull-to-refresh-Geste mit Spinner und Blur-Effekt.
+	 * Das native Gesture des Browsers ist per `overscroll-behavior-y: none` (layout.css) bewusst
+	 * blockiert — dieses hier erzwingt zusätzlich ein Service-Worker-Update statt nur die
+	 * gecachte App-Shell neu anzuzeigen (reloadLatest.ts).
+	 */
 	import { Loader2 } from '@lucide/svelte';
 	import { reloadWithLatestVersion } from '$lib/pwa/reloadLatest';
 
 	let { children } = $props();
 
-	// overscroll-behavior-y: none (layout.css) blockt das native Pull-to-refresh-Gesture des
-	// Browsers bewusst — dieses eigene Gesture ersetzt es, inkl. erzwungenem
-	// Service-Worker-Update statt nur Anzeige der gecachten App-Shell (reloadLatest.ts).
 	const PULL_THRESHOLD = 72;
 	const MAX_PULL = 120;
 	const DAMPING = 0.5;
@@ -20,17 +23,17 @@
 
 	const progress = $derived(Math.min(pullDistance / PULL_THRESHOLD, 1));
 
+	/** Ob die Seite ganz oben steht — nur dort darf die Geste starten. */
 	const atTop = () => (document.scrollingElement?.scrollTop ?? 0) <= 0;
 
+	/** Merkt sich den Startpunkt einer möglichen Zieh-Geste. */
 	const onTouchStart = (event: TouchEvent) => {
 		if (refreshing || !atTop()) return;
 		pulling = true;
 		startY = event.touches[0].clientY;
 	};
 
-	// touchmove muss non-passive registriert sein (siehe $effect unten) — sonst übernimmt Chrome
-	// die Geste als natives Scrollen. Pointer-Events reichen nicht: deren preventDefault() greift
-	// nur, wenn der Browser die Geste noch nicht fürs Scrollen "committed" hat.
+	/** Übersetzt die Zieh-Distanz gedämpft in `pullDistance`. */
 	const onTouchMove = (event: TouchEvent) => {
 		if (!pulling || refreshing) return;
 		const delta = event.touches[0].clientY - startY;
@@ -43,6 +46,7 @@
 		pullDistance = Math.min(delta * DAMPING, MAX_PULL);
 	};
 
+	/** Löst den Reload aus, wenn weit genug gezogen wurde — sonst schnappt die Anzeige zurück. */
 	const endPull = async () => {
 		if (!pulling) return;
 		pulling = false;
@@ -58,6 +62,9 @@
 		if (!container) return;
 		const el = container;
 		el.addEventListener('touchstart', onTouchStart, { passive: true });
+		// Non-passive, damit preventDefault() greift — sonst übernimmt Chrome die Geste als
+		// natives Scrollen. Pointer-Events reichen dafür nicht: deren preventDefault() wirkt nur,
+		// solange der Browser die Geste noch nicht fürs Scrollen „committed“ hat.
 		el.addEventListener('touchmove', onTouchMove, { passive: false });
 		el.addEventListener('touchend', endPull);
 		el.addEventListener('touchcancel', endPull);

@@ -12,6 +12,7 @@ const EMPTY_PROFILE: UserProfile = {
 	phone: ''
 };
 
+/** Reaktiver Store für das Melderprofil, gespiegelt in die IndexedDB. */
 export const createProfileStore = () => {
 	let profile = $state<UserProfile>({ ...EMPTY_PROFILE });
 

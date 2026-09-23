@@ -1,13 +1,14 @@
+/** Hinweistexte, wenn sich der Tatort nicht vollständig aus dem Foto ableiten ließ. */
 export const PHOTO_WARNINGS = {
 	noGps: 'Keine Standortdaten im Foto gefunden — bitte Adresse manuell eingeben.',
 	incompleteAddress:
 		'Adresse konnte nicht vollständig automatisch ermittelt werden — bitte prüfen/ergänzen.'
 } as const;
 
-// Entfernt Warnungen zu Fahrzeugen, die nicht mehr existieren — ohne diesen Aufruf sammeln sich
-// verwaiste Einträge in vehicleGeocodeWarnings an: removeVehicle() entfernt ein Fahrzeug ganz,
-// resetVehicle() ersetzt es durch ein neues mit frischer UUID, in beiden Fällen bleibt die alte
-// id sonst für immer als Karteileiche in diesem Objekt stehen.
+/** Entfernt Warnungen zu Fahrzeugen, die es nicht mehr gibt. */
+// Ohne diesen Aufruf sammeln sich verwaiste Einträge an: removeVehicle() entfernt ein Fahrzeug
+// ganz, resetVehicle() ersetzt es durch ein neues mit frischer UUID — in beiden Fällen bliebe
+// die alte id für immer als Karteileiche stehen.
 export const pruneWarnings = (
 	warnings: Record<string, string>,
 	vehicles: { id: string }[]

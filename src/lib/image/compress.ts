@@ -1,13 +1,19 @@
+/** Zielgrenzen der Kompression: längste Kante in Pixeln und JPEG-Qualität zwischen 0 und 1. */
 export interface CompressOptions {
 	maxDimension: number;
 	quality: number;
 }
 
+/**
+ * Skaliert ein Bild auf `maxDimension` herunter und kodiert es als JPEG.
+ * Kleinere Bilder behalten ihre Maße, werden aber ebenfalls neu kodiert.
+ */
 export const compressImage = async (
 	file: Blob,
 	{ maxDimension, quality }: CompressOptions
 ): Promise<Blob> => {
 	const bitmap = await createImageBitmap(file);
+	// Auf 1 gedeckelt, damit ohnehin kleine Bilder nicht hochskaliert werden.
 	const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
 	const width = Math.round(bitmap.width * scale);
 	const height = Math.round(bitmap.height * scale);

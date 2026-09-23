@@ -1,4 +1,8 @@
 <script lang="ts">
+	/**
+	 * Vollbild-Vorschau eines Fotos mit Zoom und Pan per Doppeltipp, Pinch, Mausrad und Tastatur.
+	 * Der Dialog ist offen, solange `photo` gesetzt ist.
+	 */
 	import { browser } from '$app/environment';
 
 	export interface LightboxPhoto {
@@ -7,6 +11,7 @@
 	}
 
 	interface Props {
+		/** `null` schließt die Lightbox. */
 		photo: LightboxPhoto | null;
 		onClose: () => void;
 	}
@@ -32,14 +37,17 @@
 	let baseSize = { width: 0, height: 0 };
 	let snapTimeout: ReturnType<typeof setTimeout> | undefined;
 
+	/** Setzt Zoom und Verschiebung auf die Ausgangsansicht zurück. */
 	const resetTransform = () => {
 		scale = 1;
 		translateX = 0;
 		translateY = 0;
 	};
 
+	/** Begrenzt einen Zoomfaktor auf den erlaubten Bereich. */
 	const clampScale = (value: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
 
+	/** Hält die Verschiebung so, dass der Bildrand nie in den Container hineinwandert. */
 	const clampTranslate = () => {
 		if (!container || baseSize.width === 0) return;
 		const rect = container.getBoundingClientRect();
@@ -49,8 +57,10 @@
 		translateY = Math.min(maxY, Math.max(-maxY, translateY));
 	};
 
-	// Zoomt so, dass der Bildpunkt unter (clientX, clientY) an derselben Bildschirmposition
-	// bleibt (Standardformel für ankertreues Zoomen), statt immer um die Bildmitte zu skalieren.
+	/**
+	 * Zoomt so, dass der Bildpunkt unter (clientX, clientY) an derselben Bildschirmposition
+	 * bleibt (Standardformel für ankertreues Zoomen), statt um die Bildmitte zu skalieren.
+	 */
 	const zoomAt = (newScale: number, clientX: number, clientY: number) => {
 		if (!container) {
 			scale = newScale;
@@ -66,6 +76,7 @@
 		clampTranslate();
 	};
 
+	/** Springt animiert auf eine Zoomstufe; `snapping` schaltet dafür die CSS-Transition an. */
 	const snapTo = (newScale: number, clientX: number, clientY: number) => {
 		snapping = true;
 		if (newScale === MIN_SCALE) {
@@ -77,6 +88,7 @@
 		snapTimeout = setTimeout(() => (snapping = false), SNAP_DURATION_MS);
 	};
 
+	/** Misst, wie groß das Bild bei Zoomstufe 1 im Container dargestellt wird (object-contain). */
 	const updateBaseSize = () => {
 		if (!imgEl || !container || !imgEl.naturalWidth || !imgEl.naturalHeight) return;
 		const rect = container.getBoundingClientRect();
@@ -88,6 +100,8 @@
 				: { width: rect.height * naturalRatio, height: rect.height };
 	};
 
+	// Object-URL lebt genau so lange wie das angezeigte Foto — die Cleanup-Funktion des Effekts
+	// gibt ihn bei jedem Wechsel und beim Schließen wieder frei.
 	$effect(() => {
 		if (!photo) {
 			objectUrl = null;
@@ -109,6 +123,7 @@
 		}
 	});
 
+	/** Mausrad- und Trackpad-Zoom auf die Zeigerposition. */
 	const handleWheel = (event: WheelEvent) => {
 		event.preventDefault();
 		// Trackpad-Pinch liefert wheel-Events mit ctrlKey und braucht mehr Empfindlichkeit als ein
@@ -118,6 +133,7 @@
 		zoomAt(clampScale(scale * factor), event.clientX, event.clientY);
 	};
 
+	/** Doppelklick/-tipp schaltet zwischen Ausgangsansicht und fester Zoomstufe um. */
 	const handleDoubleClick = (event: MouseEvent) => {
 		if (scale > MIN_SCALE) {
 			snapTo(MIN_SCALE, event.clientX, event.clientY);
@@ -139,16 +155,19 @@
 	let lastPinchMid: { x: number; y: number } | null = null;
 	let lastPinchDistance = 0;
 
+	/** Mittelpunkt zwischen den beiden aktiven Pinch-Fingern. */
 	const pinchMidpoint = () => {
 		const [a, b] = [...activePointers.values()];
 		return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 	};
 
+	/** Abstand zwischen den beiden aktiven Pinch-Fingern. */
 	const pinchDistance = () => {
 		const [a, b] = [...activePointers.values()];
 		return Math.hypot(a.x - b.x, a.y - b.y);
 	};
 
+	/** Startet je nach Fingerzahl eine Pinch- oder (nur im gezoomten Zustand) eine Pan-Geste. */
 	const handlePointerDown = (event: PointerEvent) => {
 		snapping = false;
 		activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -164,6 +183,7 @@
 		}
 	};
 
+	/** Führt die laufende Pinch- bzw. Pan-Geste fort. */
 	const handlePointerMove = (event: PointerEvent) => {
 		if (!activePointers.has(event.pointerId)) return;
 		activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -193,6 +213,7 @@
 		}
 	};
 
+	/** Beendet einen Finger/Zeiger und verwirft den zugehörigen Gesten-Zustand. */
 	const endPointer = (event: PointerEvent) => {
 		activePointers.delete(event.pointerId);
 		if (panPointerId === event.pointerId) panPointerId = null;
@@ -202,14 +223,19 @@
 		}
 	};
 
+	/** Schließt die Lightbox bei einem Klick neben das Bild. */
 	const handleBackdropClick = (event: MouseEvent) => {
+		// Klicks auf den Inhalt haben ein Kindelement als target — nur der Backdrop trifft
+		// das <dialog> selbst.
 		if (event.target === dialog) onClose();
 	};
 
 	const ZOOM_STEP = 1.5;
 
-	// Tastatur-Alternative zum Pinch-/Wheel-Zoom: zoomt auf die Bildmitte statt auf eine
-	// Zeigerposition, da hier kein Maus-/Touch-Event mit Koordinaten vorliegt.
+	/**
+	 * Tastatur-Alternative zum Pinch-/Wheel-Zoom: zoomt auf die Bildmitte, da hier kein Maus-
+	 * oder Touch-Event mit Koordinaten vorliegt.
+	 */
 	const zoomByStep = (factor: number) => {
 		if (!container) return;
 		const rect = container.getBoundingClientRect();

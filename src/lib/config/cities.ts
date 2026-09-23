@@ -1,13 +1,15 @@
 import { buildEmailBody } from '$lib/email/buildEmailBody';
 
+/** Eine auswählbare Verstoßart mit Formular-Label und E-Mail-Satz. */
 export interface IncidentType {
 	id: string;
 	label: string;
-	// Eigenständiger Satz für die E-Mail, damit mehrere gewählte Verstoßarten zu einem
-	// zusammenhängenden Text kombiniert werden können (siehe buildEmailBody).
+	// Eigenständiger Satz, damit mehrere gewählte Verstoßarten in buildEmailBody zu einem
+	// zusammenhängenden Text kombiniert werden können.
 	description: string;
 }
 
+/** Alle Werte, die in den E-Mail-Text einer einzelnen Fahrzeug-Anzeige einfließen. */
 export interface EmailTemplateInput {
 	firstName: string;
 	lastName: string;
@@ -34,6 +36,7 @@ export interface EmailTemplateInput {
 	vehicleTotal?: number;
 }
 
+/** Stadtspezifische Konfiguration: auswählbare Verstoßarten und E-Mail-Vorlage. */
 export interface City {
 	id: string;
 	label: string;
@@ -86,9 +89,10 @@ const KOELN_INCIDENT_TYPES: IncidentType[] = [
 	}
 ];
 
-// Bewusst ohne recipientEmail: diese Datei wird auch clientseitig importiert
-// (Formular braucht incidentTypes/label), $env/static/private ist dort verboten.
-// Der Empfänger lebt darum in cities.server.ts, per city-id nachschlagbar.
+/** Alle unterstützten Städte, nachschlagbar per `city.id`. */
+// Bewusst ohne recipientEmail: diese Datei wird auch clientseitig importiert (das Formular
+// braucht incidentTypes/label), $env/static/private ist dort verboten — der Empfänger lebt
+// darum in cities.server.ts.
 export const CITIES: Record<string, City> = {
 	koeln: {
 		id: 'koeln',

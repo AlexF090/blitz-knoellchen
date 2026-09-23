@@ -1,6 +1,7 @@
 import type { GeocodeAddress } from '$lib/geocode/geocodeAddress';
 import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
 
+/** Ein verarbeitetes Beweisfoto samt der aus ihm gelesenen Aufnahmedaten. */
 export interface PhotoEntry {
 	id: string;
 	blob: Blob;
@@ -13,18 +14,20 @@ export interface PhotoEntry {
 	resolvedAddress?: GeocodeAddress | null;
 }
 
+/** Höchstzahl Fotos, die einem einzelnen Fahrzeug zugeordnet werden dürfen. */
 export const MAX_PHOTOS_PER_VEHICLE = 3;
 
-// Begrenzt, wie viele Fotos in einer einzelnen Dateiauswahl gleichzeitig hinzugefügt werden
-// dürfen — unabhängig von MAX_PHOTOS_PER_VEHICLE, das die Zuordnung pro Fahrzeug begrenzt.
+/** Höchstzahl Fotos, die in einer einzelnen Dateiauswahl gleichzeitig hinzugefügt werden dürfen. */
+// Unabhängig von MAX_PHOTOS_PER_VEHICLE, das die Zuordnung pro Fahrzeug begrenzt.
 export const MAX_PHOTOS_PER_BATCH = 3;
 
-// Der Foto-Pool wird von allen Fahrzeugen einer Anzeige gemeinsam genutzt (Fotos können
-// zwischen Fahrzeugen geteilt werden) — die Obergrenze skaliert deshalb mit der Anzahl der
-// Fahrzeuge statt fest bei MAX_PHOTOS_PER_VEHICLE zu liegen.
+/** Höchstzahl Fotos im gemeinsamen Pool einer Anzeige mit `vehicleCount` Fahrzeugen. */
+// Der Pool wird von allen Fahrzeugen gemeinsam genutzt (Fotos können geteilt werden) — die
+// Obergrenze skaliert deshalb mit der Fahrzeuganzahl.
 export const getMaxPoolPhotos = (vehicleCount: number): number =>
 	Math.max(vehicleCount, 1) * MAX_PHOTOS_PER_VEHICLE;
 
+/** Ein angezeigtes Fahrzeug mit Tatzeit, Tatort und gewählten Verstoßarten. */
 export interface VehicleEntry {
 	id: string;
 	photoIds: string[];
@@ -50,6 +53,7 @@ export interface VehicleEntry {
 	locationCity: string;
 }
 
+/** Fehlermeldungen je Feld eines Fahrzeugs; fehlende Schlüssel bedeuten „gültig". */
 export type VehicleErrors = Partial<
 	Record<
 		| 'licensePlate'
@@ -69,6 +73,7 @@ export type VehicleErrors = Partial<
 	photoIds?: string;
 };
 
+/** Der vollständige Stand des Anzeigen-Formulars: Melderprofil, Foto-Pool und Fahrzeuge. */
 export interface ReportFormData {
 	firstName: string;
 	lastName: string;
@@ -81,6 +86,7 @@ export interface ReportFormData {
 	vehicles: VehicleEntry[];
 }
 
+/** Fehlermeldungen des gesamten Formulars; `vehicles` ist positionsgleich zu ReportFormData. */
 export type FormErrors = Partial<
 	Record<keyof Omit<ReportFormData, 'photos' | 'vehicles'>, string>
 > & {
@@ -88,17 +94,20 @@ export type FormErrors = Partial<
 	vehicles?: VehicleErrors[];
 };
 
+/** Nur die Melderfelder des Formulars, ohne Fotos und Fahrzeuge. */
 export type ProfileFields = Pick<
 	ReportFormData,
 	'firstName' | 'lastName' | 'addressStreet' | 'addressPostcode' | 'addressCity' | 'email' | 'phone'
 >;
 
+/** Fehlermeldungen je Melderfeld. */
 export type ProfileErrors = Partial<Record<keyof ProfileFields, string>>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const POSTCODE_PATTERN = /^\d{5}$/;
-// Straße + Hausnummer als ein Freitextfeld (z. B. "Musterstraße 12", "Musterstraße 12a") —
-// endet auf eine Zahl, optional gefolgt von einem einzelnen Buchstaben.
+/** Prüft, ob ein Straßen-Freitextfeld auf eine Hausnummer endet („Musterstraße 12a"). */
+// Straße + Hausnummer sind ein einziges Feld; die Hausnummer ist eine Zahl, optional gefolgt
+// von einem einzelnen Buchstaben.
 export const HOUSE_NUMBER_SUFFIX_PATTERN = /\d+\s?[a-zA-ZäöüÄÖÜ]?$/;
 // Deutsches Kennzeichenschema: 1-3 Buchstaben (Kreis/Stadt), 1-2 Buchstaben
 // (Erkennungsnummer), 1-4 Ziffern, optional "E"/"H". Capture-Gruppen füttern
@@ -123,14 +132,16 @@ const toMinutes = (time: string): number => {
 	return hours * 60 + minutes;
 };
 
-// Das kanonische Format (s. normalizeLicensePlate) gilt nur für deutsche Kennzeichen. Deckt
-// sowohl das Formular-Nationalitätszeichen ("D") als auch den ISO-Code ("DE") ab.
+// Deckt sowohl das Formular-Nationalitätszeichen ("D") als auch den ISO-Code ("DE") ab, weil
+// das kanonische Kennzeichenformat nur für deutsche Kennzeichen gilt.
 const isGermanLicensePlateCountry = (country: string): boolean =>
 	['D', 'DE'].includes(country.trim().toUpperCase());
 
-// Formt eine flexibel getippte Eingabe ("K AB 1234", "KAB1234") ins von der Stadt Köln
-// geforderte kanonische Format ("H-VA1234"). Nicht-parsbare/ausländische Eingaben werden nur
-// getrimmt und großgeschrieben zurückgegeben — fail-safe statt zu werfen.
+/**
+ * Formt eine flexibel getippte Eingabe („K AB 1234", „KAB1234") in das von der Stadt Köln
+ * geforderte kanonische Format („K-AB1234"). Nicht-parsbare oder ausländische Eingaben werden
+ * fail-safe nur getrimmt und großgeschrieben zurückgegeben.
+ */
 export const normalizeLicensePlate = (value: string, country: string): string => {
 	const trimmed = value.trim();
 	if (!isGermanLicensePlateCountry(country)) return trimmed.toUpperCase();
@@ -140,6 +151,7 @@ export const normalizeLicensePlate = (value: string, country: string): string =>
 	return `${district.toUpperCase()}-${letters.toUpperCase()}${digits}${(suffix ?? '').toUpperCase()}`;
 };
 
+/** Prüft ein einzelnes Fahrzeug samt Foto-Zuordnung gegen den Foto-Pool der Anzeige. */
 export const validateVehicle = (vehicle: VehicleEntry, photos: PhotoEntry[]): VehicleErrors => {
 	const errors: VehicleErrors = {};
 
@@ -212,6 +224,7 @@ export const validateVehicle = (vehicle: VehicleEntry, photos: PhotoEntry[]): Ve
 	return errors;
 };
 
+/** Prüft die Melderfelder — auch einzeln aufrufbar, etwa beim Speichern des Profils. */
 export const validateProfileFields = (data: ProfileFields): ProfileErrors => {
 	const errors: ProfileErrors = {};
 
@@ -237,6 +250,7 @@ export const validateProfileFields = (data: ProfileFields): ProfileErrors => {
 	return errors;
 };
 
+/** Prüft das gesamte Formular: Melderfelder, Foto-Pool und jedes Fahrzeug. */
 export const validateReportForm = (data: ReportFormData): FormErrors => {
 	const errors: FormErrors = { ...validateProfileFields(data) };
 
@@ -253,6 +267,7 @@ export const validateReportForm = (data: ReportFormData): FormErrors => {
 	return errors;
 };
 
+/** Meldet, ob ein Validierungsergebnis fehlerfrei ist. */
 export const isFormValid = (errors: FormErrors): boolean => {
 	return Object.keys(errors).length === 0;
 };

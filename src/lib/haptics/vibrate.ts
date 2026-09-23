@@ -1,3 +1,4 @@
+/** Semantischer Anlass eines Vibrations-Feedbacks. */
 export type HapticPattern = 'success' | 'warning' | 'selection';
 
 const PATTERNS: Record<HapticPattern, number | number[]> = {
@@ -6,6 +7,7 @@ const PATTERNS: Record<HapticPattern, number | number[]> = {
 	selection: 8
 };
 
+/** Löst haptisches Feedback aus; auf Geräten ohne Vibration-API passiert nichts. */
 export const triggerHaptic = (pattern: HapticPattern): void => {
 	if (typeof navigator === 'undefined' || !('vibrate' in navigator)) return;
 	navigator.vibrate(PATTERNS[pattern]);

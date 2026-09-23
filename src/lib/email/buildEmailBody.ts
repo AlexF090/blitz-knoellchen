@@ -2,6 +2,7 @@ import type { EmailTemplateInput } from '$lib/config/cities';
 import { formatIsoDateDMY } from '$lib/format/germanDate';
 import { formatAddress } from '$lib/geocode/formatAddress';
 
+/** Betreff und Textkörper einer fertig gebauten Anzeigen-E-Mail. */
 export interface EmailContent {
 	subject: string;
 	body: string;
@@ -9,16 +10,16 @@ export interface EmailContent {
 
 const SUBJECT_BASE = 'Anzeige einer Verkehrsordnungswidrigkeit (Falschparken)';
 
+/** Baut Betreff und Textkörper der Anzeigen-E-Mail für ein einzelnes Fahrzeug. */
 export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 	const licensePlateLine = input.licensePlate?.trim() ? input.licensePlate.trim() : 'nicht erfasst';
-	// Kennzeichen + Datum im Betreff, statt eines immer identischen Basistexts: hilft sowohl der
-	// Bußgeldstelle beim Zuordnen eingehender Mails als auch dem Melder selbst, mehrere Anzeigen
-	// in der eigenen bcc-Kopie auseinanderzuhalten. Tatort/Uhrzeit bewusst weggelassen, um den
-	// Betreff nicht unübersichtlich lang zu machen.
 	const vehicleSuffix =
 		input.vehicleTotal && input.vehicleTotal > 1
 			? ` (Fahrzeug ${input.vehicleIndex}/${input.vehicleTotal})`
 			: '';
+	// Kennzeichen + Datum statt eines immer identischen Basistexts: hilft der Bußgeldstelle beim
+	// Zuordnen eingehender Mails und dem Melder, mehrere Anzeigen in der eigenen bcc-Kopie
+	// auseinanderzuhalten. Tatort/Uhrzeit bewusst weggelassen, sonst wird der Betreff zu lang.
 	const subject = `${SUBJECT_BASE} – ${licensePlateLine}, ${formatIsoDateDMY(input.date)}${vehicleSuffix}`;
 	const vehicleDescriptionLine = `${input.make?.trim() || 'unbekannt'} (Farbe: ${input.color?.trim() || 'nicht angegeben'})`;
 	const notes = input.notes?.trim();

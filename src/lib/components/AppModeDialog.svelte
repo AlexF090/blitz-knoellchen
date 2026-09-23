@@ -1,4 +1,8 @@
 <script lang="ts">
+	/**
+	 * Erzwingt vor der ersten Nutzung die Wahl zwischen Demo- und Live-Modus und öffnet sich
+	 * erneut, wenn der Modus über das Header-Badge gewechselt werden soll.
+	 */
 	import { appMode } from '$lib/appMode.svelte';
 	import { buttonDestructiveSecondary, buttonPrimary } from '$lib/ui/buttonStyles';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -10,10 +14,8 @@
 	// sofort wieder aus sessionStorage nachlädt, statt den Dialog tatsächlich erneut zu öffnen.
 	let restoredFromStorage = false;
 
-	// Die Wahl gilt pro sessionStorage-Session (überlebt Reload, verschwindet mit dem Tab) statt
-	// bei jedem Reload neu erzwungen zu werden — kein Schließen ohne Klick auf einen der beiden
-	// Buttons. `browser` ist hier nicht nötig: der Effekt läuft ohnehin nur clientseitig nach dem
-	// Mount.
+	// Die Wahl gilt pro sessionStorage-Session (überlebt Reload, verschwindet mit dem Tab). Kein
+	// `browser`-Guard nötig: der Effekt läuft ohnehin nur clientseitig nach dem Mount.
 	$effect(() => {
 		if (appMode.current === null) {
 			if (!restoredFromStorage) {
@@ -24,6 +26,7 @@
 		}
 	});
 
+	/** Übernimmt die getroffene Wahl und schließt den Dialog. */
 	const choose = (value: 'demo' | 'live') => {
 		appMode.set(value);
 		dialog?.close();

@@ -1,3 +1,4 @@
+/** Demo-Modus sendet an die Test-Adresse, Live-Modus an die echte Bußgeldstelle. */
 export type AppMode = 'demo' | 'live';
 
 const STORAGE_KEY = 'blitz-knoellchen:app-mode';
@@ -6,6 +7,7 @@ const isAppMode = (value: unknown): value is AppMode => value === 'demo' || valu
 
 let mode = $state<AppMode | null>(null);
 
+/** Reaktiver Betriebsmodus der App, über sessionStorage hinweg persistiert. */
 export const appMode = {
 	get current() {
 		return mode;
@@ -20,14 +22,18 @@ export const appMode = {
 			// Persistenz über Reloads hinweg entfällt. Kein Rethrow, erwarteter Edge-Case.
 		}
 	},
-	// Nur clientseitig aus einem $effect heraus aufrufen (nie am Modul-Top-Level) — sonst
-	// schlägt der Zugriff auf sessionStorage während SSR fehl.
+	/**
+	 * Lädt den zuletzt gewählten Modus aus sessionStorage. Nur clientseitig aus einem `$effect`
+	 * heraus aufrufen (nie am Modul-Top-Level) — sonst schlägt der Zugriff während SSR fehl.
+	 */
 	restore() {
 		const stored = sessionStorage.getItem(STORAGE_KEY);
 		if (isAppMode(stored)) mode = stored;
 	},
-	// Öffnet den Auswahldialog erneut (z.B. per Klick auf das Modus-Badge im Header), ohne den
-	// zuletzt gespeicherten Wert aus sessionStorage zu verwerfen.
+	/**
+	 * Öffnet den Auswahldialog erneut (z.B. per Klick auf das Modus-Badge im Header), ohne den
+	 * zuletzt gespeicherten Wert aus sessionStorage zu verwerfen.
+	 */
 	requestChange() {
 		mode = null;
 	}

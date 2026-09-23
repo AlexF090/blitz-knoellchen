@@ -4,15 +4,21 @@ import { convertHeicToJpeg, isHeicFile } from '$lib/image/convertHeic';
 import { embedExifMetadata } from '$lib/image/embedExif';
 import type { PhotoEntry } from '$lib/validation/formSchema';
 
+/** Signalisiert, dass ein HEIC-Foto nicht in ein verarbeitbares JPEG konvertiert werden konnte. */
 export class HeicConversionError extends Error {}
 
 const HEIC_CONVERSION_ERROR_MESSAGE =
 	'Dieses HEIC-Foto konnte nicht verarbeitet werden. Bitte ein JPEG/PNG-Foto wählen oder in ' +
 	'den Kameraeinstellungen "Am kompatibelsten" aktivieren.';
 
-// HEIC→JPEG-Konvertierung, Kompression, EXIF-Einbettung. Wirft HeicConversionError statt
-// `null` zurückzugeben, damit der Aufrufer denselben Early-Return-Pfad wie zuvor abbilden kann.
+/**
+ * Macht aus einer ausgewählten Bilddatei einen versandfertigen Foto-Eintrag: HEIC→JPEG,
+ * Kompression, Wiedereinbetten der EXIF-Daten. Wirft `HeicConversionError`, wenn die
+ * Konvertierung scheitert.
+ */
 export const createPhotoEntry = async (file: File): Promise<PhotoEntry> => {
+	// Vor der Konvertierung lesen — beide folgenden Schritte kodieren das Bild neu und
+	// verwerfen dabei die ursprünglichen EXIF-Daten.
 	const exif = await parseExif(file);
 
 	let rawBlob: Blob = file;

@@ -1,6 +1,6 @@
-// Eine Zeile pro Fahrzeug/Vorgang-Sendeversuch — dieselbe Form wird sowohl für die
-// Erfolgs-/Fehler-Anzeige (licensePlate, ok) als auch zum Herausfiltern erfolgreich
-// gesendeter Fahrzeuge (vehicleId) gebraucht, dadurch entfällt ein Remap am Ende von onSubmit.
+/** Ergebnis eines einzelnen Fahrzeug-Sendeversuchs. */
+// Enthält sowohl die Anzeige-Felder (licensePlate, ok) als auch die vehicleId zum Herausfiltern
+// bereits gesendeter Fahrzeuge — dadurch entfällt ein Remap am Ende von onSubmit.
 export interface VehicleSendResult {
 	vehicleId: string;
 	licensePlate: string;

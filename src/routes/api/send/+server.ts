@@ -23,6 +23,10 @@ import type { RequestHandler } from './$types';
 // E-Mail-Aufbau) durchlaufen wird, ohne echte E-Mails zu versenden.
 const BREVO_SEND_URL = env.BREVO_API_URL || 'https://api.brevo.com/v3/smtp/email';
 
+/**
+ * Nimmt die Anzeige eines Fahrzeugs entgegen, validiert sie erneut serverseitig und verschickt
+ * sie per Brevo an die Bußgeldstelle — mit dem Melder in Reply-To und bcc.
+ */
 export const POST: RequestHandler = async ({ request }) => {
 	const formData = await request.formData();
 	const parsed = parseSendFormData(formData);
@@ -55,6 +59,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		vehicles: [vehicle]
 	};
 
+	// Erneute Validierung an der Trust-Boundary: die clientseitige Prüfung sagt nichts über
+	// eine direkt an diesen Endpunkt gerichtete Anfrage aus.
 	const errors = validateReportForm(data);
 	if (!isFormValid(errors)) {
 		return json({ error: 'Formulardaten sind ungültig.', errors }, { status: 400 });
@@ -111,6 +117,8 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		return json({ ok: true });
 	} catch {
+		// Details bewusst nicht an den Client: die Antwort ginge sonst mit Brevo-Interna an
+		// einen Aufrufer, der damit ohnehin nichts anfangen kann.
 		return json({ error: 'Versand fehlgeschlagen.' }, { status: 502 });
 	}
 };

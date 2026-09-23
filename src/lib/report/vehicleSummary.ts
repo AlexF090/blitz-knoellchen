@@ -3,17 +3,23 @@ import { formatIsoDateDMY, formatTimeRange } from '$lib/format/germanDate';
 import { formatAddress } from '$lib/geocode/formatAddress';
 import type { VehicleEntry } from '$lib/validation/formSchema';
 
+/** Eine Beschriftung/Wert-Zeile der Fahrzeug-Zusammenfassung. */
 export interface SummaryRow {
 	label: string;
 	value: string;
 }
 
 interface BuildVehicleSummaryRowsOptions {
-	// Eingeklappte Karte zeigt jede Zeile immer (mit "—"-Fallback), der Lösch-Dialog blendet
-	// leere Zeilen ganz aus (s. VehicleBlock.svelte, zwei <dl>-Blöcke mit identischer Semantik).
+	// s. VehicleBlock.svelte, zwei <dl>-Blöcke mit identischer Semantik.
 	includeEmpty: boolean;
 }
 
+/**
+ * Baut die Übersichtszeilen einer Fahrzeug-Karte.
+ *
+ * @param includeEmpty `true` zeigt jede Zeile mit „—"-Fallback (eingeklappte Karte), `false`
+ * blendet leere Zeilen ganz aus (Lösch-Dialog).
+ */
 export const buildVehicleSummaryRows = (
 	vehicle: VehicleEntry,
 	incidentTypes: IncidentType[],
@@ -53,8 +59,7 @@ export const buildVehicleSummaryRows = (
 	push('Tatort', address);
 	push('Datum / Uhrzeit', dateTime);
 	push('Art des Verstoßes', incidentLabels);
-	// Immer nur bei tatsächlichem Inhalt, auch bei includeEmpty — kein "—"-Platzhalter für ein
-	// reines Freitext-Zusatzfeld.
+	// Auch bei includeEmpty nur mit Inhalt — kein „—"-Platzhalter für ein Freitext-Zusatzfeld.
 	if (vehicle.notes) rows.push({ label: 'Weitere Angaben', value: vehicle.notes });
 
 	return rows;

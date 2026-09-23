@@ -1,5 +1,9 @@
 import type { ReportFormData, VehicleEntry } from './formSchema';
 
+/**
+ * Erzeugt ein leeres Fahrzeug mit den Formular-Defaults (Nationalitätszeichen „D",
+ * Marke „Unbekannt", Halteverstoß).
+ */
 export const createEmptyVehicle = (id: string = crypto.randomUUID()): VehicleEntry => ({
 	id,
 	photoIds: [],
@@ -19,6 +23,7 @@ export const createEmptyVehicle = (id: string = crypto.randomUUID()): VehicleEnt
 	locationCity: ''
 });
 
+/** Erzeugt ein leeres Anzeigen-Formular, noch ohne Fahrzeuge und Fotos. */
 export const createEmptyForm = (): ReportFormData => ({
 	firstName: '',
 	lastName: '',

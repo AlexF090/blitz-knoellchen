@@ -1,11 +1,17 @@
 <script lang="ts" generics="T extends string">
+	/**
+	 * Eine Reihe sich gegenseitig ausschließender Optionen im iOS-Stil — technisch verdeckte
+	 * Radio-Buttons, damit Tastatur und Screenreader die Gruppe normal bedienen können.
+	 */
 	interface Option<T> {
 		value: T;
 		label: string;
+		/** Ausführliche Beschriftung für Screenreader, z.B. mit der Bedeutung der Option. */
 		ariaLabel: string;
 	}
 
 	interface Props {
+		/** Gemeinsamer Radio-Gruppenname; muss pro Instanz auf der Seite eindeutig sein. */
 		name: string;
 		value: T;
 		options: Option<T>[];
