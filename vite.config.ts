@@ -70,7 +70,7 @@ export default defineConfig({
 			manifest: {
 				name: 'Blitz-Knöllchen',
 				short_name: 'Blitz-Knöllchen',
-				description: 'Falschparker in unter 30 Sekunden an die Bußgeldstelle Köln melden.',
+				description: 'Falschparker in rund 30 Sekunden an die Bußgeldstelle Köln melden.',
 				lang: 'de',
 				start_url: '/',
 				display: 'standalone',

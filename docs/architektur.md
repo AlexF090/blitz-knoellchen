@@ -7,7 +7,7 @@ Blitz-Knöllchen. Einstieg, Setup und Kommandos: [`../README.md`](../README.md).
 
 **Blitz-Knöllchen** ist eine Progressive Web App, mit der Falschparker der Bußgeldstelle Köln
 per E-Mail gemeldet werden können ("Fremdanzeige"). Zielgruppe: Menschen, die spontan im
-Alltag ein falsch geparktes Auto sehen und es in unter 30 Sekunden vom Smartphone aus melden
+Alltag ein falsch geparktes Auto sehen und es in rund 30 Sekunden vom Smartphone aus melden
 wollen, ohne eine native Mail-App zu öffnen. Ablauf: Foto machen → App liest Datum/GPS aus den
 EXIF-Daten aus und ermittelt per Reverse-Geocoding eine Adresse → Verstoßart wählen → Absenden
 verschickt eine fertig formulierte E-Mail; die Anzeige erscheint danach in einer lokalen

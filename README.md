@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/AlexF090/blitz-knoellchen/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexF090/blitz-knoellchen/actions/workflows/ci.yml)
 
-Progressive Web App, mit der sich Falschparker in unter 30 Sekunden vom Smartphone aus bei der
+Progressive Web App, mit der sich Falschparker in rund 30 Sekunden vom Smartphone aus bei der
 Bußgeldstelle Köln anzeigen lassen — Foto machen, Rest füllt sich selbst aus, absenden.
 
 **→ [Live-Demo](https://blitz-knoellchen.vercel.app)**
