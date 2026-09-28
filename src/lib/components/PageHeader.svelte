@@ -29,19 +29,18 @@
 			>
 				<LogoLockup />
 			</a>
-			{#if appMode.current !== null}
-				<button
-					type="button"
-					onclick={() => appMode.requestChange()}
-					aria-label="Modus wechseln (aktuell {appMode.current === 'live' ? 'Live' : 'Demo'})"
-					class="rounded-full border px-3 py-1 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 {appMode.current ===
-					'live'
-						? 'border-error-fg bg-error-bg text-error-fg'
-						: 'border-border text-ink-muted'}"
-				>
-					{appMode.current === 'live' ? 'Live' : 'Demo'}
-				</button>
-			{/if}
+			<button
+				type="button"
+				onclick={() => appMode.requestChange()}
+				disabled={!appMode.isRestored}
+				aria-label="Modus wechseln (aktuell {appMode.current === 'live' ? 'Live' : 'Demo'})"
+				class="rounded-full border px-3 py-1 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 {appMode.current ===
+				'live'
+					? 'border-error-fg bg-error-bg text-error-fg'
+					: 'border-border text-ink-muted'}"
+			>
+				{appMode.current === 'live' ? 'Live' : 'Demo'}
+			</button>
 		</div>
 		<!-- eslint-disable svelte/no-navigation-without-resolve -- linkHref wird vom Aufrufer bereits per resolve() übergeben -->
 		<a

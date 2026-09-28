@@ -20,11 +20,8 @@
 		 * als Bottom-Sheet).
 		 */
 		desktopMaxWidthClass?: string;
-		/**
-		 * `false` für Dialoge, die eine aktive Entscheidung erzwingen (z.B. Demo-/Live-Auswahl) —
-		 * unterbindet das Schließen per Escape-Taste und Backdrop-Klick.
-		 */
-		dismissable?: boolean;
+		/** Wird bei jedem Schließen aufgerufen, auch per Escape-Taste oder Backdrop-Klick. */
+		onclose?: () => void;
 	}
 
 	let {
@@ -34,26 +31,21 @@
 		children,
 		actions,
 		desktopMaxWidthClass = 'sm:max-w-sm',
-		dismissable = true
+		onclose
 	}: Props = $props();
-
-	/** Blockt das Schließen per Escape-Taste, wenn der Dialog nicht verwerfbar ist. */
-	const oncancel = (event: Event) => {
-		if (!dismissable) event.preventDefault();
-	};
 
 	/** Schließt den Dialog bei einem Klick auf den Backdrop. */
 	const onBackdropClick = (event: MouseEvent) => {
 		// Klicks auf den Inhalt haben ein Kindelement als target — nur der Backdrop trifft
 		// das <dialog> selbst.
-		if (dismissable && event.target === dialog) dialog?.close();
+		if (event.target === dialog) dialog?.close();
 	};
 </script>
 
 <dialog
 	bind:this={dialog}
 	onclick={onBackdropClick}
-	{oncancel}
+	{onclose}
 	aria-labelledby={titleId}
 	class="fixed inset-x-0 top-auto bottom-0 m-0 flex max-h-[85vh] w-full max-w-none flex-col
 		rounded-t-card rounded-b-none border-t border-surface/40 bg-surface/70 p-4 shadow-overlay

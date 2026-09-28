@@ -1,5 +1,5 @@
 import { createRawSnippet } from 'svelte';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import ConfirmDialog from './ConfirmDialog.svelte';
@@ -26,32 +26,11 @@ describe('ConfirmDialog', () => {
 		await expect.element(page.getByText('Aktionen')).toBeInTheDocument();
 	});
 
-	it('schließt NICHT per Escape, wenn dismissable=false ist', async () => {
+	it('erlaubt Schließen per Escape', async () => {
 		await render(ConfirmDialog, {
 			dialog: undefined,
 			titleId: 't',
 			title: 'Titel',
-			dismissable: false,
-			children: textSnippet('Inhalt'),
-			actions: textSnippet('Aktionen')
-		});
-
-		const dialogEl = document.querySelector('dialog') as HTMLDialogElement;
-		dialogEl.showModal();
-		expect(dialogEl.open).toBe(true);
-
-		const cancelEvent = new Event('cancel', { cancelable: true });
-		dialogEl.dispatchEvent(cancelEvent);
-
-		expect(cancelEvent.defaultPrevented).toBe(true);
-	});
-
-	it('erlaubt Schließen per Escape, wenn dismissable=true ist', async () => {
-		await render(ConfirmDialog, {
-			dialog: undefined,
-			titleId: 't',
-			title: 'Titel',
-			dismissable: true,
 			children: textSnippet('Inhalt'),
 			actions: textSnippet('Aktionen')
 		});
@@ -65,12 +44,11 @@ describe('ConfirmDialog', () => {
 		expect(cancelEvent.defaultPrevented).toBe(false);
 	});
 
-	it('schließt bei Backdrop-Klick, wenn dismissable=true ist', async () => {
+	it('schließt bei Backdrop-Klick', async () => {
 		await render(ConfirmDialog, {
 			dialog: undefined,
 			titleId: 't',
 			title: 'Titel',
-			dismissable: true,
 			children: textSnippet('Inhalt'),
 			actions: textSnippet('Aktionen')
 		});
@@ -87,12 +65,29 @@ describe('ConfirmDialog', () => {
 		expect(dialogEl.open).toBe(false);
 	});
 
+	it('ruft onclose beim Schließen auf', async () => {
+		const onclose = vi.fn();
+		await render(ConfirmDialog, {
+			dialog: undefined,
+			titleId: 't',
+			title: 'Titel',
+			onclose,
+			children: textSnippet('Inhalt'),
+			actions: textSnippet('Aktionen')
+		});
+
+		const dialogEl = document.querySelector('dialog') as HTMLDialogElement;
+		dialogEl.showModal();
+		dialogEl.click();
+
+		await vi.waitFor(() => expect(onclose).toHaveBeenCalledOnce());
+	});
+
 	it('schließt NICHT bei Klick auf den Dialog-Inhalt selbst', async () => {
 		await render(ConfirmDialog, {
 			dialog: undefined,
 			titleId: 't',
 			title: 'Titel',
-			dismissable: true,
 			children: textSnippet('Inhalt hier'),
 			actions: textSnippet('Aktionen')
 		});

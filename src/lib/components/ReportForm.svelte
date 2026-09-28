@@ -366,7 +366,7 @@
 			const results = await submitVehicleReports({
 				form,
 				city,
-				mode: appMode.current ?? 'demo',
+				mode: appMode.current,
 				send: sendVehicleReport,
 				saveHistoryEntry: addEntry,
 				createId: () => crypto.randomUUID(),

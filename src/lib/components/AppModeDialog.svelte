@@ -1,58 +1,48 @@
 <script lang="ts">
 	/**
-	 * Erzwingt vor der ersten Nutzung die Wahl zwischen Demo- und Live-Modus und öffnet sich
-	 * erneut, wenn der Modus über das Header-Badge gewechselt werden soll.
+	 * Wahl zwischen Live- und Demo-Modus. Öffnet sich, wenn der Modus über das Header-Badge
+	 * gewechselt werden soll; beim Start läuft die App ohne Rückfrage im Live-Modus.
 	 */
+	import { onMount } from 'svelte';
 	import { appMode } from '$lib/appMode.svelte';
 	import { buttonDestructiveSecondary, buttonPrimary } from '$lib/ui/buttonStyles';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	let dialog = $state<HTMLDialogElement | undefined>(undefined);
 
-	// Kein `$state`, nur ein Einmal-Schalter innerhalb des Effekts: verhindert, dass ein späteres
-	// appMode.requestChange() (Klick auf das Modus-Badge im Header) den zuletzt gewählten Wert
-	// sofort wieder aus sessionStorage nachlädt, statt den Dialog tatsächlich erneut zu öffnen.
-	let restoredFromStorage = false;
+	// Ein Wechsel zu Demo gilt pro sessionStorage-Session (überlebt Reload, verschwindet mit dem
+	// Tab). onMount läuft nur clientseitig, sessionStorage ist dort verfügbar.
+	onMount(() => appMode.restore());
 
-	// Die Wahl gilt pro sessionStorage-Session (überlebt Reload, verschwindet mit dem Tab). Kein
-	// `browser`-Guard nötig: der Effekt läuft ohnehin nur clientseitig nach dem Mount.
 	$effect(() => {
-		if (appMode.current === null) {
-			if (!restoredFromStorage) {
-				restoredFromStorage = true;
-				appMode.restore();
-			}
-			if (appMode.current === null) dialog?.showModal();
-		}
+		if (!dialog) return;
+		if (appMode.isChangeRequested && !dialog.open) dialog.showModal();
+		if (!appMode.isChangeRequested && dialog.open) dialog.close();
 	});
 
-	/** Übernimmt die getroffene Wahl und schließt den Dialog. */
-	const choose = (value: 'demo' | 'live') => {
-		appMode.set(value);
-		dialog?.close();
-	};
+	/** Escape und Backdrop-Klick schließen den Dialog nativ; der Store muss das mitbekommen. */
+	const onclose = () => appMode.cancelChange();
 </script>
 
 <ConfirmDialog
 	bind:dialog
-	dismissable={false}
+	{onclose}
 	titleId="app-mode-dialog-title"
-	title="Demo- oder Live-Modus?"
+	title="Live- oder Demo-Modus?"
 	desktopMaxWidthClass="sm:max-w-lg"
 >
 	<p class="mt-1 text-lg text-ink-muted">
-		Blitz-Knöllchen befindet sich noch in der Entwicklung und ist nicht vollständig getestet. Im
-		<strong class="text-ink">Demo-Modus</strong> geht jede Anzeige nur an eine interne Test-Adresse.
-		Im <strong class="text-ink">Live-Modus</strong> wird die Anzeige tatsächlich an die Bußgeldstelle
-		Köln versendet.
+		Im <strong class="text-ink">Live-Modus</strong> wird die Anzeige an die Bußgeldstelle Köln
+		versendet. Im <strong class="text-ink">Demo-Modus</strong> geht sie nur an eine Test-Adresse – zum
+		gefahrlosen Ausprobieren.
 	</p>
 	{#snippet actions()}
-		<button type="button" onclick={() => choose('demo')} class="flex-1 {buttonPrimary}">
+		<button type="button" onclick={() => appMode.set('demo')} class="flex-1 {buttonPrimary}">
 			Demo verwenden
 		</button>
 		<button
 			type="button"
-			onclick={() => choose('live')}
+			onclick={() => appMode.set('live')}
 			class="flex-1 {buttonDestructiveSecondary}"
 		>
 			Live verwenden

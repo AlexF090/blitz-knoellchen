@@ -161,8 +161,9 @@ const run = async () => {
 	};
 
 	await page.goto(BASE_URL);
+	await page.getByRole('button', { name: /^Modus wechseln/ }).click();
 	await page
-		.getByRole('dialog', { name: 'Demo- oder Live-Modus?' })
+		.getByRole('dialog', { name: 'Live- oder Demo-Modus?' })
 		.getByRole('button', { name: 'Demo verwenden' })
 		.click();
 	await shot('01-formular');

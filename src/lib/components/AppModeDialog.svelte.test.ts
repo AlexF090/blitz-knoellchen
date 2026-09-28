@@ -12,84 +12,97 @@ vi.mock('$lib/ui/buttonStyles', () => ({
 	buttonDestructiveSecondary: undefined
 }));
 
-afterEach(() => {
-	appMode.requestChange();
+// Offene Dialoge vor dem Reset schließen und auf ihr close-Event warten: Sonst entfernt erst der
+// Cleanup des nächsten Tests den Dialog, das dann gefeuerte close-Event ruft cancelChange() auf
+// und setzt einen dort gerade angeforderten Wechsel zurück.
+afterEach(async () => {
+	const openDialogs = [...document.querySelectorAll('dialog')].filter((dialog) => dialog.open);
+	await Promise.all(
+		openDialogs.map(
+			(dialog) =>
+				new Promise((resolve) => {
+					dialog.addEventListener('close', resolve, { once: true });
+					dialog.close();
+				})
+		)
+	);
+	appMode.reset();
 	sessionStorage.clear();
 });
 
-describe('AppModeDialog', () => {
-	it('öffnet sich automatisch, wenn noch kein Modus gesetzt ist', async () => {
-		await render(AppModeDialog);
+const renderDialog = async () => {
+	const { container } = await render(AppModeDialog);
+	return container.querySelector('dialog') as HTMLDialogElement;
+};
 
-		const dialog = document.querySelector('dialog') as HTMLDialogElement;
-		await expect.element(page.getByText('Demo- oder Live-Modus?')).toBeInTheDocument();
-		expect(dialog.open).toBe(true);
+describe('AppModeDialog', () => {
+	it('bleibt beim Start geschlossen, die App läuft im Live-Modus', async () => {
+		const dialog = await renderDialog();
+
+		expect(dialog.open).toBe(false);
+		expect(appMode.current).toBe('live');
+	});
+
+	it('öffnet sich, wenn ein Moduswechsel angefordert wird', async () => {
+		const dialog = await renderDialog();
+
+		appMode.requestChange();
+
+		await vi.waitFor(() => expect(dialog.open).toBe(true));
+		await expect.element(page.getByText('Live- oder Demo-Modus?')).toBeInTheDocument();
 	});
 
 	it('nutzt den Leerstring-Fallback in den Action-Button-Klassen bei fehlenden Style-Konstanten', async () => {
-		await render(AppModeDialog);
+		await renderDialog();
 
-		const demoButton = page.getByRole('button', { name: 'Demo verwenden' }).element();
-		const liveButton = page.getByRole('button', { name: 'Live verwenden' }).element();
+		const demoButton = page.getByRole('button', { name: 'Demo verwenden', includeHidden: true });
+		const liveButton = page.getByRole('button', { name: 'Live verwenden', includeHidden: true });
 
-		expect(demoButton.className).not.toContain('undefined');
-		expect(liveButton.className).not.toContain('undefined');
+		expect(demoButton.element().className).not.toContain('undefined');
+		expect(liveButton.element().className).not.toContain('undefined');
 	});
 
 	it('setzt den Demo-Modus und schließt den Dialog bei Klick auf "Demo verwenden"', async () => {
-		await render(AppModeDialog);
+		const dialog = await renderDialog();
+		appMode.requestChange();
+		await vi.waitFor(() => expect(dialog.open).toBe(true));
 
 		await userEvent.click(page.getByRole('button', { name: 'Demo verwenden' }));
 
 		expect(appMode.current).toBe('demo');
-		const dialog = document.querySelector('dialog') as HTMLDialogElement;
-		expect(dialog.open).toBe(false);
+		await vi.waitFor(() => expect(dialog.open).toBe(false));
 	});
 
 	it('setzt den Live-Modus und schließt den Dialog bei Klick auf "Live verwenden"', async () => {
-		await render(AppModeDialog);
+		appMode.set('demo');
+		const dialog = await renderDialog();
+		appMode.requestChange();
+		await vi.waitFor(() => expect(dialog.open).toBe(true));
 
 		await userEvent.click(page.getByRole('button', { name: 'Live verwenden' }));
 
 		expect(appMode.current).toBe('live');
-		const dialog = document.querySelector('dialog') as HTMLDialogElement;
-		expect(dialog.open).toBe(false);
+		await vi.waitFor(() => expect(dialog.open).toBe(false));
 	});
 
-	it('ist nicht per Escape schließbar (dismissable=false)', async () => {
-		await render(AppModeDialog);
-
-		const dialog = document.querySelector('dialog') as HTMLDialogElement;
-		expect(dialog.open).toBe(true);
-
-		const cancelEvent = new Event('cancel', { cancelable: true });
-		dialog.dispatchEvent(cancelEvent);
-
-		expect(cancelEvent.defaultPrevented).toBe(true);
-		expect(dialog.open).toBe(true);
-	});
-
-	it('ist nicht per Backdrop-Klick schließbar (dismissable=false)', async () => {
-		await render(AppModeDialog);
-
-		const dialog = document.querySelector('dialog') as HTMLDialogElement;
-		expect(dialog.open).toBe(true);
+	it('lässt sich per Backdrop-Klick schließen, ohne den Modus zu ändern', async () => {
+		const dialog = await renderDialog();
+		appMode.requestChange();
+		await vi.waitFor(() => expect(dialog.open).toBe(true));
 
 		dialog.click();
 
-		expect(dialog.open).toBe(true);
+		await vi.waitFor(() => expect(appMode.isChangeRequested).toBe(false));
+		expect(dialog.open).toBe(false);
+		expect(appMode.current).toBe('live');
 	});
 
-	it('lädt beim Mount einen gespeicherten Modus aus sessionStorage und öffnet den Dialog dann nicht', async () => {
-		sessionStorage.setItem('blitz-knoellchen:app-mode', 'live');
+	it('lädt beim Mount einen gespeicherten Modus aus sessionStorage', async () => {
+		sessionStorage.setItem('blitz-knoellchen:app-mode', 'demo');
 
-		await render(AppModeDialog);
+		const dialog = await renderDialog();
 
-		// Das <dialog>-Element ist immer im DOM (ConfirmDialog rendert es unbedingt) — nur der
-		// native "open"-Zustand entscheidet über die Sichtbarkeit, daher hier statt Text-Absenz
-		// geprüft.
-		const dialog = document.querySelector('dialog') as HTMLDialogElement;
-		await vi.waitFor(() => expect(dialog.open).toBe(false));
-		expect(appMode.current).toBe('live');
+		expect(appMode.current).toBe('demo');
+		expect(dialog.open).toBe(false);
 	});
 });

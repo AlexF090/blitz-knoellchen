@@ -89,10 +89,9 @@ begründet. Die 12 ADRs, die Ordnerstruktur und die Coding-Konventionen stehen i
 
 ## Demo- und Live-Modus
 
-Beim ersten Laden fragt ein blockierender Dialog, ob im **Demo-Modus** (die Anzeige geht an eine
-interne Test-Adresse) oder im **Live-Modus** (die Anzeige geht tatsächlich an die Bußgeldstelle)
-gearbeitet wird. Die Wahl gilt pro Browser-Session und lässt sich jederzeit über das Modus-Badge
-im Header ändern. Welcher Empfänger dahintersteht, entscheidet ausschließlich der Server — der
+Die App startet im **Live-Modus**: Die Anzeige geht tatsächlich an die Bußgeldstelle. Über das
+Modus-Badge im Header lässt sich in den **Demo-Modus** wechseln, dann geht die Anzeige nur an eine
+interne Test-Adresse. Ein Wechsel gilt pro Browser-Session. Welcher Empfänger dahintersteht, entscheidet ausschließlich der Server — der
 Client schickt nur `demo` oder `live`, und ein fehlender oder manipulierter Wert fällt immer auf
 `demo` zurück.
 

@@ -5,7 +5,7 @@ import { appMode } from '$lib/appMode.svelte';
 import PageHeader from './PageHeader.svelte';
 
 afterEach(() => {
-	appMode.requestChange();
+	appMode.reset();
 	sessionStorage.clear();
 });
 
@@ -18,14 +18,20 @@ describe('PageHeader', () => {
 		await expect.element(homeLink).toHaveAttribute('href', '/');
 	});
 
-	it('zeigt kein Modus-Badge, wenn appMode.current null ist', async () => {
+	it('sperrt das Modus-Badge, bis der Modus geladen ist', async () => {
 		await render(PageHeader, { linkHref: '/historie', linkLabel: 'Historie', linkIcon: 'history' });
 
-		expect(page.getByRole('button', { name: /Modus wechseln/ }).elements()).toHaveLength(0);
+		const badge = page.getByRole('button', { name: /^Modus wechseln/ });
+		await expect.element(badge).toBeDisabled();
+
+		appMode.restore();
+
+		await expect.element(badge).toBeEnabled();
 	});
 
 	it('zeigt das Modus-Badge im Demo-Modus und ruft appMode.requestChange() beim Klick auf', async () => {
 		appMode.set('demo');
+		appMode.restore();
 		await render(PageHeader, { linkHref: '/historie', linkLabel: 'Historie', linkIcon: 'history' });
 
 		const badge = page.getByRole('button', { name: 'Modus wechseln (aktuell Demo)' });
@@ -34,7 +40,8 @@ describe('PageHeader', () => {
 
 		await userEvent.click(badge);
 
-		expect(appMode.current).toBeNull();
+		expect(appMode.isChangeRequested).toBe(true);
+		expect(appMode.current).toBe('demo');
 	});
 
 	it('zeigt das Modus-Badge im Live-Modus mit entsprechendem Label', async () => {

@@ -40,9 +40,8 @@ test('Fahrzeugdaten überleben einen Reload als Entwurf', async ({ page }) => {
 	// Autosave ist debounced (800ms) — kurz warten, bevor neu geladen wird.
 	await page.waitForTimeout(1200);
 
-	// sessionStorage überlebt den Reload (s. ADR "Demo/Live-Modus-Auswahl" in docs/architektur.md) — der
-	// Dialog erscheint hier bewusst nicht erneut, ein zweiter chooseAppMode()-Aufruf würde ewig
-	// auf einen nie erscheinenden Dialog warten.
+	// sessionStorage überlebt den Reload (s. ADR "Live-Modus als Standard" in
+	// docs/architektur.md), der Demo-Modus bleibt ohne erneuten Wechsel aktiv.
 	await page.reload();
 
 	// Kein Flash: "Deine Angaben" soll sofort im gelesenen Zustand stehen, nie leer im

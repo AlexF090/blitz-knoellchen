@@ -20,12 +20,7 @@ const submitReport = async (page: Page, licensePlate: string) => {
 	);
 
 	await page.goto('/');
-	const appModeDialog = page.getByRole('dialog', { name: 'Demo- oder Live-Modus?' });
-	const appModeDialogShown = await appModeDialog
-		.waitFor({ state: 'visible', timeout: 2000 })
-		.then(() => true)
-		.catch(() => false);
-	if (appModeDialogShown) await chooseAppMode(page);
+	await chooseAppMode(page);
 
 	// Ab dem zweiten Aufruf in derselben Test-Session ist das Profil bereits aus IndexedDB
 	// gespeichert — das Formular zeigt es dann nur noch als Zusammenfassung statt als Eingabefelder.

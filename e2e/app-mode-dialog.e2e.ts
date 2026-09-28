@@ -36,20 +36,24 @@ const getPreviewRecipient = (page: import('@playwright/test').Page) => {
 	return previewDialog.locator('xpath=.//p[text()="An"]/following-sibling::p[1]');
 };
 
-test('Dialog erscheint beim ersten Laden und lässt sich nicht per Escape oder Backdrop-Klick schließen', async ({
-	page
-}) => {
+test('Startet ohne Dialog im Live-Modus', async ({ page }) => {
 	await page.goto('/');
 
-	const dialog = page.getByRole('dialog', { name: 'Demo- oder Live-Modus?' });
+	await expect(page.locator('#firstName')).toBeEditable();
+	await expect(page.getByRole('button', { name: 'Modus wechseln (aktuell Live)' })).toBeVisible();
+	await expect(page.getByRole('dialog', { name: 'Live- oder Demo-Modus?' })).toBeHidden();
+});
+
+test('Dialog lässt sich per Escape schließen, ohne den Modus zu ändern', async ({ page }) => {
+	await page.goto('/');
+	await page.getByRole('button', { name: 'Modus wechseln (aktuell Live)' }).click();
+	const dialog = page.getByRole('dialog', { name: 'Live- oder Demo-Modus?' });
 	await expect(dialog).toBeVisible();
 
 	await page.keyboard.press('Escape');
-	await expect(dialog).toBeVisible();
 
-	// Klick auf den Backdrop-Bereich, außerhalb des zentrierten Dialog-Inhalts.
-	await page.mouse.click(5, 5);
-	await expect(dialog).toBeVisible();
+	await expect(page.locator('#firstName')).toBeEditable();
+	await expect(page.getByRole('button', { name: 'Modus wechseln (aktuell Live)' })).toBeVisible();
 });
 
 test('Demo-Modus: Badge im Header und Test-Adresse in der E-Mail-Vorschau', async ({ page }) => {
@@ -58,8 +62,8 @@ test('Demo-Modus: Badge im Header und Test-Adresse in der E-Mail-Vorschau', asyn
 
 	// Nicht auf dem Dialog selbst assertieren: die CSS-Exit-Animation (layout.css,
 	// `transition: display 300ms allow-discrete`) hält ihn in manchen Browsern optisch noch kurz
-	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert (choose() setzt
-	// pointer-events: none synchron). Stattdessen auf ein Element *hinter* dem Dialog prüfen.
+	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert.
+	// Stattdessen auf ein Element *hinter* dem Dialog prüfen.
 	await expect(page.locator('#firstName')).toBeEditable();
 	await expect(page.getByText('Demo', { exact: true })).toBeVisible();
 
@@ -79,34 +83,29 @@ test('Nach hartem Reload bleibt die Wahl innerhalb der Session erhalten', async 
 	await chooseAppMode(page, 'demo');
 	// Nicht auf dem Dialog selbst assertieren: die CSS-Exit-Animation (layout.css,
 	// `transition: display 300ms allow-discrete`) hält ihn in manchen Browsern optisch noch kurz
-	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert (choose() setzt
-	// pointer-events: none synchron). Stattdessen auf ein Element *hinter* dem Dialog prüfen.
+	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert.
+	// Stattdessen auf ein Element *hinter* dem Dialog prüfen.
 	await expect(page.locator('#firstName')).toBeEditable();
 
 	await page.reload();
 	// Nicht auf dem Dialog selbst assertieren: die CSS-Exit-Animation (layout.css,
 	// `transition: display 300ms allow-discrete`) hält ihn in manchen Browsern optisch noch kurz
-	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert (choose() setzt
-	// pointer-events: none synchron). Stattdessen auf ein Element *hinter* dem Dialog prüfen.
+	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert.
+	// Stattdessen auf ein Element *hinter* dem Dialog prüfen.
 	await expect(page.locator('#firstName')).toBeEditable();
 	await expect(page.getByText('Demo', { exact: true })).toBeVisible();
 });
 
-test('Klick auf das Modus-Badge im Header öffnet den Dialog erneut und erlaubt einen Wechsel', async ({
-	page
-}) => {
+test('Wechsel von Demo zurück zu Live über das Modus-Badge', async ({ page }) => {
 	await page.goto('/');
 	await chooseAppMode(page, 'demo');
 	await expect(page.getByText('Demo', { exact: true })).toBeVisible();
 
-	await page.getByRole('button', { name: 'Modus wechseln (aktuell Demo)' }).click();
-	await expect(page.getByRole('dialog', { name: 'Demo- oder Live-Modus?' })).toBeVisible();
-
 	await chooseAppMode(page, 'live');
 	// Nicht auf dem Dialog selbst assertieren: die CSS-Exit-Animation (layout.css,
 	// `transition: display 300ms allow-discrete`) hält ihn in manchen Browsern optisch noch kurz
-	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert (choose() setzt
-	// pointer-events: none synchron). Stattdessen auf ein Element *hinter* dem Dialog prüfen.
+	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert.
+	// Stattdessen auf ein Element *hinter* dem Dialog prüfen.
 	await expect(page.locator('#firstName')).toBeEditable();
 	await expect(page.getByText('Live', { exact: true })).toBeVisible();
 });
@@ -119,8 +118,8 @@ test('Live-Modus: Badge im Header und echte Bußgeldstelle-Adresse in der E-Mail
 
 	// Nicht auf dem Dialog selbst assertieren: die CSS-Exit-Animation (layout.css,
 	// `transition: display 300ms allow-discrete`) hält ihn in manchen Browsern optisch noch kurz
-	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert (choose() setzt
-	// pointer-events: none synchron). Stattdessen auf ein Element *hinter* dem Dialog prüfen.
+	// im Layout, ohne dass er nach dem Schließen noch etwas blockiert.
+	// Stattdessen auf ein Element *hinter* dem Dialog prüfen.
 	await expect(page.locator('#firstName')).toBeEditable();
 	await expect(page.getByText('Live', { exact: true })).toBeVisible();
 

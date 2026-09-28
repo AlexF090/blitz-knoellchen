@@ -258,25 +258,25 @@ erneut mit der Stadt Köln abgleichen**:
 - **Länderkennzeichen:** Pflichtfeld, Default `"D"` (weit überwiegender Regelfall bei in Köln
   gemeldeten Verstößen, bleibt aber editierbar für ausländische Kennzeichen).
 
-### Demo/Live-Modus-Auswahl pro Session, manuell über das Header-Badge wechselbar
+### Live-Modus als Standard, Demo-Modus pro Session über das Header-Badge
 
-Solange die App nicht vollständig getestet ist, würde ein versehentlicher Live-Versand eine
-echte Ordnungswidrigkeits-Anzeige an die Stadt Köln auslösen. Deshalb fragt ein blockierender
-Dialog (`src/lib/components/AppModeDialog.svelte`, global über `src/routes/+layout.svelte`
-eingebunden), ob im **Demo-Modus** (Anzeige geht an eine interne Test-Adresse) oder im
-**Live-Modus** (Anzeige geht tatsächlich an die Bußgeldstelle Köln) gearbeitet werden soll —
-weder Backdrop-Klick noch Escape schließen ihn, nur die beiden Buttons. Die Wahl wird in
-`sessionStorage` gespeichert (`STORAGE_KEY` in `src/lib/appMode.svelte.ts`) und gilt dadurch
-**pro Tab/Session**: Ein Reload behält die zuletzt getroffene Wahl, ein neuer Tab/eine neue
-Session erzwingt die Entscheidung erneut. Bewusst kein `localStorage`, damit die Wahl nicht
-dauerhaft über Sessions hinweg bestehen bleibt — anfangs wurde hier auf jeden Reload erneut
-gefragt (reiner In-Memory-Modul-State, kein Persistieren), das erwies sich im täglichen
-Gebrauch aber als zu aufdringlich.
+Die App startet ohne Rückfrage im **Live-Modus** (Anzeige geht an die Bußgeldstelle Köln). Wer
+einen geteilten Link öffnet, soll direkt melden können, ohne erst einen Dialog wegzuklicken. Ein
+Klick auf das Modus-Badge im Header (`PageHeader.svelte`) ruft `appMode.requestChange()` auf und
+öffnet den Auswahldialog (`src/lib/components/AppModeDialog.svelte`, global über
+`src/routes/+layout.svelte` eingebunden). Dort lässt sich in den **Demo-Modus** wechseln
+(Anzeige geht nur an eine interne Test-Adresse, zum gefahrlosen Ausprobieren). Escape und
+Backdrop-Klick schließen den Dialog, ohne den Modus zu ändern.
 
-Ein Klick auf das Modus-Badge im Header (`PageHeader.svelte`, jetzt ein `<button>` statt eines
-reinen `<span>`) ruft `appMode.requestChange()` auf und öffnet den Dialog jederzeit erneut, um
-den Modus manuell zu wechseln — der zuvor in `sessionStorage` gespeicherte Wert wird dabei erst
-mit der nächsten expliziten Auswahl überschrieben, nicht schon beim Öffnen des Dialogs.
+Ein Wechsel wird in `sessionStorage` gespeichert (`STORAGE_KEY` in `src/lib/appMode.svelte.ts`)
+und gilt **pro Tab/Session**: Ein Reload behält die Wahl, ein neuer Tab startet wieder live.
+Bewusst kein `localStorage`: Wer vor Wochen einmal Demo ausprobiert hat, soll nicht unbemerkt
+ins Leere melden. Beim SSR ist der Modus immer `live`; ein gespeicherter Demo-Modus greift erst
+nach dem Mount, das Badge wechselt dann kurz nach dem Laden. Bis dahin ist das Badge `disabled`
+(`appMode.isRestored`), weil ein Klick vor der Hydration wirkungslos bliebe.
+
+„Absenden“ versendet ohne weitere Bestätigung: Wer eine Anzeige ausfüllt und abschickt, tut das
+bewusst. Den Live-Modus zeigt das Badge in Fehlerfarbe an.
 
 Der gewählte Modus liegt als Client-Runen-Modul in `src/lib/appMode.svelte.ts` (`AppMode =
 'demo' | 'live'`) und wird an zwei Stellen konsumiert: `PageHeader.svelte` zeigt ihn dauerhaft
@@ -331,8 +331,8 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `src/lib/components/branding/`                       | Logo-/Wortmarken-Komponenten (`BrandIcon.svelte`, `LogoLockup.svelte`, `Wordmark.svelte`), s. ADR "Branding-Assets" oben                                        |
 | `src/lib/config/cities.ts`                           | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import                                                                         |
 | `src/lib/config/cities.server.ts`                    | Serverseitige, modusabhängige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`                                                             |
-| `src/lib/appMode.svelte.ts`                          | Client-Runen-Modul für die Demo-/Live-Modus-Wahl, s. ADR "Demo/Live-Modus-Auswahl" oben                                                                         |
-| `src/lib/components/AppModeDialog.svelte`            | Blockierender Demo-/Live-Auswahldialog, global in `+layout.svelte` eingebunden                                                                                  |
+| `src/lib/appMode.svelte.ts`                          | Client-Runen-Modul für die Demo-/Live-Modus-Wahl, s. ADR "Live-Modus als Standard" oben                                                                         |
+| `src/lib/components/AppModeDialog.svelte`            | Live-/Demo-Auswahldialog, öffnet sich über das Header-Badge, global in `+layout.svelte`                                                                         |
 | `src/lib/config/vehicleMakes.ts`                     | Kuratierte Marken-Liste für die Marke-`<datalist>` (Fahrzeugbeschreibung), Freitext bleibt möglich                                                              |
 | `src/lib/config/vehicleTypes.ts`                     | Feste Fahrzeugart-Liste (`VEHICLE_TYPES`), geschlossene Auswahl statt Freitext                                                                                  |
 | `src/lib/email/buildEmailBody.ts`                    | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                                                                                            |
@@ -424,7 +424,7 @@ nicht:
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `BREVO_API_KEY`        | API-Key für den E-Mail-Versand über Brevo.                                                                         |
 | `EMAIL_FROM`           | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain).                                         |
-| `RECIPIENT_EMAIL_DEMO` | Empfänger im Demo-Modus (interne Test-Adresse), s. ADR "Demo/Live-Modus-Auswahl" oben.                             |
+| `RECIPIENT_EMAIL_DEMO` | Empfänger im Demo-Modus (interne Test-Adresse), s. ADR "Live-Modus als Standard" oben.                             |
 | `RECIPIENT_EMAIL_LIVE` | Empfänger im Live-Modus (Bußgeldstelle Köln, `bussgeldstelle@stadt-koeln.de`).                                     |
 | `LOCATIONIQ_API_KEY`   | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider), auch für Adress-Autocomplete. |
 | `BREVO_API_URL`        | Optional, nur für E2E-Tests: leitet den Versand auf den lokalen Brevo-Mock um. Gehört nicht nach Vercel.           |
