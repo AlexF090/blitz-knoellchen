@@ -110,6 +110,8 @@ export default defineConfig({
 			workbox: {
 				// Nur die App-Shell vorcachen, kein komplexes Runtime-Caching.
 				globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+				// Das Vorschaubild brauchen nur Link-Vorschau-Crawler, nicht die App offline.
+				globIgnores: ['**/og-image.png'],
 				// heic-to (dynamic import, mehrere MB durch die gebündelte libheif-WASM)
 				// überschreitet Workbox' Standardlimit von 2 MiB, das vor manifestTransforms
 				// greift und den Build sonst abbricht — daher angehoben, bleibt aber trotzdem

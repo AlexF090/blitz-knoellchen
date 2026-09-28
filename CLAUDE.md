@@ -21,6 +21,7 @@ npm run test:unit -- --run --coverage  # wie die CI, inklusive Coverage-Threshol
 npm run test:e2e                       # Playwright (baut + startet die App automatisch)
 npm run test                           # test:unit + test:e2e
 npm run screenshots                    # README-Screenshots aus dem Production-Build
+npm run og-image                       # Link-Vorschaubild static/og-image.png neu erzeugen
 ```
 
 ## Wichtigste Konventionen

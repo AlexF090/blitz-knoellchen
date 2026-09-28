@@ -158,6 +158,17 @@ eigenen Markenrots — ein eigenes Markenrot wurde testweise eingeführt und wie
 konsistent mit der bestehenden `oklch()`-Token-Konvention (s. u., Coding-Konventionen) zu
 bleiben.
 
+### Link-Vorschau über Open Graph mit versioniertem PNG
+
+Messenger und soziale Netzwerke bauen die Vorschau geteilter Links aus den `og:*`- und
+`twitter:*`-Tags in `src/routes/+layout.svelte`. Crawler brauchen absolute URLs; sie entstehen
+aus `page.url.origin` und passen damit auch auf Vercel-Preview-Deployments. `og:image` muss ein
+Rasterbild sein (SVG zeigen die meisten Messenger nicht), deshalb erzeugt
+`npm run og-image` einmalig `static/og-image.png` (1200×630) mit Playwright aus App-Icon,
+Wortmarke und Claim. Das PNG ist versioniert und muss nach Änderungen an Icon, Wortmarke oder
+Claim neu erzeugt werden. Es ist aus dem Workbox-Precache ausgenommen (`globIgnores`), weil nur
+Crawler es abrufen.
+
 ### HEIC/HEIF-Fotos werden client-seitig zu JPEG konvertiert
 
 iPhones speichern Fotos standardmäßig als HEIC; `createImageBitmap` (für Vorschau/Kompression)
@@ -345,6 +356,7 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `e2e/`                                               | Playwright-Tests + `fixtures/photo-with-gps.jpg` bzw. `.heic` (EXIF-Testbilder)                                                                                 |
 | `scripts/generate-e2e-fixture.mjs`                   | Einmaliges Setup-Skript für das EXIF-Testbild — nicht Teil der App                                                                                              |
 | `scripts/generate-screenshots.mjs`                   | Erzeugt die README-Screenshots aus dem Production-Build (`npm run screenshots`)                                                                                 |
+| `scripts/generate-og-image.mjs`                      | Erzeugt das Link-Vorschaubild `static/og-image.png` (`npm run og-image`), s. ADR "Link-Vorschau" oben                                                           |
 
 ## Kommandos
 
@@ -359,6 +371,7 @@ npm run test:unit  # Vitest (Unit- + Komponententests, Node- und Browser-Projekt
 npm run test:e2e   # Playwright (installiert Browser, baut + startet die App)
 npm run test       # test:unit + test:e2e
 npm run screenshots # README-Screenshots aus dem Production-Build
+npm run og-image    # Link-Vorschaubild static/og-image.png neu erzeugen
 ```
 
 ## Coding-Konventionen

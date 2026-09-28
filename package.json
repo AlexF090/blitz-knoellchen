@@ -26,7 +26,8 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright install && playwright test",
-		"screenshots": "node scripts/generate-screenshots.mjs"
+		"screenshots": "node scripts/generate-screenshots.mjs",
+		"og-image": "node scripts/generate-og-image.mjs"
 	},
 	"lint-staged": {
 		"*.{js,ts,svelte,json,md,css}": "prettier --write",
