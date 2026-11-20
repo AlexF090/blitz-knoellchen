@@ -1318,7 +1318,7 @@ describe('ReportForm', () => {
 			await expect
 				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
 				.toBeInTheDocument();
-			await expect.element(page.getByText('2 Fahrzeuge, 1 Foto')).toBeInTheDocument();
+			await expect.element(page.getByText('mit 2 Fahrzeugen und 1 Foto')).toBeInTheDocument();
 			await expect.element(page.getByText(validProfile.email, { exact: true })).toBeInTheDocument();
 			await expect.element(page.getByLabelText('Kennzeichen')).not.toBeInTheDocument();
 			await expect

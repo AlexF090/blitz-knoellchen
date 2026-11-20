@@ -154,6 +154,18 @@ describe('VehicleBlock', () => {
 		await expect.element(page.getByText('Maximal 3 Fotos pro Fahrzeug')).not.toBeInTheDocument();
 	});
 
+	it('beschriftet das allgemeine Freitextfeld eindeutig als Angaben zum Vorfall', async () => {
+		const vehicle = $state(makeCompleteVehicle());
+		await render(VehicleBlock, { ...baseProps(), vehicle });
+
+		await expect
+			.element(page.getByLabelText('Weitere Angaben zum Vorfall (optional)'))
+			.toBeInTheDocument();
+		await expect
+			.element(page.getByLabelText('Weitere Angaben zu gefährdeten Personen (optional)'))
+			.toBeInTheDocument();
+	});
+
 	it('gibt die Auswahl wieder frei, sobald ein Foto abgewählt wird', async () => {
 		const pool = ['p1', 'p2', 'p3', 'p4'].map((id) => makePhoto(id));
 		const vehicle = $state({ ...createEmptyVehicle('v-swap'), photoIds: ['p1', 'p2', 'p3'] });
@@ -424,7 +436,7 @@ describe('VehicleBlock', () => {
 		await expect.element(page.getByRole('button', { name: 'Bearbeiten' })).toBeInTheDocument();
 	});
 
-	it('fügt bei Enter in „Weitere Angaben“ einen Zeilenumbruch ein, statt die Karte zu schließen', async () => {
+	it('fügt bei Enter in „Weitere Angaben zum Vorfall“ einen Zeilenumbruch ein, statt die Karte zu schließen', async () => {
 		const vehicle = $state(makeCompleteVehicle());
 		await render(VehicleBlock, { ...baseProps(), vehicle });
 

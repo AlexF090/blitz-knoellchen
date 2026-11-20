@@ -143,7 +143,7 @@
 				{/if}
 				{#if entry.impairmentLabels?.length}
 					<p class="text-base text-ink-muted">
-						Behinderung: {entry.impairmentLabels.join(', ')}
+						Ausmaß der Behinderung: {entry.impairmentLabels.join(', ')}
 					</p>
 				{/if}
 				{#if entry.endangeredPersonLabels?.length}

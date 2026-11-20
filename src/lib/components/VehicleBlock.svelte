@@ -329,7 +329,11 @@
 			</div>
 
 			<div class="mt-3">
-				<FormField id="notes-{vehicle.id}" label="Weitere Angaben (optional)" wrapperClass="">
+				<FormField
+					id="notes-{vehicle.id}"
+					label="Weitere Angaben zum Vorfall (optional)"
+					wrapperClass=""
+				>
 					{#snippet control()}
 						<textarea
 							id="notes-{vehicle.id}"

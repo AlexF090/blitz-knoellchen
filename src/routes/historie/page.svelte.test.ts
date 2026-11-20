@@ -57,7 +57,7 @@ describe('Historie-Seite', () => {
 		await render(HistoriePage);
 
 		await expect
-			.element(page.getByText(/Behinderung:/))
+			.element(page.getByText(/Ausmaß der Behinderung:/))
 			.toMatchTextContent('Gehweg vollständig blockiert');
 		await expect
 			.element(page.getByText(/Gefährdete Personen:/))
@@ -71,7 +71,7 @@ describe('Historie-Seite', () => {
 		await render(HistoriePage);
 
 		await expect.element(page.getByText('K-AB1234 · BMW · Rot')).toBeInTheDocument();
-		await expect.element(page.getByText(/Behinderung:/)).not.toBeInTheDocument();
+		await expect.element(page.getByText(/Ausmaß der Behinderung:/)).not.toBeInTheDocument();
 		await expect.element(page.getByText(/Gefährdete Personen:/)).not.toBeInTheDocument();
 	});
 

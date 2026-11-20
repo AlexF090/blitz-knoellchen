@@ -17,16 +17,15 @@
 
 	let { savedAt, vehicleCount, photoCount, onResume, onDiscard }: Props = $props();
 
-	const summary = $derived.by(() => {
-		const vehicleLabel = vehicleCount === 1 ? '1 Fahrzeug' : `${vehicleCount} Fahrzeuge`;
-		const photoLabel = photoCount === 1 ? '1 Foto' : `${photoCount} Fotos`;
-		return `Ungesendeter Entwurf vom ${formatTimestampDE(savedAt)} – ${vehicleLabel}, ${photoLabel}`;
-	});
+	// Dativ nach „mit“: „1 Fahrzeug“, aber „2 Fahrzeugen“.
+	const vehicleLabel = $derived(vehicleCount === 1 ? '1 Fahrzeug' : `${vehicleCount} Fahrzeugen`);
+	const photoLabel = $derived(photoCount === 1 ? '1 Foto' : `${photoCount} Fotos`);
 </script>
 
 <!-- Ein benannter Bereich statt role="status": Der Hinweis ist Teil der Seite und bleibt, bis der
-Nutzer entscheidet; eine Live-Region würde ihn nur einmal beim Erscheinen vorlesen. Der Fokus
-bleibt unangetastet. -->
+Nutzer entscheidet; eine Live-Region würde ihn nur einmal beim Erscheinen vorlesen. Beim
+Erscheinen bleibt der Fokus unangetastet; nach der Entscheidung setzt ihn der Aufrufer neu, weil
+der Hinweis samt fokussiertem Button verschwindet. -->
 <section
 	aria-labelledby="draft-resume-title"
 	class="rounded-card bg-surface p-4 shadow-card sm:p-6"
@@ -34,7 +33,11 @@ bleibt unangetastet. -->
 	<h2 id="draft-resume-title" class="text-lg font-semibold text-ink md:text-xl">
 		Entwurf fortsetzen?
 	</h2>
-	<p class="mt-1 text-lg text-ink-muted">{summary}</p>
+	<p class="mt-1 text-lg text-ink-muted">
+		Ungesendeter Entwurf vom
+		<time datetime={new Date(savedAt).toISOString()}>{formatTimestampDE(savedAt)}</time>
+		mit {vehicleLabel} und {photoLabel}
+	</p>
 	<div class="mt-4 flex gap-2">
 		<button type="button" onclick={onDiscard} class={['flex-1', buttonDestructiveSecondary]}>
 			Verwerfen

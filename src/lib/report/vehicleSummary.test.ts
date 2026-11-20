@@ -77,7 +77,7 @@ describe('buildVehicleSummaryRows: Auswirkungen', () => {
 			incidentTypes,
 			{ includeEmpty: true }
 		);
-		expect(findRow(rows, 'Behinderung')?.value).toBe(
+		expect(findRow(rows, 'Ausmaß der Behinderung')?.value).toBe(
 			'Gehweg vollständig blockiert, Sicht an Kreuzung oder Überweg verdeckt'
 		);
 		expect(findRow(rows, 'Gefährdete Personen')?.value).toBe(
@@ -92,12 +92,12 @@ describe('buildVehicleSummaryRows: Auswirkungen', () => {
 			{ includeEmpty: false }
 		);
 		expect(findRow(rows, 'Gefährdete Personen')?.value).toBe('Kita nebenan');
-		expect(findRow(rows, 'Behinderung')).toBeUndefined();
+		expect(findRow(rows, 'Ausmaß der Behinderung')).toBeUndefined();
 	});
 
 	it('blendet beide Zeilen ohne Angaben aus, auch bei includeEmpty: true', () => {
 		const rows = buildVehicleSummaryRows(makeVehicle(), incidentTypes, { includeEmpty: true });
-		expect(findRow(rows, 'Behinderung')).toBeUndefined();
+		expect(findRow(rows, 'Ausmaß der Behinderung')).toBeUndefined();
 		expect(findRow(rows, 'Gefährdete Personen')).toBeUndefined();
 	});
 });

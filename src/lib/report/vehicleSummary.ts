@@ -69,7 +69,7 @@ export const buildVehicleSummaryRows = (
 		(option) => option.label
 	);
 	if (impairmentLabels.length > 0)
-		rows.push({ label: 'Behinderung', value: impairmentLabels.join(', ') });
+		rows.push({ label: 'Ausmaß der Behinderung', value: impairmentLabels.join(', ') });
 	const endangeredPersonLabels = resolveImpactOptions(
 		ENDANGERED_PERSON_OPTIONS,
 		vehicle.endangeredPersonIds

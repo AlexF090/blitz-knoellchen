@@ -34,19 +34,40 @@ describe('DraftResumeBanner', () => {
 		await renderBanner();
 
 		await expect
-			.element(page.getByText('Ungesendeter Entwurf vom 19.11.2026, 14:32 – 2 Fahrzeuge, 5 Fotos'))
-			.toBeInTheDocument();
+			.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+			.toMatchTextContent(
+				'Ungesendeter Entwurf vom 19.11.2026, 14:32 mit 2 Fahrzeugen und 5 Fotos'
+			);
 	});
 
 	it('verwendet bei je einem Fahrzeug und Foto den Singular', async () => {
 		await renderBanner({ vehicleCount: 1, photoCount: 1 });
 
-		await expect.element(page.getByText('1 Fahrzeug, 1 Foto')).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+			.toMatchTextContent('mit 1 Fahrzeug und 1 Foto');
 	});
 
 	it('zählt Fahrzeuge und Fotos unabhängig voneinander im Singular oder Plural', async () => {
 		await renderBanner({ vehicleCount: 1, photoCount: 4 });
-		await expect.element(page.getByText('1 Fahrzeug, 4 Fotos')).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+			.toMatchTextContent('mit 1 Fahrzeug und 4 Fotos');
+	});
+
+	it('zeichnet den Zeitpunkt als time-Element mit ISO-Zeitstempel aus', async () => {
+		const { container, unmount } = await render(DraftResumeBanner, {
+			savedAt,
+			vehicleCount: 2,
+			photoCount: 5,
+			onResume: vi.fn(),
+			onDiscard: vi.fn()
+		});
+		currentUnmount = unmount;
+
+		const time = container.querySelector('time');
+		expect(time?.getAttribute('datetime')).toBe(new Date(savedAt).toISOString());
+		expect(time?.textContent).toBe('19.11.2026, 14:32');
 	});
 
 	it('ist ein benannter Bereich mit Überschrift', async () => {
