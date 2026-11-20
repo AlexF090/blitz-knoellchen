@@ -1496,5 +1496,54 @@ describe('ReportForm', () => {
 
 			await expect.poll(() => document.activeElement?.id).toBe('photo-pool-heading');
 		});
+
+		it('nennt als Grund für die gesperrten Buttons die offene Entwurfs-Entscheidung', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			const reason =
+				'Bitte zuerst entscheiden, ob du den Entwurf fortsetzen oder verwerfen möchtest.';
+			await expect.element(page.getByText(reason)).toBeVisible();
+			const reasonId = document.getElementById('form-actions-disabled-reason')?.id;
+			expect(reasonId).toBeTruthy();
+			await expect
+				.element(page.getByRole('button', { name: 'Absenden' }))
+				.toHaveAccessibleDescription(reason);
+			await expect
+				.element(page.getByRole('button', { name: 'Zurücksetzen', exact: true }))
+				.toHaveAccessibleDescription(reason);
+
+			await resumeDraft();
+			await expect.element(page.getByText(reason)).not.toBeInTheDocument();
+			await expect
+				.element(page.getByRole('button', { name: 'Absenden' }))
+				.not.toHaveAttribute('aria-describedby');
+		});
+	});
+
+	it('nennt als Grund für die gesperrten Buttons die laufende Foto-Verarbeitung', async () => {
+		setDefaultMocks();
+		let finishProcessing: (entry: PhotoEntry) => void = () => {};
+		mockedCreatePhotoEntry.mockReturnValue(
+			new Promise<PhotoEntry>((resolve) => {
+				finishProcessing = resolve;
+			})
+		);
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhoto(new File(['x'], 'slow.jpg', { type: 'image/jpeg' }));
+
+		await expect
+			.element(page.getByRole('button', { name: 'Absenden' }))
+			.toHaveAccessibleDescription('Fotos werden noch verarbeitet …');
+		await expect
+			.element(page.getByRole('button', { name: 'Zurücksetzen', exact: true }))
+			.toHaveAccessibleDescription('Fotos werden noch verarbeitet …');
+
+		finishProcessing(makePhoto('slow'));
+		await expect.element(page.getByText('Fotos werden noch verarbeitet …')).not.toBeInTheDocument();
 	});
 });

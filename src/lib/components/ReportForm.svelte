@@ -95,6 +95,15 @@
 	let successDialog = $state<HTMLDialogElement | undefined>(undefined);
 	let successCount = $state(0);
 
+	/** Kurzer Grund, warum „Absenden“ und „Zurücksetzen“ gerade gesperrt sind; sonst `null`. */
+	const actionsDisabledReason = $derived.by(() => {
+		if (draftStatus === 'pending') {
+			return 'Bitte zuerst entscheiden, ob du den Entwurf fortsetzen oder verwerfen möchtest.';
+		}
+		if (photoProcessing) return 'Fotos werden noch verarbeitet …';
+		return null;
+	});
+
 	// Profil und Entwurf laden gemeinsam, bevor irgendetwas vom Formular gerendert wird (s.
 	// formReady-Gate im Markup) — sonst blitzt „Deine Angaben“ erst leer im Bearbeiten-Modus auf
 	// und schaltet dann auf den Lese-Modus um.
@@ -126,6 +135,15 @@
 		})();
 	});
 
+	/**
+	 * Setzt den Fokus nach der Entscheidung über den Entwurf auf die Überschrift der Fotos: Der
+	 * Hinweis samt fokussiertem Button ist dann entfernt, der Fokus fiele sonst auf `body`.
+	 */
+	const focusPhotoHeading = async () => {
+		await tick();
+		document.getElementById('photo-pool-heading')?.focus({ preventScroll: true });
+	};
+
 	/** Übernimmt den wartenden Entwurf ins Formular und stellt die Ansicht wieder her. */
 	const resumeDraft = async (draft: LoadedDraft) => {
 		form.vehicles = draft.vehicles;
@@ -135,15 +153,6 @@
 		);
 		vehicleGeocodeWarnings = draft.ui.geocodeWarnings;
 		pendingDraft = undefined;
-		/**
-		 * Setzt den Fokus nach der Entscheidung über den Entwurf auf die Überschrift der Fotos: Der
-		 * Hinweis samt fokussiertem Button ist dann entfernt, der Fokus fiele sonst auf `body`.
-		 */
-		const focusPhotoHeading = async () => {
-			await tick();
-			document.getElementById('photo-pool-heading')?.focus({ preventScroll: true });
-		};
-
 		draftStatus = 'active';
 		// Erst nach dem Rendern der Karten ist die Seite wieder so hoch wie beim Speichern.
 		await focusPhotoHeading();
@@ -164,6 +173,7 @@
 		}
 		pendingDraft = undefined;
 		draftStatus = 'active';
+		await focusPhotoHeading();
 	};
 
 	/**
@@ -689,11 +699,20 @@
 	{/if}
 
 	<div class="mt-4 border-t border-border pt-4">
+		{#if actionsDisabledReason}
+			<p
+				id="form-actions-disabled-reason"
+				class="mx-auto mb-3 max-w-md text-lg text-ink-muted lg:max-w-5xl"
+			>
+				{actionsDisabledReason}
+			</p>
+		{/if}
 		<div class="mx-auto flex max-w-md items-center gap-6 lg:max-w-5xl">
 			<button
 				type="button"
 				onclick={openResetDialog}
 				disabled={!formReady || draftStatus === 'pending' || photoProcessing}
+				aria-describedby={actionsDisabledReason ? 'form-actions-disabled-reason' : undefined}
 				class="flex-1 {buttonDestructiveSecondary} disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				Zurücksetzen
@@ -701,6 +720,7 @@
 			<button
 				type="submit"
 				disabled={!formReady || draftStatus === 'pending' || submitting || photoProcessing}
+				aria-describedby={actionsDisabledReason ? 'form-actions-disabled-reason' : undefined}
 				class="flex-1 {buttonPrimary}"
 			>
 				{submitting ? 'Wird gesendet…' : 'Absenden'}
