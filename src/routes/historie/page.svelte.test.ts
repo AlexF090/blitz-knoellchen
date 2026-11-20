@@ -64,6 +64,20 @@ describe('Historie-Seite', () => {
 			.toMatchTextContent('Kinder auf dem Schulweg, Radfahrende');
 	});
 
+	it('zeigt die Notiz zu gefährdeten Personen auch ohne gewählte Gruppe', async () => {
+		listEntriesMock.mockResolvedValueOnce([
+			makeEntry({ endangeredPersonsNote: '  Seniorengruppe am Überweg  ' })
+		]);
+		const { default: HistoriePage } = await import('./+page.svelte');
+
+		await render(HistoriePage);
+
+		await expect
+			.element(page.getByText(/Weitere Angaben zu gefährdeten Personen:/))
+			.toHaveTextContent('Weitere Angaben zu gefährdeten Personen: Seniorengruppe am Überweg');
+		await expect.element(page.getByText(/Gefährdete Personen:/)).not.toBeInTheDocument();
+	});
+
 	it('rendert Einträge älterer App-Versionen ohne die neuen Felder', async () => {
 		listEntriesMock.mockResolvedValueOnce([makeEntry()]);
 		const { default: HistoriePage } = await import('./+page.svelte');
