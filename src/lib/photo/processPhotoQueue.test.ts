@@ -153,6 +153,65 @@ describe('processPhotoQueue', () => {
 		]);
 	});
 
+	it('wertet einen Fehler in onEntry als Fehlschlag der einen Datei und läuft weiter', async () => {
+		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const entries: string[] = [];
+		try {
+			const result = await processPhotoQueue([makeFile('a.jpg'), makeFile('b.jpg')], {
+				process: async (file) => makeEntry(file.name),
+				onEntry: (entry) => {
+					if (entry.fileName === 'a.jpg') throw new Error('Speichern gescheitert');
+					entries.push(entry.fileName);
+				},
+				onProgress: () => {}
+			});
+
+			expect(entries).toEqual(['b.jpg']);
+			expect(result.failed).toEqual([
+				{ fileName: 'a.jpg', message: 'Das Foto konnte nicht verarbeitet werden.' }
+			]);
+			expect(consoleError).toHaveBeenCalledOnce();
+		} finally {
+			consoleError.mockRestore();
+		}
+	});
+
+	it('verwirft nach einem Abbruch das gerade fertige Foto und startet keine weiteren', async () => {
+		const controlled = createControlledProcess();
+		const abortController = new AbortController();
+		const onEntry = vi.fn();
+		const done = processPhotoQueue([makeFile('a'), makeFile('b')], {
+			process: controlled.process,
+			onEntry,
+			onProgress: () => {},
+			signal: abortController.signal
+		});
+
+		await flush();
+		abortController.abort();
+		controlled.pending[0].resolve();
+		const result = await done;
+
+		expect(onEntry).not.toHaveBeenCalled();
+		expect(controlled.pending).toHaveLength(1);
+		expect(result.failed).toEqual([]);
+	});
+
+	it('startet nach einem Abbruch während onEntry keine weitere Datei und meldet keinen Fortschritt', async () => {
+		const abortController = new AbortController();
+		const process = vi.fn(async (file: File) => makeEntry(file.name));
+		const onProgress = vi.fn();
+		await processPhotoQueue([makeFile('a'), makeFile('b')], {
+			process,
+			onEntry: () => abortController.abort(),
+			onProgress,
+			signal: abortController.signal
+		});
+
+		expect(process).toHaveBeenCalledOnce();
+		expect(onProgress).toHaveBeenCalledOnce();
+	});
+
 	it('tut bei leerer Dateiliste nichts', async () => {
 		const onProgress = vi.fn();
 		const result = await processPhotoQueue([], {
