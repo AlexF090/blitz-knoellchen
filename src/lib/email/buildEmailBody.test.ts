@@ -176,4 +176,107 @@ describe('buildEmailBody', () => {
 		expect(result.body).toContain('Björn Müller-Straße');
 		expect(result.body).toContain('Übermäßig groß, blockiert Gehweg vollständig.');
 	});
+
+	describe('Auswirkungen', () => {
+		const withoutNotes: EmailTemplateInput = { ...baseInput, notes: undefined };
+		const BODY_WITHOUT_IMPACT = `Sehr geehrte Damen und Herren,
+
+hiermit zeige ich folgenden Verkehrsverstoß an.
+
+Angaben zu mir:
+Name: Max Mustermann
+Anschrift: Musterstraße 1, 50667 Köln
+
+Tatzeit und Tatort
+Datum: 01.03.2026
+Uhrzeit: 14:30 Uhr
+Tatort: Domkloster 4, 50667 Köln
+
+Fahrzeug und Verstoß
+Kennzeichen: K-AB 1234
+Länderkennzeichen: D
+Fahrzeugart: PKW
+Fahrzeug: VW (Farbe: Rot)
+Art des Verstoßes: Parken auf dem Gehweg
+Beschreibung: Das Fahrzeug parkte auf dem Gehweg.
+
+Ein Beweisfoto ist dieser E-Mail beigefügt.
+
+Ich stehe für Rückfragen und gegebenenfalls als Zeuge zur Verfügung.
+
+Mit freundlichen Grüßen
+Max Mustermann`;
+
+		it('lässt den Text ohne die neuen Angaben unverändert', () => {
+			expect(buildEmailBody(withoutNotes).body).toBe(BODY_WITHOUT_IMPACT);
+			expect(
+				buildEmailBody({
+					...withoutNotes,
+					impairments: [],
+					endangeredPersons: [],
+					endangeredPersonsNote: '  '
+				}).body
+			).toBe(BODY_WITHOUT_IMPACT);
+		});
+
+		it('listet eine einzelne Behinderung', () => {
+			const { body } = buildEmailBody({
+				...withoutNotes,
+				impairments: ['Der Gehweg war vollständig blockiert.']
+			});
+			expect(body).toContain(
+				'Beschreibung: Das Fahrzeug parkte auf dem Gehweg.\n\nAusmaß der Behinderung:\n- Der Gehweg war vollständig blockiert.\n\nEin Beweisfoto'
+			);
+		});
+
+		it('listet mehrere Behinderungen', () => {
+			const { body } = buildEmailBody({
+				...withoutNotes,
+				impairments: ['Satz eins.', 'Satz zwei.']
+			});
+			expect(body).toContain(
+				'Ausmaß der Behinderung:\n- Satz eins.\n- Satz zwei.\n\nEin Beweisfoto'
+			);
+		});
+
+		it('nennt gefährdete Personen als Aufzählung', () => {
+			const { body } = buildEmailBody({
+				...withoutNotes,
+				endangeredPersons: ['Kinder auf dem Schulweg', 'Radfahrende']
+			});
+			expect(body).toContain(
+				'\n\nGefährdete Personen: Durch das Fahrzeug wurden insbesondere Kinder auf dem Schulweg und Radfahrende gefährdet bzw. behindert.\n\nEin Beweisfoto'
+			);
+		});
+
+		it('zeigt nur die Notiz, wenn keine Personengruppe gewählt ist', () => {
+			const { body } = buildEmailBody({ ...withoutNotes, endangeredPersonsNote: ' Schule ' });
+			expect(body).toContain('\n\nGefährdete Personen: Schule\n\nEin Beweisfoto');
+		});
+
+		it('hängt die Notiz an die Personengruppen an', () => {
+			const { body } = buildEmailBody({
+				...withoutNotes,
+				endangeredPersons: ['Radfahrende'],
+				endangeredPersonsNote: 'Schule'
+			});
+			expect(body).toContain(
+				'Gefährdete Personen: Durch das Fahrzeug wurden insbesondere Radfahrende gefährdet bzw. behindert.\nSchule\n\nEin Beweisfoto'
+			);
+		});
+
+		it('trennt alle Abschnitte mit genau einer Leerzeile', () => {
+			const { body } = buildEmailBody({
+				...baseInput,
+				impairments: ['Satz eins.'],
+				endangeredPersons: ['Radfahrende'],
+				endangeredPersonsNote: 'Schule'
+			});
+			expect(body).not.toMatch(/\n\n\n/);
+			expect(body.indexOf('Ausmaß der Behinderung')).toBeLessThan(
+				body.indexOf('Gefährdete Personen')
+			);
+			expect(body.indexOf('Gefährdete Personen')).toBeLessThan(body.indexOf('Weitere Angaben'));
+		});
+	});
 });

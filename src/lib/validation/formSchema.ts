@@ -1,4 +1,5 @@
 import type { GeocodeAddress } from '$lib/geocode/geocodeAddress';
+import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '$lib/config/impactOptions';
 import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
 
 /** Ein verarbeitetes Beweisfoto samt der aus ihm gelesenen Aufnahmedaten. */
@@ -42,6 +43,11 @@ export interface VehicleEntry {
 	color: string;
 	incidentTypeIds: string[];
 	notes?: string;
+	// Optionale Angaben, die die Anzeige stützen; ids stammen aus IMPAIRMENT_OPTIONS bzw.
+	// ENDANGERED_PERSON_OPTIONS, die Notiz ergänzt die Personengruppen als Freitext.
+	impairmentIds: string[];
+	endangeredPersonIds: string[];
+	endangeredPersonsNote?: string;
 	date: string;
 	time: string;
 	// 'parkverstoss' erfordert endTime mit Mindestparkzeit 4 Min., 'halteverstoss' nur `time`.
@@ -61,6 +67,8 @@ export type VehicleErrors = Partial<
 		| 'make'
 		| 'color'
 		| 'incidentTypeIds'
+		| 'impairmentIds'
+		| 'endangeredPersonIds'
 		| 'date'
 		| 'time'
 		| 'endTime'
@@ -174,6 +182,14 @@ export const validateVehicle = (vehicle: VehicleEntry, photos: PhotoEntry[]): Ve
 		errors.color = 'Farbe ist erforderlich (z. B. „hell"/„dunkel", falls unbekannt).';
 	if (vehicle.incidentTypeIds.length === 0)
 		errors.incidentTypeIds = 'Mindestens eine Verstoßart ist erforderlich.';
+	if (vehicle.impairmentIds.some((id) => !IMPAIRMENT_OPTIONS.some((option) => option.id === id)))
+		errors.impairmentIds = 'Unbekannte Angabe zur Behinderung.';
+	if (
+		vehicle.endangeredPersonIds.some(
+			(id) => !ENDANGERED_PERSON_OPTIONS.some((option) => option.id === id)
+		)
+	)
+		errors.endangeredPersonIds = 'Unbekannte Personengruppe.';
 
 	if (vehicle.photoIds.length === 0) {
 		errors.photoIds = 'Bitte mindestens ein Foto für dieses Fahrzeug auswählen.';

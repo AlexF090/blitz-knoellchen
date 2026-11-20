@@ -28,7 +28,7 @@ test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 	await page.locator('#email').fill(BREVO_FAILURE_EMAIL);
 	await page.locator('#phone').fill('0221 12345678');
 	await page.locator('#photo-pool-input').setInputFiles(FIXTURE);
-	await page.getByLabel('Parken auf dem Gehweg').check();
+	await page.getByLabel('Halten/Parken auf dem Gehweg').check();
 	await page.getByLabel('Kennzeichen').fill('K-AB 1234');
 	await page.getByLabel('Fahrzeugart').selectOption('PKW');
 	await page.getByLabel('Farbe').fill('Rot');
@@ -48,7 +48,7 @@ test('Sende-Fehler: Formulardaten bleiben erhalten', async ({ page }) => {
 	await expect(page.locator('[id^="locationHouseNumber-"]')).toHaveValue('4');
 	await expect(page.locator('[id^="locationPostcode-"]')).toHaveValue('50667');
 	await expect(page.locator('[id^="locationCity-"]')).toHaveValue('Köln');
-	await expect(page.getByLabel('Parken auf dem Gehweg')).toBeChecked();
+	await expect(page.getByLabel('Halten/Parken auf dem Gehweg')).toBeChecked();
 	// Kennzeichen-Normalisierung passiert bereits bei Blur (gewollt), nicht erst beim Versand.
 	await expect(page.getByLabel('Kennzeichen')).toHaveValue('K-AB1234');
 	await expect(page.getByLabel('Fahrzeugart')).toHaveValue('PKW');

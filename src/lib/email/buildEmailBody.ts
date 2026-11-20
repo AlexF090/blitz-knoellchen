@@ -1,5 +1,6 @@
 import type { EmailTemplateInput } from '$lib/config/cities';
 import { formatIsoDateDMY } from '$lib/format/germanDate';
+import { joinGermanList } from '$lib/format/joinGermanList';
 import { formatAddress } from '$lib/geocode/formatAddress';
 
 /** Betreff und Textkörper einer fertig gebauten Anzeigen-E-Mail. */
@@ -28,6 +29,22 @@ export const buildEmailBody = (input: EmailTemplateInput): EmailContent => {
 		input.incidentTypes.length > 1
 			? `\n${input.incidentTypes.map((t) => `- ${t.description}`).join('\n')}`
 			: input.incidentTypes[0].description;
+	// Jeder optionale Abschnitt ist leer oder beginnt und endet mit einem Zeilenumbruch, damit
+	// zwischen den Abschnitten genau eine Leerzeile steht.
+	const impairmentsSection = input.impairments?.length
+		? `\nAusmaß der Behinderung:\n${input.impairments.map((sentence) => `- ${sentence}`).join('\n')}\n`
+		: '';
+	const endangeredPersonsNote = input.endangeredPersonsNote?.trim();
+	const endangeredPersonsSentence = input.endangeredPersons?.length
+		? `Durch das Fahrzeug wurden insbesondere ${joinGermanList(input.endangeredPersons)} gefährdet bzw. behindert.`
+		: '';
+	const endangeredPersonsContent = [endangeredPersonsSentence, endangeredPersonsNote]
+		.filter(Boolean)
+		.join('\n');
+	const endangeredPersonsSection = endangeredPersonsContent
+		? `\nGefährdete Personen: ${endangeredPersonsContent}\n`
+		: '';
+	const notesSection = notes ? `\nWeitere Angaben: ${notes}\n` : '';
 	const locationLine = formatAddress({
 		street: input.locationStreet,
 		houseNumber: input.locationHouseNumber,
@@ -74,7 +91,7 @@ Fahrzeugart: ${input.vehicleType?.trim() || 'nicht angegeben'}
 Fahrzeug: ${vehicleDescriptionLine}
 Art des Verstoßes: ${incidentLabels}
 ${descriptionLabel}${incidentDescriptions}
-${notes ? `\nWeitere Angaben: ${notes}\n` : ''}
+${impairmentsSection}${endangeredPersonsSection}${notesSection}
 ${photoLine}
 
 Ich stehe für Rückfragen und gegebenenfalls als Zeuge zur Verfügung.

@@ -1,9 +1,17 @@
 import { buildEmailBody } from '$lib/email/buildEmailBody';
 
-/** Eine auswählbare Verstoßart mit Formular-Label und E-Mail-Satz. */
+/**
+ * Eine auswählbare Verstoßart mit Formular-Label und E-Mail-Satz.
+ *
+ * `label`, `emailLabel` und `description` dürfen die Platzhalter `{verb}` („hielt"/„parkte") und
+ * `{Vorgang}` („Halten"/„Parken") enthalten; sie richten sich nach dem Halte-/Parkverstoß des
+ * Fahrzeugs (siehe `applyTimeModeWording`).
+ */
 export interface IncidentType {
 	id: string;
 	label: string;
+	/** Bezeichnung in der E-Mail, wenn sie vom Formular-Label abweicht. */
+	emailLabel?: string;
 	// Eigenständiger Satz, damit mehrere gewählte Verstoßarten in buildEmailBody zu einem
 	// zusammenhängenden Text kombiniert werden können.
 	description: string;
@@ -31,6 +39,11 @@ export interface EmailTemplateInput {
 	make?: string;
 	color?: string;
 	notes?: string;
+	/** Sätze zum Ausmaß der Behinderung, je Eintrag ein vollständiger Satz. */
+	impairments?: string[];
+	/** Nominalphrasen der gefährdeten Personengruppen für eine Aufzählung. */
+	endangeredPersons?: string[];
+	endangeredPersonsNote?: string;
 	photoCount: number;
 	vehicleIndex?: number;
 	vehicleTotal?: number;
@@ -47,8 +60,9 @@ export interface City {
 const KOELN_INCIDENT_TYPES: IncidentType[] = [
 	{
 		id: 'gehweg',
-		label: 'Parken auf dem Gehweg',
-		description: 'Das Fahrzeug parkte auf dem Gehweg und behinderte Fußgänger.'
+		label: 'Halten/Parken auf dem Gehweg',
+		emailLabel: '{Vorgang} auf dem Gehweg',
+		description: 'Das Fahrzeug {verb} auf dem Gehweg.'
 	},
 	{
 		id: 'halteverbot',

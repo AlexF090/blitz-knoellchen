@@ -31,6 +31,8 @@ const makeVehicle = (overrides: Partial<VehicleEntry> = {}, photoIds: string[]):
 	color: 'Rot',
 	incidentTypeIds: ['gehweg'],
 	notes: '',
+	impairmentIds: [],
+	endangeredPersonIds: [],
 	date: '2026-03-01',
 	time: '14:30',
 	timeMode: 'halteverstoss',
@@ -155,6 +157,28 @@ describe('validateReportForm', () => {
 		data.vehicles[0].incidentTypeIds = [];
 		const errors = validateReportForm(data);
 		expect(errors.vehicles?.[0].incidentTypeIds).toBeDefined();
+	});
+
+	it('akzeptiert bekannte Behinderungs- und Personen-ids sowie eine Notiz', () => {
+		const data = makeValidData();
+		data.vehicles[0].impairmentIds = ['gehweg-blockiert', 'sicht-verdeckt'];
+		data.vehicles[0].endangeredPersonIds = ['radfahrende'];
+		data.vehicles[0].endangeredPersonsNote = 'Schule in der Nähe';
+		expect(isFormValid(validateReportForm(data))).toBe(true);
+	});
+
+	it('meldet unbekannte Behinderungs-id', () => {
+		const data = makeValidData();
+		data.vehicles[0].impairmentIds = ['gehweg-blockiert', 'gibt-es-nicht'];
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].impairmentIds).toBe('Unbekannte Angabe zur Behinderung.');
+	});
+
+	it('meldet unbekannte Personengruppe', () => {
+		const data = makeValidData();
+		data.vehicles[0].endangeredPersonIds = ['gibt-es-nicht'];
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].endangeredPersonIds).toBe('Unbekannte Personengruppe.');
 	});
 
 	it('meldet fehlende Foto-Zuordnung pro Fahrzeug', () => {

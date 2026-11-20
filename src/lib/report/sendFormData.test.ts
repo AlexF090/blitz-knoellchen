@@ -19,6 +19,9 @@ const baseInput: BuildSendFormDataInput = {
 		color: 'Rot',
 		incidentTypeIds: ['gehweg', 'kreuzung'],
 		notes: 'Auffällig lange geparkt.',
+		impairmentIds: ['gehweg-blockiert', 'sicht-verdeckt'],
+		endangeredPersonIds: ['radfahrende'],
+		endangeredPersonsNote: 'Schule in der Nähe',
 		date: '2026-03-01',
 		time: '12:00',
 		timeMode: 'parkverstoss',
@@ -54,6 +57,9 @@ describe('buildSendFormData / parseSendFormData round trip', () => {
 			vehicle: {
 				...baseInput.vehicle,
 				notes: undefined,
+				endangeredPersonsNote: undefined,
+				impairmentIds: [],
+				endangeredPersonIds: [],
 				endTime: undefined,
 				locationHouseNumber: undefined,
 				timeMode: 'halteverstoss'
@@ -64,6 +70,9 @@ describe('buildSendFormData / parseSendFormData round trip', () => {
 
 		expect(parsed.profile.phone).toBeUndefined();
 		expect(parsed.vehicle.notes).toBeUndefined();
+		expect(parsed.vehicle.endangeredPersonsNote).toBeUndefined();
+		expect(parsed.vehicle.impairmentIds).toEqual([]);
+		expect(parsed.vehicle.endangeredPersonIds).toEqual([]);
 		expect(parsed.vehicle.endTime).toBeUndefined();
 		expect(parsed.vehicle.locationHouseNumber).toBeUndefined();
 		expect(parsed.vehicle.timeMode).toBe('halteverstoss');
@@ -93,5 +102,16 @@ describe('buildSendFormData / parseSendFormData round trip', () => {
 		const parsed = parseSendFormData(buildSendFormData(input));
 		expect(parsed.vehicle.incidentTypeIds).toEqual(['gehweg', 'kreuzung']);
 		expect(parsed.photoBlobs.map((p) => p.name)).toEqual(['a.jpg', 'b.jpg']);
+	});
+
+	it('liest Behinderungs- und Personen-ids dedupliziert und nur als Text', () => {
+		const formData = new FormData();
+		formData.append('impairmentIds', 'sicht-verdeckt');
+		formData.append('impairmentIds', 'sicht-verdeckt');
+		formData.append('endangeredPersonIds', 'radfahrende');
+		formData.append('endangeredPersonIds', new File(['x'], 'datei.txt'));
+		const parsed = parseSendFormData(formData);
+		expect(parsed.vehicle.impairmentIds).toEqual(['sicht-verdeckt']);
+		expect(parsed.vehicle.endangeredPersonIds).toEqual(['radfahrende']);
 	});
 });

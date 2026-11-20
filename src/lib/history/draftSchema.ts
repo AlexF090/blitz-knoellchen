@@ -1,8 +1,15 @@
 import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
+import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '$lib/config/impactOptions';
 import type { DraftFormData } from './db';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === 'object' && value !== null;
+
+// Ältere Entwürfe kennen die Felder nicht (-> leer); unbekannte oder doppelte ids fallen weg.
+const knownIds = (value: unknown, allowed: { id: string }[]): string[] =>
+	Array.isArray(value)
+		? [...new Set(value)].filter((id): id is string => allowed.some((option) => option.id === id))
+		: [];
 
 const isValidVehicle = (value: unknown): value is VehicleEntry => {
 	if (!isRecord(value)) return false;
@@ -50,7 +57,16 @@ export const parseStoredDraft = (
 	if (!Array.isArray(photos) || !photos.every(isValidPhoto)) return undefined;
 	if (now - savedAt > maxAgeMs) return undefined;
 
-	return { vehicles, photos };
+	return {
+		vehicles: vehicles.map((vehicle) => ({
+			...vehicle,
+			impairmentIds: knownIds(vehicle.impairmentIds, IMPAIRMENT_OPTIONS),
+			endangeredPersonIds: knownIds(vehicle.endangeredPersonIds, ENDANGERED_PERSON_OPTIONS),
+			endangeredPersonsNote:
+				typeof vehicle.endangeredPersonsNote === 'string' ? vehicle.endangeredPersonsNote : ''
+		})),
+		photos
+	};
 };
 
 /**

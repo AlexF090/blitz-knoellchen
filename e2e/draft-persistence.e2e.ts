@@ -33,7 +33,7 @@ test('Fahrzeugdaten überleben einen Reload als Entwurf', async ({ page }) => {
 	await page.locator('[id^="locationStreet-"]').fill('Domkloster');
 	await page.locator('[id^="locationPostcode-"]').fill('50667');
 	await page.locator('[id^="locationCity-"]').fill('Köln');
-	await page.getByLabel('Parken auf dem Gehweg').check();
+	await page.getByLabel('Halten/Parken auf dem Gehweg').check();
 	await page.getByLabel('Kennzeichen').fill('K-AB 1234');
 	await page.getByLabel('Fahrzeugart').selectOption('PKW');
 
@@ -51,6 +51,6 @@ test('Fahrzeugdaten überleben einen Reload als Entwurf', async ({ page }) => {
 
 	await expect(page.getByLabel('Kennzeichen')).toHaveValue('K-AB 1234');
 	await expect(page.getByLabel('Fahrzeugart')).toHaveValue('PKW');
-	await expect(page.getByLabel('Parken auf dem Gehweg')).toBeChecked();
+	await expect(page.getByLabel('Halten/Parken auf dem Gehweg')).toBeChecked();
 	await expect(page.locator('[id^="locationStreet-"]')).toHaveValue('Domkloster');
 });

@@ -32,4 +32,18 @@ describe('findFirstErrorTarget', () => {
 		const target = findFirstErrorTarget({ vehicles: [{ make: 'Pflicht' }] }, []);
 		expect(target).toBeNull();
 	});
+
+	it('ordnet Behinderung und gefährdete Personen nach der Verstoßart ein', () => {
+		const target = findFirstErrorTarget(
+			{ vehicles: [{ endangeredPersonIds: 'x', impairmentIds: 'y' }] },
+			['v1']
+		);
+		expect(target).toMatchObject({ fieldElementId: 'impairmentIds-v1' });
+
+		const later = findFirstErrorTarget(
+			{ vehicles: [{ endangeredPersonIds: 'x', incidentTypeIds: 'y' }] },
+			['v1']
+		);
+		expect(later).toMatchObject({ fieldElementId: 'incidentTypeIds-v1' });
+	});
 });

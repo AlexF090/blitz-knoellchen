@@ -20,4 +20,14 @@ describe('CITIES', () => {
 			expect(type.description.length).toBeGreaterThan(0);
 		}
 	});
+
+	it('verwendet in Verstoßarten nur bekannte Platzhalter', () => {
+		const knownPlaceholders = ['{verb}', '{Vorgang}'];
+		for (const type of CITIES.koeln.incidentTypes) {
+			const texts = [type.label, type.emailLabel ?? '', type.description];
+			for (const placeholder of texts.flatMap((text) => text.match(/\{[^}]*\}/g) ?? [])) {
+				expect(knownPlaceholders).toContain(placeholder);
+			}
+		}
+	});
 });

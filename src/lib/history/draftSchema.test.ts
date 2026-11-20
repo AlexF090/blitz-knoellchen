@@ -37,8 +37,35 @@ const makeDraft = (overrides: Record<string, unknown> = {}): Record<string, unkn
 });
 
 describe('parseStoredDraft', () => {
+	it('ergänzt bei alten Entwürfen die Angaben zu Behinderung und Personen mit Defaults', () => {
+		const vehicle = parseStoredDraft(makeDraft(), NOW, MAX_AGE)?.vehicles[0];
+		expect(vehicle?.impairmentIds).toEqual([]);
+		expect(vehicle?.endangeredPersonIds).toEqual([]);
+		expect(vehicle?.endangeredPersonsNote).toBe('');
+	});
+
+	it('übernimmt bekannte ids und die Notiz, verwirft unbekannte und doppelte ids', () => {
+		const raw = makeDraft({
+			vehicles: [
+				makeVehicle({
+					impairmentIds: ['gehweg-blockiert', 'gibt-es-nicht', 'gehweg-blockiert', 3],
+					endangeredPersonIds: ['radfahrende', 'x'],
+					endangeredPersonsNote: 'Schule'
+				})
+			]
+		});
+		const vehicle = parseStoredDraft(raw, NOW, MAX_AGE)?.vehicles[0];
+		expect(vehicle?.impairmentIds).toEqual(['gehweg-blockiert']);
+		expect(vehicle?.endangeredPersonIds).toEqual(['radfahrende']);
+		expect(vehicle?.endangeredPersonsNote).toBe('Schule');
+	});
+
 	it('liefert Fahrzeuge und Fotos eines gültigen Entwurfs', () => {
-		const raw = makeDraft();
+		const raw = makeDraft({
+			vehicles: [
+				makeVehicle({ impairmentIds: [], endangeredPersonIds: [], endangeredPersonsNote: '' })
+			]
+		});
 		const draft = parseStoredDraft(raw, NOW, MAX_AGE);
 		expect(draft?.vehicles).toEqual(raw.vehicles as VehicleEntry[]);
 		expect(draft?.photos).toEqual(raw.photos as PhotoEntry[]);

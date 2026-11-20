@@ -96,6 +96,49 @@ describe('POST /api/send', () => {
 		await expect(response.json()).resolves.toEqual({ error: 'Unbekannte Verstoßart.' });
 	});
 
+	it.each([
+		['impairmentIds', 'unbekannte-behinderung'],
+		['endangeredPersonIds', 'unbekannte-person']
+	])('liefert 400 und sendet nicht bei unbekannter id in %s', async (field, id) => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal('fetch', fetchMock);
+		const formData = buildFormData();
+		formData.append(field, id);
+
+		const { POST } = await import('./+server');
+		const response = await POST(buildEvent(formData) as never);
+
+		expect(response.status).toBe(400);
+		const body = await response.json();
+		expect(body.errors.vehicles[0][field]).toBeDefined();
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('übernimmt Behinderung, gefährdete Personen und Notiz in den E-Mail-Text', async () => {
+		const fetchMock = vi.fn(async (url: string, init: RequestInit) => {
+			void url;
+			void init;
+			return new Response(null, { status: 201 });
+		});
+		vi.stubGlobal('fetch', fetchMock);
+		const formData = buildFormData({ endangeredPersonsNote: 'Schule in der Nähe' });
+		formData.append('impairmentIds', 'gehweg-blockiert');
+		formData.append('endangeredPersonIds', 'kinder-schulweg');
+		formData.append('endangeredPersonIds', 'radfahrende');
+
+		const { POST } = await import('./+server');
+		const response = await POST(buildEvent(formData) as never);
+
+		expect(response.status).toBe(200);
+		const payload = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+		const text: string = payload.textContent;
+		expect(text).toContain('- Der Gehweg war vollständig blockiert.');
+		expect(text).toContain(
+			'Gefährdete Personen: Durch das Fahrzeug wurden insbesondere Kinder auf dem Schulweg und Radfahrende gefährdet bzw. behindert.\nSchule in der Nähe'
+		);
+		expect(text).toContain('Das Fahrzeug hielt auf dem Gehweg.');
+	});
+
 	it('liefert 400, wenn ein Foto kein JPEG ist', async () => {
 		const fetchMock = vi.fn();
 		vi.stubGlobal('fetch', fetchMock);

@@ -78,6 +78,8 @@ const makeVehicle = (overrides: Partial<VehicleEntry> = {}): VehicleEntry => ({
 	color: 'Rot',
 	incidentTypeIds: ['halteverbot'],
 	notes: '',
+	impairmentIds: [],
+	endangeredPersonIds: [],
 	date: '2024-01-05',
 	time: '10:00',
 	timeMode: 'halteverstoss',

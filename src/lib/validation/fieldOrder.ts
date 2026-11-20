@@ -22,14 +22,16 @@ const VEHICLE_FIELD_ORDER: (keyof NonNullable<FormErrors['vehicles']>[number])[]
 	'licensePlate',
 	'make',
 	'color',
-	'incidentTypeIds'
+	'incidentTypeIds',
+	'impairmentIds',
+	'endangeredPersonIds'
 ];
 
 /** Wohin bei einem Validierungsfehler gescrollt und fokussiert werden soll. */
 export type ErrorTarget =
 	| { type: 'photos' }
 	| { type: 'profileField'; elementId: string }
-	// photoIds/incidentTypeIds haben kein einzelnes fokussierbares Eingabefeld (Foto-Grid bzw.
+	// photoIds/incidentTypeIds/impairmentIds/endangeredPersonIds haben kein einzelnes fokussierbares Eingabefeld (Foto-Grid bzw.
 	// Checkbox-Gruppe) — blockElementId ist der Scroll-Fallback, wenn fieldElementId im DOM
 	// nicht existiert (der Aufrufer entscheidet das, da nur er das DOM kennt).
 	| { type: 'vehicleField'; fieldElementId: string; blockElementId: string };

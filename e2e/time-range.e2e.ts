@@ -41,7 +41,7 @@ test('Zeitraum unter 4 Minuten blockiert das Absenden mit Fehlermeldung', async 
 	await page.getByLabel('Parkverstoß (Zeitraum, mind. 4 Min.)').check();
 	await page.locator('[id^="time-"]').fill('14:00');
 	await page.locator('[id^="endTime-"]').fill('14:02');
-	await page.getByLabel('Parken auf dem Gehweg').check();
+	await page.getByLabel('Halten/Parken auf dem Gehweg').check();
 	await page.getByLabel('Kennzeichen').fill('K-AB 1234');
 	await page.getByLabel('Fahrzeugart').selectOption('PKW');
 	await page.getByLabel('Farbe').fill('Rot');
@@ -59,7 +59,7 @@ test('Zeitraum von mindestens 4 Minuten sendet erfolgreich', async ({ page }) =>
 	await page.getByLabel('Parkverstoß (Zeitraum, mind. 4 Min.)').check();
 	await page.locator('[id^="time-"]').fill('14:00');
 	await page.locator('[id^="endTime-"]').fill('14:04');
-	await page.getByLabel('Parken auf dem Gehweg').check();
+	await page.getByLabel('Halten/Parken auf dem Gehweg').check();
 	await page.getByLabel('Kennzeichen').fill('K-AB 1234');
 	await page.getByLabel('Fahrzeugart').selectOption('PKW');
 	await page.getByLabel('Farbe').fill('Rot');
