@@ -162,7 +162,7 @@ describe('buildEmailTemplateInput Auswirkungen', () => {
 		});
 		expect(input.impairments).toEqual([
 			'Der Gehweg war vollständig blockiert.',
-			'Die Sicht an der Kreuzung bzw. am Überweg war verdeckt.'
+			'Das Fahrzeug schränkte die Sicht für Personen ein, die die Fahrbahn queren wollten.'
 		]);
 		expect(input.endangeredPersons).toEqual(['Kinder auf dem Schulweg', 'Radfahrende']);
 		expect(input.endangeredPersonsNote).toBe('Schule in der Nähe');

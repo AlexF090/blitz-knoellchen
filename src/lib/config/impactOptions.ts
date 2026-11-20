@@ -37,8 +37,8 @@ export const IMPAIRMENT_OPTIONS: ImpactOption[] = [
 	},
 	{
 		id: 'sicht-verdeckt',
-		label: 'Sicht an Kreuzung oder Überweg verdeckt',
-		emailText: 'Die Sicht an der Kreuzung bzw. am Überweg war verdeckt.'
+		label: 'Sicht beim Queren der Fahrbahn eingeschränkt',
+		emailText: 'Das Fahrzeug schränkte die Sicht für Personen ein, die die Fahrbahn queren wollten.'
 	},
 	{
 		id: 'rettungsweg-blockiert',

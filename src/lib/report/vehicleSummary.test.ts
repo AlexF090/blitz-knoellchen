@@ -78,7 +78,7 @@ describe('buildVehicleSummaryRows: Auswirkungen', () => {
 			{ includeEmpty: true }
 		);
 		expect(findRow(rows, 'Ausmaß der Behinderung')?.value).toBe(
-			'Gehweg vollständig blockiert, Sicht an Kreuzung oder Überweg verdeckt'
+			'Gehweg vollständig blockiert, Sicht beim Queren der Fahrbahn eingeschränkt'
 		);
 		expect(findRow(rows, 'Gefährdete Personen')?.value).toBe(
 			'Kinder auf dem Schulweg, Radfahrende – Grundschule gegenüber'
