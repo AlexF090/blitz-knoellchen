@@ -234,6 +234,26 @@ describe('ReportForm', () => {
 		expect(mockedFetchAddress).not.toHaveBeenCalled();
 	});
 
+	it('sperrt Zurücksetzen, solange Fotos verarbeitet werden', async () => {
+		setDefaultMocks();
+		let finishProcessing: (entry: PhotoEntry) => void = () => {};
+		mockedCreatePhotoEntry.mockReturnValue(
+			new Promise<PhotoEntry>((resolve) => {
+				finishProcessing = resolve;
+			})
+		);
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhoto(new File(['x'], 'slow.jpg', { type: 'image/jpeg' }));
+
+		const resetButton = page.getByRole('button', { name: 'Zurücksetzen', exact: true });
+		await expect.element(resetButton).toBeDisabled();
+
+		finishProcessing(makePhoto('slow'));
+		await expect.element(resetButton).toBeEnabled();
+	});
+
 	it('meldet eine nicht konvertierbare HEIC-Datei als Fehler, ohne das Formular zu blockieren', async () => {
 		setDefaultMocks();
 		mockedCreatePhotoEntry.mockRejectedValue(new HeicConversionError('HEIC kaputt'));

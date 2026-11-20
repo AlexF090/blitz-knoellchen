@@ -1,5 +1,10 @@
 import type { DraftFormData } from './db';
 
+/** Ruhezeit des Formular-Autosaves. */
+// Kurz genug, dass ein Schließen des Tabs kaum Eingaben kostet, lang genug, dass nicht jeder
+// Tastendruck die IndexedDB beschreibt.
+export const DRAFT_AUTOSAVE_DELAY_MS = 800;
+
 interface DraftAutosaveOptions {
 	/** Ruhezeit nach der letzten Änderung, bevor geschrieben wird. */
 	delayMs: number;

@@ -17,7 +17,7 @@
 		type DraftFormData,
 		type LoadedDraft
 	} from '$lib/history/db';
-	import { createDraftAutosave } from '$lib/history/draftAutosave';
+	import { createDraftAutosave, DRAFT_AUTOSAVE_DELAY_MS } from '$lib/history/draftAutosave';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { decideAutoAssignment } from '$lib/photo/autoAssign';
 	import { createPhotoEntry } from '$lib/photo/createPhotoEntry';
@@ -74,6 +74,8 @@
 	let photoProgress = $state<PhotoQueueProgress | null>(null);
 	const photoProcessing = $derived(photoProgress !== null);
 	let photoProcessingError = $state<string | null>(null);
+	/** Bricht die laufende Foto-Verarbeitung ab, sobald das Formular zurückgesetzt wird. */
+	let photoQueueAbort: AbortController | undefined;
 	let vehicleGeocodeWarnings = $state<Record<string, string>>({});
 	/** Fahrzeug-id -> `true`, wenn die Karte zugeklappt ist; fehlende Einträge gelten als offen. */
 	let collapsedVehicles = $state<Record<string, boolean>>({});
@@ -179,7 +181,7 @@
 	};
 
 	const autosave = createDraftAutosave({
-		delayMs: 800,
+		delayMs: DRAFT_AUTOSAVE_DELAY_MS,
 		write: async (snapshot) => {
 			if (snapshot) await saveDraft(snapshot);
 			else await clearDraft();
@@ -245,6 +247,10 @@
 
 	// Beim Verlassen der Seite (z.B. Wechsel zur Historie) bleibt die letzte Eingabe erhalten.
 	$effect(() => () => void autosave.flush());
+
+	// Beim Verlassen der Seite endet auch die Foto-Verarbeitung, damit keine Einträge in ein
+	// nicht mehr vorhandenes Formular fallen.
+	$effect(() => () => photoQueueAbort?.abort());
 
 	/** Übernimmt die aktuellen „Deine Angaben“-Felder in das dauerhaft gespeicherte Profil. */
 	const saveProfileFields = async () => {
@@ -342,11 +348,14 @@
 	 */
 	const onAddFiles = async (files: File[]) => {
 		photoProcessingError = null;
+		const abort = new AbortController();
+		photoQueueAbort = abort;
 		try {
 			const { failed } = await processPhotoQueue(files, {
 				process: createPhotoEntry,
 				onEntry: addPhotoEntry,
-				onProgress: (progress) => (photoProgress = progress)
+				onProgress: (progress) => (photoProgress = progress),
+				signal: abort.signal
 			});
 			if (failed.length > 0) {
 				// Bei genau einer Datei ist deren konkrete Meldung (z.B. HEIC-Hinweis) hilfreicher.
@@ -428,6 +437,7 @@
 	 * aber unangetastet (bleibt für die nächste Anzeige als Autofill erhalten).
 	 */
 	const resetAll = async () => {
+		photoQueueAbort?.abort();
 		form = createEmptyForm();
 		errors = {};
 		vehicleGeocodeWarnings = {};
@@ -674,7 +684,7 @@
 			<button
 				type="button"
 				onclick={openResetDialog}
-				disabled={!formReady || draftStatus === 'pending'}
+				disabled={!formReady || draftStatus === 'pending' || photoProcessing}
 				class="flex-1 {buttonDestructiveSecondary} disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				Zurücksetzen
