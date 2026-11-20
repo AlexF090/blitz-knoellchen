@@ -107,7 +107,7 @@ describe('buildEmailTemplateInput Halte-/Parkwortlaut', () => {
 	const sidewalk: IncidentType = {
 		id: 'gehweg',
 		label: 'Halten/Parken auf dem Gehweg',
-		emailLabel: '{Vorgang} auf dem Gehweg',
+		emailLabel: '{noun} auf dem Gehweg',
 		description: 'Das Fahrzeug {verb} auf dem Gehweg.'
 	};
 	const build = (timeMode: VehicleEntry['timeMode']) =>

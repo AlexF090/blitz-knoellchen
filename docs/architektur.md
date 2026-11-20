@@ -207,7 +207,7 @@ Labels zu einer Aufzählung ("Art des Verstoßes: X, Y") und die Beschreibungen 
 Stichpunktliste im Fließtext — so bleibt der Text auch bei mehreren gleichzeitig vorliegenden
 Verstößen (z. B. Gehweg + Kreuzungsbereich) klar strukturiert.
 
-`emailLabel` und `description` dürfen die Platzhalter `{verb}` und `{Vorgang}` enthalten.
+`emailLabel` und `description` dürfen die Platzhalter `{verb}` und `{noun}` enthalten.
 `applyTimeModeWording` (`src/lib/email/timeModeWording.ts`) ersetzt sie je nach gewählter
 Zeitangabe: Halteverstoß → „hielt“/„Halten“, Parkverstoß → „parkte“/„Parken“. So bleibt der
 E-Mail-Satz zur Auswahl „Halteverstoß“ bzw. „Parkverstoß“ stimmig.
@@ -215,7 +215,11 @@ E-Mail-Satz zur Auswahl „Halteverstoß“ bzw. „Parkverstoß“ stimmig.
 Die Platzhalter tragen alle Verstoßarten, bei denen schon das Halten verboten ist (Gehweg,
 Halteverbot, zweite Reihe, Feuerwehrzufahrt, Radweg); ihr Formular-Label lautet „Halten/Parken
 …“. Parkverbot, Schwerbehinderten-Parkplatz und Kreuzungsbereich verbieten nur das Parken und
-bleiben beim festen „parkte“.
+bleiben beim festen „parkte“. Sie tragen in der Konfiguration `parkingOnly: true`;
+`validateVehicle` lehnt sie zusammen mit „Halteverstoß“ ab (Fehler am Zeitmodus, auch
+serverseitig mit 400), weil kurzes Halten dort erlaubt ist und die Anzeige sonst keine Grundlage
+hätte. Die Freitexte „Weitere Angaben“ und „Weitere Angaben zu gefährdeten Personen“ sind auf
+2000 Zeichen begrenzt (`MAX_FREE_TEXT_LENGTH`).
 
 Zwei weitere, optionale Abschnitte ergänzen die E-Mail. „Ausmaß der Behinderung“ ist eine
 Stichpunktliste vollständiger Sätze, „Gefährdete Personen“ ein Satz („Durch das Fahrzeug wurden
@@ -413,7 +417,7 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `src/lib/components/DraftResumeBanner.svelte`        | Hinweis „Entwurf fortsetzen?“ beim Öffnen, s. ADR „Entwurf“ oben                                                                                                |
 | `src/lib/components/CheckboxGroupFieldset.svelte`    | Mehrfachauswahl als Checkbox-Gruppe (Ausmaß der Behinderung, gefährdete Personen)                                                                               |
 | `src/lib/config/impactOptions.ts`                    | Auswahllisten für „Ausmaß der Behinderung“ und „Gefährdete Personen“ samt E-Mail-Formulierung                                                                   |
-| `src/lib/email/timeModeWording.ts`                   | Ersetzt `{verb}`/`{Vorgang}` in Verstoßbeschreibungen je nach Halte- oder Parkverstoß                                                                           |
+| `src/lib/email/timeModeWording.ts`                   | Ersetzt `{verb}`/`{noun}` in Verstoßbeschreibungen je nach Halte- oder Parkverstoß                                                                              |
 | `src/lib/format/joinGermanList.ts`                   | Verbindet Aufzählungen mit Komma und „und“                                                                                                                      |
 | `src/lib/format/germanDate.ts`                       | Datums- und Zeitformatierung (`formatIsoDateDMY`, `formatTimeRange`, `formatTimestampDE`)                                                                       |
 | `src/lib/validation/toggleId.ts`                     | Setzt oder entfernt eine id in einer Mehrfachauswahl                                                                                                            |

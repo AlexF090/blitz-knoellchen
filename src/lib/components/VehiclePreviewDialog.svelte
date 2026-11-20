@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { blobSrc } from '$lib/photo/blobSrc';
 	/**
 	 * Zeigt vor dem Absenden, wie die E-Mail für ein Fahrzeug aussieht: Empfänger, Betreff,
 	 * Nachrichtentext und Anhänge.
@@ -9,6 +8,7 @@
 		buildEmailTemplateInput,
 		resolveVehicleIncidentTypes
 	} from '$lib/email/buildEmailTemplateInput';
+	import { blobSrc } from '$lib/photo/blobSrc';
 	import { buttonSecondary } from '$lib/ui/buttonStyles';
 	import type { PhotoEntry, ProfileFields, VehicleEntry } from '$lib/validation/formSchema';
 	import ConfirmDialog from './ConfirmDialog.svelte';

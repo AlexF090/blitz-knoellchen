@@ -13,6 +13,7 @@ const PROFILE_FIELD_ORDER: (keyof FormErrors)[] = [
 
 const VEHICLE_FIELD_ORDER: (keyof NonNullable<FormErrors['vehicles']>[number])[] = [
 	'photoIds',
+	'timeMode',
 	'date',
 	'time',
 	'endTime',
@@ -24,16 +25,18 @@ const VEHICLE_FIELD_ORDER: (keyof NonNullable<FormErrors['vehicles']>[number])[]
 	'color',
 	'incidentTypeIds',
 	'impairmentIds',
-	'endangeredPersonIds'
+	'endangeredPersonIds',
+	'endangeredPersonsNote',
+	'notes'
 ];
 
 /** Wohin bei einem Validierungsfehler gescrollt und fokussiert werden soll. */
 export type ErrorTarget =
 	| { type: 'photos' }
 	| { type: 'profileField'; elementId: string }
-	// photoIds/incidentTypeIds/impairmentIds/endangeredPersonIds haben kein einzelnes fokussierbares Eingabefeld (Foto-Grid bzw.
-	// Checkbox-Gruppe) — blockElementId ist der Scroll-Fallback, wenn fieldElementId im DOM
-	// nicht existiert (der Aufrufer entscheidet das, da nur er das DOM kennt).
+	// photoIds hat kein einzelnes fokussierbares Eingabefeld (Foto-Grid) — blockElementId ist der
+	// Scroll-Fallback, wenn fieldElementId im DOM nicht existiert (der Aufrufer entscheidet das, da
+	// nur er das DOM kennt). Checkbox-Gruppen und der Zeitmodus fokussieren ihr Fieldset.
 	| { type: 'vehicleField'; fieldElementId: string; blockElementId: string };
 
 /** Ermittelt den in der Formularreihenfolge obersten Fehler, oder `null`, wenn es keinen gibt. */

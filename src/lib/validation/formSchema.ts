@@ -1,6 +1,8 @@
 import type { GeocodeAddress } from '$lib/geocode/geocodeAddress';
+import { findParkingOnlyIncidentTypes } from '$lib/config/cities';
 import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '$lib/config/impactOptions';
 import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
+import { joinGermanList } from '$lib/format/joinGermanList';
 
 /** Ein verarbeitetes Beweisfoto samt der aus ihm gelesenen Aufnahmedaten. */
 export interface PhotoEntry {
@@ -17,6 +19,9 @@ export interface PhotoEntry {
 
 /** Höchstzahl Fotos, die einem einzelnen Fahrzeug zugeordnet werden dürfen. */
 export const MAX_PHOTOS_PER_VEHICLE = 3;
+
+/** Höchstlänge eines Freitextfelds pro Fahrzeug (Notizen, Angaben zu gefährdeten Personen). */
+export const MAX_FREE_TEXT_LENGTH = 2000;
 
 /** Ein angezeigtes Fahrzeug mit Tatzeit, Tatort und gewählten Verstoßarten. */
 export interface VehicleEntry {
@@ -59,6 +64,9 @@ export type VehicleErrors = Partial<
 		| 'incidentTypeIds'
 		| 'impairmentIds'
 		| 'endangeredPersonIds'
+		| 'endangeredPersonsNote'
+		| 'notes'
+		| 'timeMode'
 		| 'date'
 		| 'time'
 		| 'endTime'
@@ -180,6 +188,18 @@ export const validateVehicle = (vehicle: VehicleEntry, photos: PhotoEntry[]): Ve
 		)
 	)
 		errors.endangeredPersonIds = 'Unbekannte Personengruppe.';
+	if ((vehicle.endangeredPersonsNote?.length ?? 0) > MAX_FREE_TEXT_LENGTH)
+		errors.endangeredPersonsNote = `Höchstens ${MAX_FREE_TEXT_LENGTH} Zeichen.`;
+	if ((vehicle.notes?.length ?? 0) > MAX_FREE_TEXT_LENGTH)
+		errors.notes = `Höchstens ${MAX_FREE_TEXT_LENGTH} Zeichen.`;
+
+	// Wo nur das Parken verboten ist, ist kurzes Halten erlaubt: Ohne Zeitraum gäbe es nichts
+	// anzuzeigen.
+	const parkingOnlyTypes = findParkingOnlyIncidentTypes(vehicle.incidentTypeIds);
+	if (vehicle.timeMode === 'halteverstoss' && parkingOnlyTypes.length > 0) {
+		const labels = joinGermanList(parkingOnlyTypes.map((type) => `„${type.label}“`));
+		errors.timeMode = `${labels} ${parkingOnlyTypes.length === 1 ? 'ist' : 'sind'} nur als Parkverstoß anzeigbar: Bitte „Parkverstoß“ mit Zeitraum wählen.`;
+	}
 
 	if (vehicle.photoIds.length === 0) {
 		errors.photoIds = 'Bitte mindestens ein Foto für dieses Fahrzeug auswählen.';

@@ -3,13 +3,13 @@ import { applyTimeModeWording } from './timeModeWording';
 
 describe('applyTimeModeWording', () => {
 	it('setzt Halteverstoß-Wortlaut ein', () => {
-		expect(applyTimeModeWording('Das Fahrzeug {verb}. {Vorgang} verboten.', 'halteverstoss')).toBe(
+		expect(applyTimeModeWording('Das Fahrzeug {verb}. {noun} verboten.', 'halteverstoss')).toBe(
 			'Das Fahrzeug hielt. Halten verboten.'
 		);
 	});
 
 	it('setzt Parkverstoß-Wortlaut ein', () => {
-		expect(applyTimeModeWording('Das Fahrzeug {verb}. {Vorgang} verboten.', 'parkverstoss')).toBe(
+		expect(applyTimeModeWording('Das Fahrzeug {verb}. {noun} verboten.', 'parkverstoss')).toBe(
 			'Das Fahrzeug parkte. Parken verboten.'
 		);
 	});

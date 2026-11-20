@@ -114,6 +114,37 @@ describe('POST /api/send', () => {
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
+	it('liefert 400 und sendet nicht bei reinem Parkverstoß als Halteverstoß', async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal('fetch', fetchMock);
+		const formData = buildFormData({ timeMode: 'halteverstoss' });
+		formData.append('incidentTypeIds', 'parkverbot');
+
+		const response = await POST(buildEvent(formData) as never);
+
+		expect(response.status).toBe(400);
+		const body = await response.json();
+		expect(body.errors.vehicles[0].timeMode).toBeDefined();
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it.each(['notes', 'endangeredPersonsNote'])(
+		'liefert 400 und sendet nicht bei zu langem Freitext in %s',
+		async (field) => {
+			const fetchMock = vi.fn();
+			vi.stubGlobal('fetch', fetchMock);
+
+			const response = await POST(
+				buildEvent(buildFormData({ [field]: 'a'.repeat(2001) })) as never
+			);
+
+			expect(response.status).toBe(400);
+			const body = await response.json();
+			expect(body.errors.vehicles[0][field]).toBeDefined();
+			expect(fetchMock).not.toHaveBeenCalled();
+		}
+	);
+
 	it('übernimmt Behinderung, gefährdete Personen und Notiz in den E-Mail-Text', async () => {
 		const fetchMock = vi.fn(async (url: string, init: RequestInit) => {
 			void url;

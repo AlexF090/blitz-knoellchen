@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	HOUSE_NUMBER_SUFFIX_PATTERN,
 	isFormValid,
+	MAX_FREE_TEXT_LENGTH,
 	normalizeLicensePlate,
 	validateProfileFields,
 	validateReportForm,
@@ -366,6 +367,52 @@ describe('validateVehicle: timeMode', () => {
 		expect(errors.time).toBe('Uhrzeit ist ungültig.');
 		expect(errors.endTime).toBeUndefined();
 	});
+
+	it.each(['parkverbot', 'schwerbehindert', 'kreuzung'])(
+		'verlangt bei „%s“ einen Parkverstoß statt eines Halteverstoßes',
+		(incidentTypeId) => {
+			const vehicle = makeVehicle({ incidentTypeIds: ['gehweg', incidentTypeId] }, []);
+			expect(validateVehicle(vehicle, []).timeMode).toContain('Bitte „Parkverstoß“');
+		}
+	);
+
+	it('nennt alle gewählten reinen Parkverstöße in der Meldung', () => {
+		const vehicle = makeVehicle({ incidentTypeIds: ['parkverbot', 'kreuzung'] }, []);
+		expect(validateVehicle(vehicle, []).timeMode).toBe(
+			'„Parken im Parkverbot“ und „Parken im Kreuzungsbereich“ sind nur als Parkverstoß anzeigbar: Bitte „Parkverstoß“ mit Zeitraum wählen.'
+		);
+	});
+
+	it('akzeptiert reine Parkverstöße mit Zeitraum', () => {
+		const vehicle = makeVehicle(
+			{
+				incidentTypeIds: ['parkverbot'],
+				timeMode: 'parkverstoss',
+				time: '14:00',
+				endTime: '14:10'
+			},
+			[]
+		);
+		expect(validateVehicle(vehicle, []).timeMode).toBeUndefined();
+	});
+
+	it('akzeptiert Halteverstöße bei Verstoßarten mit Halteverbot', () => {
+		const vehicle = makeVehicle({ incidentTypeIds: ['gehweg', 'halteverbot'] }, []);
+		expect(validateVehicle(vehicle, []).timeMode).toBeUndefined();
+	});
+});
+
+describe('validateVehicle: Freitexte', () => {
+	it.each(['notes', 'endangeredPersonsNote'] as const)(
+		'akzeptiert %s bis zur Höchstlänge und meldet längere Texte',
+		(field) => {
+			const atLimit = makeVehicle({ [field]: 'a'.repeat(MAX_FREE_TEXT_LENGTH) }, []);
+			expect(validateVehicle(atLimit, [])[field]).toBeUndefined();
+
+			const tooLong = makeVehicle({ [field]: 'a'.repeat(MAX_FREE_TEXT_LENGTH + 1) }, []);
+			expect(validateVehicle(tooLong, [])[field]).toBe('Höchstens 2000 Zeichen.');
+		}
+	);
 });
 
 describe('normalizeLicensePlate', () => {

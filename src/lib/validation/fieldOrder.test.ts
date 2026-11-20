@@ -46,4 +46,22 @@ describe('findFirstErrorTarget', () => {
 		);
 		expect(later).toMatchObject({ fieldElementId: 'incidentTypeIds-v1' });
 	});
+
+	it('ordnet den Zeitmodus vor Datum und Uhrzeit ein', () => {
+		const target = findFirstErrorTarget({ vehicles: [{ date: 'x', timeMode: 'y' }] }, ['v1']);
+		expect(target).toMatchObject({ fieldElementId: 'timeMode-v1' });
+	});
+
+	it('ordnet die Freitexte ans Ende, die Notiz zu gefährdeten Personen zuerst', () => {
+		const target = findFirstErrorTarget(
+			{ vehicles: [{ notes: 'x', endangeredPersonsNote: 'y' }] },
+			['v1']
+		);
+		expect(target).toMatchObject({ fieldElementId: 'endangeredPersonsNote-v1' });
+
+		const earlier = findFirstErrorTarget({ vehicles: [{ notes: 'x', endangeredPersonIds: 'y' }] }, [
+			'v1'
+		]);
+		expect(earlier).toMatchObject({ fieldElementId: 'endangeredPersonIds-v1' });
+	});
 });

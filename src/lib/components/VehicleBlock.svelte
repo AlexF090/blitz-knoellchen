@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { blobSrc } from '$lib/photo/blobSrc';
 	/**
 	 * Eine auf- und zuklappbare Karte pro gemeldetem Fahrzeug: Fotoauswahl, Tatort, Fahrzeugdaten
 	 * und Verstöße. Zugeklappt zeigt sie nur noch die Zusammenfassung.
@@ -10,6 +9,7 @@
 	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
+	import { blobSrc } from '$lib/photo/blobSrc';
 	import { buildVehicleSummaryRows } from '$lib/report/vehicleSummary';
 	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
 	import { inputBase } from '$lib/ui/inputStyles';
@@ -20,7 +20,8 @@
 		VehicleEntry,
 		VehicleErrors
 	} from '$lib/validation/formSchema';
-	import { validateVehicle } from '$lib/validation/formSchema';
+	import { ariaFieldProps } from '$lib/validation/ariaField';
+	import { MAX_FREE_TEXT_LENGTH, validateVehicle } from '$lib/validation/formSchema';
 	import { toggleId } from '$lib/validation/toggleId';
 	import { Eye, RotateCcw, Trash2 } from '@lucide/svelte';
 	import { fade } from 'svelte/transition';
@@ -317,11 +318,17 @@
 					id="endangeredPersonsNote-{vehicle.id}"
 					label="Weitere Angaben zu gefährdeten Personen (optional)"
 					wrapperClass=""
+					error={errors?.endangeredPersonsNote}
 				>
 					{#snippet control()}
 						<textarea
 							id="endangeredPersonsNote-{vehicle.id}"
 							name="endangeredPersonsNote-{vehicle.id}"
+							maxlength={MAX_FREE_TEXT_LENGTH}
+							{...ariaFieldProps(
+								`endangeredPersonsNote-${vehicle.id}`,
+								errors?.endangeredPersonsNote
+							)}
 							bind:value={vehicle.endangeredPersonsNote}
 							class={inputBase}></textarea>
 					{/snippet}
@@ -333,11 +340,14 @@
 					id="notes-{vehicle.id}"
 					label="Weitere Angaben zum Vorfall (optional)"
 					wrapperClass=""
+					error={errors?.notes}
 				>
 					{#snippet control()}
 						<textarea
 							id="notes-{vehicle.id}"
 							name="notes-{vehicle.id}"
+							maxlength={MAX_FREE_TEXT_LENGTH}
+							{...ariaFieldProps(`notes-${vehicle.id}`, errors?.notes)}
 							bind:value={vehicle.notes}
 							class={inputBase}></textarea>
 					{/snippet}

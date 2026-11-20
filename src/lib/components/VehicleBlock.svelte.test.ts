@@ -448,6 +448,24 @@ describe('VehicleBlock', () => {
 		await expect.element(page.getByRole('button', { name: 'Fertig' })).toBeInTheDocument();
 	});
 
+	it('begrenzt die Freitexte und zeigt deren Fehler am Feld', async () => {
+		const vehicle = $state(makeCompleteVehicle());
+		await render(VehicleBlock, {
+			...baseProps(),
+			vehicle,
+			errors: { notes: 'Höchstens 2000 Zeichen.', endangeredPersonsNote: 'Zu lang.' }
+		});
+
+		for (const field of ['notes', 'endangeredPersonsNote']) {
+			const textarea = document.getElementById(`${field}-${vehicle.id}`);
+			expect(textarea?.getAttribute('maxlength')).toBe('2000');
+			expect(textarea?.getAttribute('aria-invalid')).toBe('true');
+			expect(textarea?.getAttribute('aria-describedby')).toBe(`${field}-${vehicle.id}-error`);
+		}
+		await expect.element(page.getByText('Höchstens 2000 Zeichen.')).toBeInTheDocument();
+		await expect.element(page.getByText('Zu lang.')).toBeInTheDocument();
+	});
+
 	it('lässt die Karte bei Enter-Taste in einem Feld offen, solange Angaben fehlen', async () => {
 		const vehicle = $state(createEmptyVehicle('vehicle-incomplete-enter'));
 		await render(VehicleBlock, { ...baseProps(), vehicle, pool: [] });

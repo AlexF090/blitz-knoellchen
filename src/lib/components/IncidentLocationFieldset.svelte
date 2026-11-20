@@ -5,6 +5,7 @@
 	 */
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
+	import { fieldErrorBase } from '$lib/ui/inputStyles';
 	import type { VehicleEntry, VehicleErrors } from '$lib/validation/formSchema';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import FormField from './FormField.svelte';
@@ -32,7 +33,13 @@
 <fieldset class="mt-3 rounded-control border border-border p-3">
 	<legend class="px-1 text-lg font-medium text-ink">Tatort</legend>
 
-	<fieldset class="mt-2">
+	<!-- Fokussierbar, damit ein Validierungsfehler am Zeitmodus hierher springt. -->
+	<fieldset
+		id="timeMode-{vehicle.id}"
+		tabindex="-1"
+		aria-describedby={errors?.timeMode ? `timeMode-${vehicle.id}-error` : undefined}
+		class="mt-2"
+	>
 		<legend class="text-lg font-medium text-ink">Art der Zeitangabe</legend>
 		<SegmentedControl
 			name="timeMode-{vehicle.id}"
@@ -57,6 +64,9 @@
 				geparkt gewesen sein.
 			</p>
 		{/if}
+		{#if errors?.timeMode}<p id="timeMode-{vehicle.id}-error" role="alert" class={fieldErrorBase}>
+				{errors.timeMode}
+			</p>{/if}
 	</fieldset>
 
 	<div

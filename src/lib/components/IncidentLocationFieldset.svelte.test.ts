@@ -143,4 +143,17 @@ describe('IncidentLocationFieldset', () => {
 		await expect.element(page.getByText('Bitte PLZ angeben.')).toBeInTheDocument();
 		await expect.element(page.getByText('Bitte Ort angeben.')).toBeInTheDocument();
 	});
+
+	it('verknüpft einen Fehler am Zeitmodus mit dem fokussierbaren Fieldset', async () => {
+		await render(IncidentLocationFieldset, {
+			vehicle: makeVehicle('v-8'),
+			errors: { timeMode: 'Bitte „Parkverstoß“ wählen.' }
+		});
+
+		const fieldset = document.getElementById('timeMode-v-8');
+		await expect.element(page.getByText('Bitte „Parkverstoß“ wählen.')).toBeInTheDocument();
+		expect(fieldset?.getAttribute('tabindex')).toBe('-1');
+		expect(fieldset?.getAttribute('aria-describedby')).toBe('timeMode-v-8-error');
+		expect(document.getElementById('timeMode-v-8-error')?.getAttribute('role')).toBe('alert');
+	});
 });
