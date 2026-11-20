@@ -11,7 +11,13 @@ import type { ProfileFields, VehicleEntry } from '#lib/validation/formSchema.ts'
 export interface BuildEmailTemplateInputOptions {
 	profile: Pick<
 		ProfileFields,
-		'firstName' | 'lastName' | 'addressStreet' | 'addressPostcode' | 'addressCity' | 'phone'
+		| 'firstName'
+		| 'lastName'
+		| 'addressStreet'
+		| 'addressPostcode'
+		| 'addressCity'
+		| 'email'
+		| 'phone'
 	>;
 	vehicle: VehicleEntry;
 	incidentTypes: Pick<IncidentType, 'label' | 'emailLabel' | 'description'>[];
@@ -29,6 +35,7 @@ export const buildEmailTemplateInput = (
 	addressStreet: opts.profile.addressStreet,
 	addressPostcode: opts.profile.addressPostcode,
 	addressCity: opts.profile.addressCity,
+	email: opts.profile.email,
 	phone: opts.profile.phone,
 	date: opts.vehicle.date,
 	time: opts.vehicle.time,

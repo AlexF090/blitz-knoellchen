@@ -8,6 +8,7 @@ const baseInput: EmailTemplateInput = {
 	addressStreet: 'Musterstraße 1',
 	addressPostcode: '50667',
 	addressCity: 'Köln',
+	email: 'max@example.com',
 	date: '2026-03-01',
 	time: '14:30',
 	locationStreet: 'Domkloster',
@@ -130,6 +131,18 @@ describe('buildEmailBody', () => {
 		);
 	});
 
+	it('nennt die E-Mail-Adresse des Melders als eigene Zeile nach der Anschrift', () => {
+		const result = buildEmailBody({ ...baseInput, email: ' max@example.com ' });
+		expect(result.body).toContain(
+			'Anschrift: Musterstraße 1, 50667 Köln\nE-Mail: max@example.com\n'
+		);
+	});
+
+	it('setzt die Telefon-Zeile hinter die E-Mail-Zeile', () => {
+		const result = buildEmailBody({ ...baseInput, phone: '0221 12345678' });
+		expect(result.body).toContain('E-Mail: max@example.com\nTelefon: 0221 12345678');
+	});
+
 	it('erwähnt die Telefonnummer als eigene Zeile, wenn angegeben', () => {
 		const result = buildEmailBody({ ...baseInput, phone: '0221 12345678' });
 		expect(result.body).toContain('Telefon: 0221 12345678');
@@ -186,6 +199,7 @@ hiermit zeige ich folgenden Verkehrsverstoß an.
 Angaben zu mir:
 Name: Max Mustermann
 Anschrift: Musterstraße 1, 50667 Köln
+E-Mail: max@example.com
 
 Tatzeit und Tatort
 Datum: 01.03.2026

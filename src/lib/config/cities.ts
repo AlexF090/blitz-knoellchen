@@ -27,6 +27,7 @@ export interface EmailTemplateInput {
 	addressStreet: string;
 	addressPostcode: string;
 	addressCity: string;
+	email: string;
 	phone?: string;
 	date: string;
 	time: string;

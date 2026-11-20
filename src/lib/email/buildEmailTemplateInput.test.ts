@@ -65,6 +65,7 @@ describe('buildEmailTemplateInput', () => {
 			addressStreet: 'Musterstraße 1',
 			addressPostcode: '50667',
 			addressCity: 'Köln',
+			email: 'max@example.com',
 			phone: '0221 12345678',
 			date: '2026-03-01',
 			time: '14:30',

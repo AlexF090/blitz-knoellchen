@@ -331,8 +331,10 @@ erneut mit der Stadt Köln abgleichen**:
 - **Telefonnummer (optional):** Das Original-Formular bittet um eine Telefonnummer "für den
   Fall, dass wir kurzfristig Rückfragen haben ..., unter der Sie tagsüber zu erreichen sind."
   Mobil oder Festnetz, keine Formatvorgabe — daher `phone?: string` ohne Regex-Validierung (s.
-  Coding-Konventionen, keine Validierung ohne echten Bedarf). Wird in `buildEmailBody.ts` an den
-  Schlusssatz angehängt, wenn vorhanden.
+  Coding-Konventionen, keine Validierung ohne echten Bedarf). Steht in `buildEmailBody.ts` unter
+  „Angaben zu mir" als eigene Zeile nach Anschrift und E-Mail-Adresse, wenn vorhanden. Die
+  E-Mail-Adresse ist Pflichtfeld und steht immer im Text: Der `Reply-To`-Header allein geht
+  verloren, sobald die Anzeige ausgedruckt oder in ein Fachverfahren übernommen wird.
 - **4-Minuten-Regel bei Parkverstößen:** "Der Tattag und die Tatzeit sind genau zu benennen. Für
   die Ahndung von Parkverstößen ist zwingend eine Mindestparkzeit von vier Minuten
   erforderlich. Halteverstöße können selbstverständlich nach wie vor mit Zeiten unter vier

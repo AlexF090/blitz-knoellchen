@@ -77,7 +77,8 @@ ${introLine}
 
 Angaben zu mir:
 Name: ${input.firstName} ${input.lastName}
-Anschrift: ${addressLine}${phoneLine}
+Anschrift: ${addressLine}
+E-Mail: ${input.email.trim()}${phoneLine}
 
 Tatzeit und Tatort
 Datum: ${formatIsoDateDMY(input.date)}
