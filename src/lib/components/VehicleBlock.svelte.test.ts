@@ -59,6 +59,11 @@ const makeCompleteVehicle = (overrides: Partial<VehicleEntry> = {}): VehicleEntr
 	...overrides
 });
 
+/** Löst einen DOM-Klick aus — Playwright klickt `aria-disabled`-Elemente nicht. */
+const domClick = (element: HTMLElement | SVGElement) => {
+	element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+};
+
 const baseProps = () => ({
 	index: 0,
 	total: 1,
@@ -95,13 +100,48 @@ describe('VehicleBlock', () => {
 		await expect.element(button1).toHaveAttribute('aria-pressed', 'true');
 		await expect.element(button2).toHaveAttribute('aria-pressed', 'true');
 
-		await userEvent.click(button3);
+		// Playwright klickt aria-disabled-Elemente nicht; der DOM-Klick prüft die Schutzabfrage.
+		domClick(button3.element());
 		await expect.element(button3).toHaveAttribute('aria-pressed', 'false');
 
 		expect(onPhotoToggled).toHaveBeenCalledTimes(2);
 		expect(onPhotoToggled).toHaveBeenCalledWith('p1', true);
 		expect(onPhotoToggled).toHaveBeenCalledWith('p2', true);
 		expect(vehicle.photoIds).toEqual(['p1', 'p2']);
+	});
+
+	it('markiert nicht gewählte Fotos als deaktiviert und zeigt einen Hinweis, wenn das Fahrzeug voll ist', async () => {
+		const pool = ['p1', 'p2', 'p3', 'p4'].map((id) => makePhoto(id));
+		const vehicle = $state({ ...createEmptyVehicle('v-full'), photoIds: ['p1', 'p2', 'p3'] });
+
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool, maxPhotos: 3 });
+
+		const blocked = page.getByRole('button', { name: 'Foto p4.jpg auswählen' });
+		await expect.element(blocked).toHaveAttribute('aria-disabled', 'true');
+		await expect
+			.element(page.getByRole('button', { name: 'Foto p1.jpg auswählen' }))
+			.not.toHaveAttribute('aria-disabled');
+		await expect
+			.element(page.getByText('Maximal 3 Fotos pro Fahrzeug – zum Tauschen zuerst eins abwählen.'))
+			.toBeInTheDocument();
+
+		domClick(blocked.element());
+		await expect.element(blocked).toHaveAttribute('aria-pressed', 'false');
+		expect(vehicle.photoIds).toEqual(['p1', 'p2', 'p3']);
+	});
+
+	it('gibt die Auswahl wieder frei, sobald ein Foto abgewählt wird', async () => {
+		const pool = ['p1', 'p2', 'p3', 'p4'].map((id) => makePhoto(id));
+		const vehicle = $state({ ...createEmptyVehicle('v-swap'), photoIds: ['p1', 'p2', 'p3'] });
+
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool, maxPhotos: 3 });
+
+		await userEvent.click(page.getByRole('button', { name: 'Foto p1.jpg auswählen' }));
+		const freed = page.getByRole('button', { name: 'Foto p4.jpg auswählen' });
+		await expect.element(freed).not.toHaveAttribute('aria-disabled');
+		await userEvent.click(freed);
+		await expect.element(freed).toHaveAttribute('aria-pressed', 'true');
+		expect(vehicle.photoIds).toEqual(['p2', 'p3', 'p4']);
 	});
 
 	it('entfernt ein bereits ausgewähltes Foto erneut bei Klick', async () => {

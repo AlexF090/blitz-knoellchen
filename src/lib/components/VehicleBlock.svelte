@@ -89,6 +89,8 @@
 
 	const missingFieldMessages = $derived(Object.values(validateVehicle(vehicle, pool)));
 
+	const isPhotoSelectionFull = $derived(vehicle.photoIds.length >= maxPhotos);
+
 	const isComplete = $derived(missingFieldMessages.length === 0);
 
 	// Werden Angaben nachträglich unvollständig (z.B. ein Foto wird andernorts aus dem Pool
@@ -197,13 +199,17 @@
 					<div class="mt-1 grid grid-cols-4 gap-2 sm:grid-cols-6 sm:gap-3">
 						{#each pool as photo (photo.id)}
 							{@const selected = vehicle.photoIds.includes(photo.id)}
+							{@const blocked = isPhotoSelectionFull && !selected}
 							<button
 								type="button"
 								onclick={() => togglePhoto(photo.id)}
 								class="relative aspect-square overflow-hidden rounded-control border border-border"
 								class:ring-2={selected}
 								class:ring-primary-500={selected}
+								class:opacity-40={blocked}
+								class:cursor-not-allowed={blocked}
 								aria-pressed={selected}
+								aria-disabled={blocked ? 'true' : undefined}
 							>
 								<img
 									{@attach blobSrc(photo.blob)}
@@ -222,6 +228,11 @@
 							</button>
 						{/each}
 					</div>
+				{/if}
+				{#if isPhotoSelectionFull && pool.length > maxPhotos}
+					<p class="mt-1 text-lg text-ink-muted">
+						Maximal {maxPhotos} Fotos pro Fahrzeug – zum Tauschen zuerst eins abwählen.
+					</p>
 				{/if}
 				{#if errors?.photoIds}<p role="alert" class="mt-1 text-lg text-error-fg">
 						{errors.photoIds}

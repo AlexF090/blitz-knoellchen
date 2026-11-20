@@ -212,4 +212,24 @@ describe('submitVehicleReports', () => {
 		expect(send).not.toHaveBeenCalled();
 		expect(saved).toEqual([]);
 	});
+
+	it('sendet nur die dem Fahrzeug zugeordneten Fotos, nicht den ganzen Pool', async () => {
+		const bodies: FormData[] = [];
+		const send = vi.fn(async (body: FormData) => {
+			bodies.push(body);
+			return true;
+		});
+		const pool = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'].map(photo);
+		const form = formWith([vehicleWith('v1', 'K-AB1234', ['p2', 'p5'])], pool);
+
+		await run(form, send).results;
+
+		const sent = bodies[0].getAll('photos');
+		expect(sent).toHaveLength(2);
+		// Der Blob-Inhalt entspricht der Foto-id (siehe `photo`), so sind die Fotos identifizierbar.
+		const contents = await Promise.all(
+			sent.filter((file): file is File => file instanceof File).map((file) => file.text())
+		);
+		expect(contents).toEqual(['p2', 'p5']);
+	});
 });
