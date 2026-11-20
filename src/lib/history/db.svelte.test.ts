@@ -12,6 +12,7 @@ import {
 	saveDraft,
 	clearDraft,
 	DRAFT_MAX_AGE_MS,
+	type DraftUiState,
 	type HistoryEntry,
 	type UserProfile
 } from './db';
@@ -21,10 +22,18 @@ import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
 // IndexedDB — simuliert einen Entwurf aus einer Vorgängerversion, der über getDraft()/saveDraft()
 // (mit aktuellem TypeScript-Typ) nicht mehr abbildbar wäre.
 const writeRawDraft = async (value: unknown): Promise<void> => {
-	const db = await openDB('blitz-knoellchen', 3);
+	const db = await openDB('blitz-knoellchen');
 	await db.put('draft', { id: 'default', ...(value as object) });
 	db.close();
 };
+
+const emptyUi: DraftUiState = { collapsedVehicleIds: [], scrollY: 0, geocodeWarnings: {} };
+
+const saveDraftOf = (
+	vehicles: VehicleEntry[],
+	photos: PhotoEntry[],
+	ui: DraftUiState = emptyUi
+): Promise<void> => saveDraft({ vehicles, photos, ui });
 
 const makeVehicle = (overrides: Partial<VehicleEntry> = {}): VehicleEntry => ({
 	id: crypto.randomUUID(),
@@ -36,6 +45,9 @@ const makeVehicle = (overrides: Partial<VehicleEntry> = {}): VehicleEntry => ({
 	color: 'Rot',
 	incidentTypeIds: ['gehweg'],
 	notes: '',
+	impairmentIds: [],
+	endangeredPersonIds: [],
+	endangeredPersonsNote: '',
 	date: '2026-09-11',
 	time: '12:00',
 	timeMode: 'halteverstoss',
@@ -97,7 +109,7 @@ beforeAll(async () => {
 beforeEach(async () => {
 	await clearEntries();
 	await clearDraft();
-	const db = await openDB('blitz-knoellchen', 3);
+	const db = await openDB('blitz-knoellchen');
 	await db.clear('profile');
 	db.close();
 });
@@ -119,6 +131,34 @@ describe('Migration', () => {
 		const entry = makeEntry();
 		await addEntry(entry);
 		expect(await listEntries()).toEqual([expect.objectContaining({ id: entry.id })]);
+	});
+});
+
+describe('Migration von Version 3', () => {
+	it('liest einen Entwurf im alten Format mit eingebetteten Blobs', async () => {
+		await deleteDB('blitz-knoellchen');
+		const legacyDb = await openDB('blitz-knoellchen', 3, {
+			upgrade(db) {
+				const store = db.createObjectStore('entries', { keyPath: 'id' });
+				store.createIndex('by-timestamp', 'timestamp');
+				db.createObjectStore('profile', { keyPath: 'id' });
+				db.createObjectStore('draft', { keyPath: 'id' });
+			}
+		});
+		const vehicle = makeVehicle();
+		const photo = makePhoto();
+		await legacyDb.put('draft', {
+			id: 'default',
+			vehicles: [vehicle],
+			photos: [photo],
+			savedAt: Date.now()
+		});
+		legacyDb.close();
+
+		const draft = await getDraft();
+
+		expect(draft?.vehicles).toEqual([vehicle]);
+		expect(draft?.photos.map((p) => [p.id, p.blob.size])).toEqual([[photo.id, 1]]);
 	});
 });
 
@@ -207,16 +247,63 @@ describe('draft', () => {
 	it('speichert und liest einen Entwurf', async () => {
 		const vehicle = makeVehicle();
 		const photo = makePhoto();
-		await saveDraft([vehicle], [photo]);
+		await saveDraftOf([vehicle], [photo]);
 
 		const draft = await getDraft();
 		expect(draft?.vehicles).toEqual([vehicle]);
 		expect(draft?.photos.map((p) => p.id)).toEqual([photo.id]);
 	});
 
+	it('räumt verwaiste Foto-Blobs auf, wenn kein Entwurfsdatensatz existiert', async () => {
+		const db = await openDB('blitz-knoellchen');
+		await db.put('draftPhotos', { id: 'orphan', blob: new Blob(['x']) });
+		db.close();
+
+		expect(await getDraft()).toBeUndefined();
+
+		const checkDb = await openDB('blitz-knoellchen');
+		expect(await checkDb.count('draftPhotos')).toBe(0);
+		checkDb.close();
+	});
+
+	it('speichert Oberflächen-Zustand und Speicherzeitpunkt und liest sie wieder', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(1_000_000);
+		const vehicle = makeVehicle();
+		const ui: DraftUiState = {
+			collapsedVehicleIds: [vehicle.id],
+			scrollY: 420,
+			geocodeWarnings: { [vehicle.id]: 'Kein GPS' }
+		};
+		await saveDraftOf([vehicle], [], ui);
+
+		const draft = await getDraft();
+		expect(draft?.ui).toEqual(ui);
+		expect(draft?.savedAt).toBe(1_000_000);
+	});
+
+	it('liefert Standardwerte für den Oberflächen-Zustand eines Entwurfs ohne ui', async () => {
+		await writeRawDraft({ vehicles: [makeVehicle()], photos: [], savedAt: Date.now() });
+
+		expect((await getDraft())?.ui).toEqual(emptyUi);
+	});
+
+	it('hält einen Entwurf sechs Tage lang und verwirft ihn nach acht Tagen', async () => {
+		const day = 24 * 60 * 60 * 1000;
+		vi.useFakeTimers();
+		vi.setSystemTime(0);
+		await saveDraftOf([makeVehicle()], []);
+
+		vi.setSystemTime(6 * day);
+		expect(await getDraft()).toBeDefined();
+
+		vi.setSystemTime(8 * day);
+		expect(await getDraft()).toBeUndefined();
+	});
+
 	it('überschreibt einen bestehenden Entwurf beim erneuten Speichern', async () => {
-		await saveDraft([makeVehicle({ licensePlate: 'K-AA 1' })], []);
-		await saveDraft([makeVehicle({ licensePlate: 'K-BB 2' })], []);
+		await saveDraftOf([makeVehicle({ licensePlate: 'K-AA 1' })], []);
+		await saveDraftOf([makeVehicle({ licensePlate: 'K-BB 2' })], []);
 
 		const draft = await getDraft();
 		expect(draft?.vehicles).toHaveLength(1);
@@ -231,7 +318,7 @@ describe('draft', () => {
 	it('verwirft einen abgelaufenen Entwurf und löscht ihn', async () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(0);
-		await saveDraft([makeVehicle()], []);
+		await saveDraftOf([makeVehicle()], []);
 
 		vi.setSystemTime(DRAFT_MAX_AGE_MS + 1);
 		expect(await getDraft()).toBeUndefined();
@@ -241,7 +328,7 @@ describe('draft', () => {
 	});
 
 	it('löscht einen Entwurf explizit', async () => {
-		await saveDraft([makeVehicle()], []);
+		await saveDraftOf([makeVehicle()], []);
 		await clearDraft();
 		expect(await getDraft()).toBeUndefined();
 	});
@@ -322,5 +409,83 @@ describe('draft', () => {
 		await writeRawDraft({ vehicles: [], photos: [legacyPhoto], savedAt: Date.now() });
 
 		expect(await getDraft()).toBeUndefined();
+	});
+
+	describe('Foto-Store', () => {
+		const readPhotoBlobs = async () => {
+			const db = await openDB('blitz-knoellchen');
+			const photoBlobs = await db.getAll('draftPhotos');
+			db.close();
+			return photoBlobs as { id: string; blob: Blob }[];
+		};
+
+		it('speichert die Blobs im Foto-Store und nicht im Entwurfsdatensatz', async () => {
+			const photo = makePhoto();
+			await saveDraftOf([makeVehicle()], [photo]);
+
+			const db = await openDB('blitz-knoellchen');
+			const record = await db.get('draft', 'default');
+			db.close();
+			expect(record.photos).toEqual([expect.not.objectContaining({ blob: expect.anything() })]);
+			expect((await readPhotoBlobs()).map((entry) => entry.id)).toEqual([photo.id]);
+			expect((await getDraft())?.photos[0].blob.size).toBe(1);
+		});
+
+		it('schreibt den Blob eines bereits gespeicherten Fotos nicht erneut', async () => {
+			const photo = makePhoto({ blob: new Blob(['original'], { type: 'image/jpeg' }) });
+			await saveDraftOf([makeVehicle()], [photo]);
+
+			// Gleiche id, anderer Inhalt: Würde der Blob neu geschrieben, läge danach der neue vor.
+			await saveDraftOf([makeVehicle()], [{ ...photo, blob: new Blob(['ersatz']) }]);
+
+			const [stored] = await readPhotoBlobs();
+			expect(await stored.blob.text()).toBe('original');
+		});
+
+		it('aktualisiert die Metadaten eines bereits gespeicherten Fotos', async () => {
+			const photo = makePhoto();
+			await saveDraftOf([makeVehicle()], [photo]);
+			await saveDraftOf([makeVehicle()], [{ ...photo, date: '2026-09-11' }]);
+
+			expect((await getDraft())?.photos[0].date).toBe('2026-09-11');
+		});
+
+		it('entfernt ein nicht mehr vorhandenes Foto aus dem Foto-Store', async () => {
+			const kept = makePhoto();
+			const removed = makePhoto();
+			await saveDraftOf([makeVehicle()], [kept, removed]);
+			await saveDraftOf([makeVehicle()], [kept]);
+
+			expect((await readPhotoBlobs()).map((entry) => entry.id)).toEqual([kept.id]);
+		});
+
+		it('leert beim Löschen des Entwurfs beide Stores', async () => {
+			await saveDraftOf([makeVehicle()], [makePhoto()]);
+			await clearDraft();
+
+			const db = await openDB('blitz-knoellchen');
+			expect(await db.count('draft')).toBe(0);
+			expect(await db.count('draftPhotos')).toBe(0);
+			db.close();
+		});
+
+		it('verwirft einen Entwurf, dessen Foto-Blob im Store fehlt, samt Fotos', async () => {
+			const photo = makePhoto();
+			await saveDraftOf([makeVehicle()], [photo]);
+			const db = await openDB('blitz-knoellchen');
+			await db.delete('draftPhotos', photo.id);
+			db.close();
+
+			expect(await getDraft()).toBeUndefined();
+			expect(await getDraft()).toBeUndefined();
+		});
+
+		it('räumt beim Verwerfen eines ungültigen Entwurfs den Foto-Store auf', async () => {
+			await saveDraftOf([makeVehicle()], [makePhoto()]);
+			await writeRawDraft({ vehicles: 'nicht-array', photos: [], savedAt: Date.now() });
+
+			expect(await getDraft()).toBeUndefined();
+			expect(await readPhotoBlobs()).toEqual([]);
+		});
 	});
 });

@@ -1,4 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import { joinPhotoBlobs, parseStoredDraft } from './draftSchema';
 import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
 
 /** Eine abgesendete Anzeige, wie sie in der lokalen Historie gespeichert wird. */
@@ -15,6 +16,11 @@ export interface HistoryEntry {
 	make?: string;
 	color?: string;
 	notes?: string;
+	/** Ausmaß der Behinderung; fehlt bei Einträgen aus älteren App-Versionen. */
+	impairmentLabels?: string[];
+	/** Gefährdete Personen; fehlt bei Einträgen aus älteren App-Versionen. */
+	endangeredPersonLabels?: string[];
+	endangeredPersonsNote?: string;
 	thumbnails: Blob[];
 }
 
@@ -33,15 +39,42 @@ interface StoredUserProfile extends UserProfile {
 	id: string;
 }
 
+/** Oberflächen-Zustand des Formulars, den ein fortgesetzter Entwurf wiederherstellt. */
+export interface DraftUiState {
+	/** Ids der zugeklappten Fahrzeug-Karten. */
+	collapsedVehicleIds: string[];
+	/** Vertikale Scrollposition der Seite in Pixeln. */
+	scrollY: number;
+	/** Hinweise zur Adressauflösung je Fahrzeug-id. */
+	geocodeWarnings: Record<string, string>;
+}
+
 /** Der zwischengespeicherte, noch nicht abgesendete Formularstand. */
 export interface DraftFormData {
 	vehicles: VehicleEntry[];
 	photos: PhotoEntry[];
+	ui: DraftUiState;
 }
 
-interface StoredDraft extends DraftFormData {
-	id: string;
+/** Ein gelesener Entwurf samt dem Zeitpunkt (Epoch-Millisekunden), zu dem er gespeichert wurde. */
+export interface LoadedDraft extends DraftFormData {
 	savedAt: number;
+}
+
+/** Foto-Metadaten im Entwurfsdatensatz; der Blob liegt separat im Store `draftPhotos`. */
+type StoredDraftPhoto = Omit<PhotoEntry, 'blob'>;
+
+interface StoredDraft {
+	id: string;
+	vehicles: VehicleEntry[];
+	photos: StoredDraftPhoto[];
+	ui: DraftUiState;
+	savedAt: number;
+}
+
+interface StoredDraftPhotoBlob {
+	id: string;
+	blob: Blob;
 }
 
 interface BlitzKnoellchenDB extends DBSchema {
@@ -58,6 +91,10 @@ interface BlitzKnoellchenDB extends DBSchema {
 		key: string;
 		value: StoredDraft;
 	};
+	draftPhotos: {
+		key: string;
+		value: StoredDraftPhotoBlob;
+	};
 }
 
 const DB_NAME = 'blitz-knoellchen';
@@ -65,17 +102,18 @@ const STORE_NAME = 'entries';
 const PROFILE_STORE_NAME = 'profile';
 const PROFILE_KEY = 'default';
 const DRAFT_STORE_NAME = 'draft';
+const DRAFT_PHOTO_STORE_NAME = 'draftPhotos';
 const DRAFT_KEY = 'default';
 
 /** Höchstalter eines Entwurfs; ältere werden beim nächsten Laden verworfen. */
 // Ein nie abgesendeter Entwurf soll nicht unbegrenzt als Datenschutz-Altlast in der IndexedDB
-// liegen bleiben.
-export const DRAFT_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+// liegen bleiben; sieben Tage reichen, um die Anzeige später in Ruhe fortzusetzen.
+export const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 let dbPromise: Promise<IDBPDatabase<BlitzKnoellchenDB>> | undefined;
 
 const getDb = () => {
-	dbPromise ??= openDB<BlitzKnoellchenDB>(DB_NAME, 3, {
+	dbPromise ??= openDB<BlitzKnoellchenDB>(DB_NAME, 4, {
 		upgrade(db, oldVersion) {
 			if (oldVersion < 1) {
 				const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
@@ -87,6 +125,9 @@ const getDb = () => {
 			if (oldVersion < 3) {
 				db.createObjectStore(DRAFT_STORE_NAME, { keyPath: 'id' });
 			}
+			// `upgrade` läuft nur für Stände unterhalb der aktuellen Version 4: Der Store der
+			// jüngsten Version existiert hier nie, eine Versionsprüfung wäre ein toter Zweig.
+			db.createObjectStore(DRAFT_PHOTO_STORE_NAME, { keyPath: 'id' });
 		},
 		// Eine andere Verbindung will die Datenbank upgraden oder löschen, z.B. eine neuere
 		// App-Version in einem zweiten Tab. Ohne Freigabe wartet sie unbegrenzt auf diese hier.
@@ -156,69 +197,79 @@ export const saveProfile = async (profile: UserProfile): Promise<void> => {
 	await db.put(PROFILE_STORE_NAME, { ...profile, id: PROFILE_KEY });
 };
 
-const isValidVehicle = (value: unknown): value is VehicleEntry => {
-	if (typeof value !== 'object' || value === null) return false;
-	const vehicle = value as Partial<VehicleEntry>;
-	return (
-		typeof vehicle.id === 'string' &&
-		Array.isArray(vehicle.photoIds) &&
-		vehicle.photoIds.every((id) => typeof id === 'string') &&
-		typeof vehicle.licensePlate === 'string' &&
-		typeof vehicle.make === 'string' &&
-		typeof vehicle.color === 'string' &&
-		Array.isArray(vehicle.incidentTypeIds) &&
-		typeof vehicle.date === 'string' &&
-		typeof vehicle.time === 'string' &&
-		(vehicle.timeMode === 'halteverstoss' || vehicle.timeMode === 'parkverstoss') &&
-		typeof vehicle.locationStreet === 'string' &&
-		typeof vehicle.locationPostcode === 'string' &&
-		typeof vehicle.locationCity === 'string'
-	);
-};
-
-const isValidPhoto = (value: unknown): value is PhotoEntry => {
-	if (typeof value !== 'object' || value === null) return false;
-	const photo = value as Partial<PhotoEntry>;
-	return (
-		typeof photo.id === 'string' && photo.blob instanceof Blob && typeof photo.fileName === 'string'
-	);
-};
-
-// Ein Entwurf kann aus einer älteren App-Version mit abweichendem Schema stammen. Ungeprüft
-// übernommen gäbe das einen TypeError beim Rendering und die App hinge dauerhaft im
-// Lade-Skeleton.
-const isValidDraft = (stored: StoredDraft): boolean =>
-	Number.isFinite(stored.savedAt) &&
-	Array.isArray(stored.vehicles) &&
-	stored.vehicles.every(isValidVehicle) &&
-	Array.isArray(stored.photos) &&
-	stored.photos.every(isValidPhoto);
-
 /**
  * Liest den zwischengespeicherten Entwurf. Ein ungültiger oder zu alter Entwurf wird gelöscht
  * und als `undefined` gemeldet.
  */
-export const getDraft = async (): Promise<DraftFormData | undefined> => {
+export const getDraft = async (): Promise<LoadedDraft | undefined> => {
 	const db = await getDb();
-	const stored = await db.get(DRAFT_STORE_NAME, DRAFT_KEY);
-	if (!stored) return undefined;
-
-	if (!isValidDraft(stored) || Date.now() - stored.savedAt > DRAFT_MAX_AGE_MS) {
-		await db.delete(DRAFT_STORE_NAME, DRAFT_KEY);
+	const transaction = db.transaction([DRAFT_STORE_NAME, DRAFT_PHOTO_STORE_NAME], 'readwrite');
+	const stored = await transaction.objectStore(DRAFT_STORE_NAME).get(DRAFT_KEY);
+	if (!stored) {
+		// Blobs ohne Datensatz stammen aus einem abgebrochenen Schreibvorgang und wären sonst
+		// dauerhaft unerreichbar.
+		await Promise.all([transaction.objectStore(DRAFT_PHOTO_STORE_NAME).clear(), transaction.done]);
 		return undefined;
 	}
 
-	return { vehicles: stored.vehicles, photos: stored.photos };
+	const photoBlobs = await transaction.objectStore(DRAFT_PHOTO_STORE_NAME).getAll();
+	const blobsById = new Map(photoBlobs.map((photoBlob) => [photoBlob.id, photoBlob.blob]));
+	const draft = parseStoredDraft(joinPhotoBlobs(stored, blobsById), Date.now(), DRAFT_MAX_AGE_MS);
+	if (!draft) {
+		await Promise.all([
+			transaction.objectStore(DRAFT_STORE_NAME).delete(DRAFT_KEY),
+			transaction.objectStore(DRAFT_PHOTO_STORE_NAME).clear()
+		]);
+	}
+	await transaction.done;
+	return draft;
 };
 
-/** Speichert den aktuellen Formularstand als Entwurf und aktualisiert dessen Zeitstempel. */
-export const saveDraft = async (vehicles: VehicleEntry[], photos: PhotoEntry[]): Promise<void> => {
+/**
+ * Speichert den aktuellen Formularstand als Entwurf und aktualisiert dessen Zeitstempel.
+ * Fotos liegen in einem eigenen Store: Der Autosave schreibt nur Metadaten neu und legt die
+ * Blobs bislang unbekannter Fotos an.
+ */
+export const saveDraft = async ({ vehicles, photos, ui }: DraftFormData): Promise<void> => {
 	const db = await getDb();
-	await db.put(DRAFT_STORE_NAME, { id: DRAFT_KEY, vehicles, photos, savedAt: Date.now() });
+	const transaction = db.transaction([DRAFT_STORE_NAME, DRAFT_PHOTO_STORE_NAME], 'readwrite');
+	const photoStore = transaction.objectStore(DRAFT_PHOTO_STORE_NAME);
+
+	// Alles außer dem Blob ist Metadaten, neue Felder von `PhotoEntry` werden so mitgespeichert.
+	const photoMetadata: StoredDraftPhoto[] = photos.map((photo) => {
+		// Der Blob wird nur zum Abtrennen aus dem Rest-Objekt benannt.
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const { blob, ...metadata } = photo;
+		return metadata;
+	});
+	const storedIds = new Set(await photoStore.getAllKeys());
+	const currentIds = new Set(photos.map((photo) => photo.id));
+
+	await Promise.all([
+		transaction.objectStore(DRAFT_STORE_NAME).put({
+			id: DRAFT_KEY,
+			vehicles,
+			photos: photoMetadata,
+			ui,
+			savedAt: Date.now()
+		}),
+		// Der Blob eines Fotos ändert sich pro id nie (`createPhotoEntry` vergibt für jede
+		// Verarbeitung eine neue id), ein vorhandener Eintrag muss also nicht neu geschrieben werden.
+		...photos
+			.filter((photo) => !storedIds.has(photo.id))
+			.map((photo) => photoStore.put({ id: photo.id, blob: photo.blob })),
+		...[...storedIds].filter((id) => !currentIds.has(id)).map((id) => photoStore.delete(id)),
+		transaction.done
+	]);
 };
 
-/** Verwirft den gespeicherten Entwurf. */
+/** Verwirft den gespeicherten Entwurf samt seiner Fotos. */
 export const clearDraft = async (): Promise<void> => {
 	const db = await getDb();
-	await db.delete(DRAFT_STORE_NAME, DRAFT_KEY);
+	const transaction = db.transaction([DRAFT_STORE_NAME, DRAFT_PHOTO_STORE_NAME], 'readwrite');
+	await Promise.all([
+		transaction.objectStore(DRAFT_STORE_NAME).clear(),
+		transaction.objectStore(DRAFT_PHOTO_STORE_NAME).clear(),
+		transaction.done
+	]);
 };

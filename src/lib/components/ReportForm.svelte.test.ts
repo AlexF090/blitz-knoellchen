@@ -7,7 +7,8 @@ import {
 	getDraft,
 	getProfile,
 	saveDraft,
-	saveProfile
+	saveProfile,
+	type LoadedDraft
 } from '$lib/history/db';
 import { fetchAddress } from '$lib/geocode/client';
 import { fetchAddressSuggestions } from '$lib/geocode/autocompleteClient';
@@ -78,6 +79,8 @@ const makeVehicle = (overrides: Partial<VehicleEntry> = {}): VehicleEntry => ({
 	color: 'Rot',
 	incidentTypeIds: ['halteverbot'],
 	notes: '',
+	impairmentIds: [],
+	endangeredPersonIds: [],
 	date: '2024-01-05',
 	time: '10:00',
 	timeMode: 'halteverstoss',
@@ -98,6 +101,18 @@ const validProfile = {
 	phone: ''
 };
 
+/** Liefert beim Laden einen gespeicherten Entwurf; nicht angegebene Teile erhalten Standardwerte. */
+const mockDraft = (draft: Pick<LoadedDraft, 'vehicles' | 'photos'> & Partial<LoadedDraft>) => {
+	mockedGetDraft.mockResolvedValue({
+		savedAt: Date.now(),
+		ui: { collapsedVehicleIds: [], scrollY: 0, geocodeWarnings: {} },
+		...draft
+	});
+};
+
+/** Entscheidet im Hinweis auf den gespeicherten Entwurf für „Fortsetzen“. */
+const resumeDraft = () => userEvent.click(page.getByRole('button', { name: 'Fortsetzen' }));
+
 const setDefaultMocks = () => {
 	mockedGetDraft.mockResolvedValue(undefined);
 	mockedGetProfile.mockResolvedValue(undefined);
@@ -110,13 +125,15 @@ const setDefaultMocks = () => {
 	mockedSendVehicleReport.mockResolvedValue(true);
 };
 
-const uploadPhoto = (file: File) => {
+const uploadPhotos = (...files: File[]) => {
 	const input = document.getElementById('photo-pool-input') as HTMLInputElement;
 	const dataTransfer = new DataTransfer();
-	dataTransfer.items.add(file);
+	for (const file of files) dataTransfer.items.add(file);
 	input.files = dataTransfer.files;
 	input.dispatchEvent(new Event('change', { bubbles: true }));
 };
+
+const uploadPhoto = (file: File) => uploadPhotos(file);
 
 // Ohne explizites Unmounten bleiben Komponenten aus vorherigen Tests im DOM (kein automatisches
 // Cleanup zwischen Tests) — das führt zu mehrdeutigen Selektoren und zu Cross-Test-Interferenz
@@ -146,12 +163,13 @@ describe('ReportForm', () => {
 	it('befüllt das Formular beim Laden mit gespeichertem Profil und Entwurf', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle()],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 
 		await expect.element(page.getByText(validProfile.email, { exact: true })).toBeInTheDocument();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
@@ -216,6 +234,26 @@ describe('ReportForm', () => {
 		expect(mockedFetchAddress).not.toHaveBeenCalled();
 	});
 
+	it('sperrt Zurücksetzen, solange Fotos verarbeitet werden', async () => {
+		setDefaultMocks();
+		let finishProcessing: (entry: PhotoEntry) => void = () => {};
+		mockedCreatePhotoEntry.mockReturnValue(
+			new Promise<PhotoEntry>((resolve) => {
+				finishProcessing = resolve;
+			})
+		);
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhoto(new File(['x'], 'slow.jpg', { type: 'image/jpeg' }));
+
+		const resetButton = page.getByRole('button', { name: 'Zurücksetzen', exact: true });
+		await expect.element(resetButton).toBeDisabled();
+
+		finishProcessing(makePhoto('slow'));
+		await expect.element(resetButton).toBeEnabled();
+	});
+
 	it('meldet eine nicht konvertierbare HEIC-Datei als Fehler, ohne das Formular zu blockieren', async () => {
 		setDefaultMocks();
 		mockedCreatePhotoEntry.mockRejectedValue(new HeicConversionError('HEIC kaputt'));
@@ -227,46 +265,76 @@ describe('ReportForm', () => {
 		await expect.element(page.getByText('HEIC kaputt')).toBeInTheDocument();
 	});
 
-	it('lässt einen anderen Fehler als HeicConversionError beim Foto-Hinzufügen durchreichen', async () => {
+	it('meldet einen unerwarteten Verarbeitungsfehler als nicht verarbeitetes Foto, ohne hängen zu bleiben', async () => {
 		setDefaultMocks();
 		mockedCreatePhotoEntry.mockRejectedValue(new Error('Unerwarteter Verarbeitungsfehler'));
 
-		let caughtRejection: unknown;
-		const onUnhandledRejection = (event: PromiseRejectionEvent) => {
-			caughtRejection = event.reason;
-			// Verhindert, dass der Browser-Kontext den Test wegen des (erwarteten) unbehandelten
-			// Rejects als fehlgeschlagen markiert — der generische Fehler soll hier bewusst nicht
-			// von onAddPhoto verschluckt, sondern durchgereicht werden (`throw error;`).
-			event.preventDefault();
-		};
-		window.addEventListener('unhandledrejection', onUnhandledRejection);
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhoto(new File(['x'], 'normal.jpg', { type: 'image/jpeg' }));
 
-		try {
-			await renderForm();
-			await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
-			uploadPhoto(new File(['x'], 'normal.jpg', { type: 'image/jpeg' }));
+		await expect
+			.element(page.getByText('Das Foto konnte nicht verarbeitet werden.'))
+			.toBeInTheDocument();
+		await expect.poll(() => page.getByRole('status').element().textContent).toBe('');
+	});
 
-			await expect
-				.poll(() => (caughtRejection as Error | undefined)?.message)
-				.toBe('Unerwarteter Verarbeitungsfehler');
-			// Der finally-Block läuft trotz Rethrow — kein dauerhaft hängender
-			// Verarbeitungs-Zustand (kein sichtbarer "Foto wird verarbeitet…"-Spinner mehr).
-			await expect
-				.element(page.getByRole('status', { name: 'Foto wird verarbeitet…' }))
-				.not.toBeInTheDocument();
-		} finally {
-			window.removeEventListener('unhandledrejection', onUnhandledRejection);
-		}
+	it('übernimmt mehrere gleichzeitig gewählte Fotos in den Pool und ordnet höchstens drei dem Fahrzeug zu', async () => {
+		setDefaultMocks();
+		mockedCreatePhotoEntry.mockImplementation(async (file) => makePhoto(file.name));
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhotos(
+			...['a', 'b', 'c', 'd', 'e'].map((name) => new File(['x'], name, { type: 'image/jpeg' }))
+		);
+
+		await expect
+			.poll(
+				() =>
+					document.querySelectorAll('button[aria-label^="Foto "][aria-label*="vergrößern"]').length
+			)
+			.toBe(5);
+		await expect
+			.poll(() => document.querySelectorAll('button[aria-pressed="true"]').length)
+			.toBe(3);
+		await expect
+			.element(page.getByText('Nicht zugeordnete Fotos werden nicht mitgesendet.'))
+			.toBeInTheDocument();
+	});
+
+	it('übernimmt die übrigen Fotos, wenn eine Datei scheitert, und nennt die gescheiterte', async () => {
+		setDefaultMocks();
+		mockedCreatePhotoEntry.mockImplementation(async (file) => {
+			if (file.name === 'b.heic') throw new HeicConversionError('HEIC kaputt');
+			return makePhoto(file.name);
+		});
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhotos(
+			new File(['x'], 'a.jpg', { type: 'image/jpeg' }),
+			new File(['x'], 'b.heic', { type: 'image/heic' }),
+			new File(['x'], 'c.jpg', { type: 'image/jpeg' })
+		);
+
+		await expect
+			.element(page.getByText('1 von 3 Fotos konnten nicht verarbeitet werden: b.heic'))
+			.toBeInTheDocument();
+		expect(
+			document.querySelectorAll('button[aria-label^="Foto "][aria-label*="vergrößern"]')
+		).toHaveLength(2);
 	});
 
 	it('fügt per Button ein weiteres Fahrzeug hinzu', async () => {
 		setDefaultMocks();
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1' })],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: '+ Weiteres Fahrzeug hinzufügen' }));
@@ -277,7 +345,7 @@ describe('ReportForm', () => {
 
 	it('entfernt ein Fahrzeug über den Reset-Dialog, wenn mehrere existieren', async () => {
 		setDefaultMocks();
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [
 				makeVehicle({ id: 'veh-1' }),
 				makeVehicle({ id: 'veh-2', licensePlate: 'K-BB2222' })
@@ -286,6 +354,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Vorfall entfernen' }).first());
@@ -297,12 +366,13 @@ describe('ReportForm', () => {
 
 	it('setzt das einzige Fahrzeug über den Reset-Dialog zurück', async () => {
 		setDefaultMocks();
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1' })],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Vorfall zurücksetzen' }));
@@ -314,13 +384,14 @@ describe('ReportForm', () => {
 	it('sendet ein gültiges Formular ab und zeigt den Erfolgsdialog', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1' })],
 			photos: [makePhoto('photo-1')]
 		});
 		mockedSendVehicleReport.mockResolvedValue(true);
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -338,12 +409,13 @@ describe('ReportForm', () => {
 	it('verhindert das Absenden bei Validierungsfehlern und fokussiert das erste fehlerhafte Feld', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1', licensePlate: '' })],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -355,10 +427,47 @@ describe('ReportForm', () => {
 		expect(document.activeElement?.id).toBe('licensePlate-veh-1');
 	});
 
+	it('fokussiert bei fehlender Verstoßart die zugehörige Checkbox-Gruppe', async () => {
+		setDefaultMocks();
+		mockedGetProfile.mockResolvedValue(validProfile);
+		mockDraft({
+			vehicles: [makeVehicle({ id: 'veh-1', incidentTypeIds: [] })],
+			photos: [makePhoto('photo-1')]
+		});
+
+		await renderForm();
+		await resumeDraft();
+		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
+
+		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
+
+		expect(mockedSendVehicleReport).not.toHaveBeenCalled();
+		await expect.poll(() => document.activeElement?.id).toBe('incidentTypeIds-veh-1');
+	});
+
+	it('scrollt bei fehlender Fotoauswahl zum Fahrzeugblock, wenn kein Feld fokussierbar ist', async () => {
+		setDefaultMocks();
+		mockedGetProfile.mockResolvedValue(validProfile);
+		mockDraft({
+			vehicles: [makeVehicle({ id: 'veh-1', photoIds: [] })],
+			photos: [makePhoto('photo-1')]
+		});
+
+		await renderForm();
+		await resumeDraft();
+		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
+		const block = document.getElementById('vehicle-block-veh-1') as HTMLElement;
+		const scrollIntoViewSpy = vi.spyOn(block, 'scrollIntoView');
+
+		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
+
+		await expect.poll(() => scrollIntoViewSpy).toHaveBeenCalled();
+	});
+
 	it('entfernt bei Teilerfolg nur die erfolgreich gesendeten Fahrzeuge aus dem Formular', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [
 				makeVehicle({ id: 'veh-1', licensePlate: 'K-AA1111' }),
 				makeVehicle({ id: 'veh-2', licensePlate: 'K-BB2222', photoIds: ['photo-2'] })
@@ -368,6 +477,7 @@ describe('ReportForm', () => {
 		mockedSendVehicleReport.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -383,13 +493,14 @@ describe('ReportForm', () => {
 	it('zeigt eine Fehlermeldung, wenn der Versand für alle Fahrzeuge fehlschlägt', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1' })],
 			photos: [makePhoto('photo-1')]
 		});
 		mockedSendVehicleReport.mockResolvedValue(false);
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -407,12 +518,13 @@ describe('ReportForm', () => {
 	it('setzt das komplette Formular über den Reset-Dialog zurück', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1' })],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Zurücksetzen', exact: true }).first());
@@ -425,7 +537,7 @@ describe('ReportForm', () => {
 	it('BUG-Regressionstest: nach Entfernen eines Fahrzeugs zeigt das verbleibende Fahrzeug weiterhin seinen eigenen Fehler', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [
 				makeVehicle({ id: 'veh-a', licensePlate: 'K-AA1111' }),
 				makeVehicle({ id: 'veh-b', licensePlate: '', photoIds: ['photo-2'] })
@@ -434,6 +546,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		// Absenden schlägt fehl: Fahrzeug A (Index 0) ist gültig, Fahrzeug B (Index 1) hat ein
@@ -563,12 +676,13 @@ describe('ReportForm', () => {
 
 	it('speichert einen nicht-leeren Entwurf automatisch (debounced) in die IndexedDB', async () => {
 		setDefaultMocks();
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1' })],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await new Promise((resolve) => setTimeout(resolve, 900));
@@ -589,7 +703,7 @@ describe('ReportForm', () => {
 
 	it('ordnet ein zweites hinzugefügtes Foto ebenfalls automatisch dem einzigen Fahrzeug zu', async () => {
 		setDefaultMocks();
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1', photoIds: ['photo-1'] })],
 			photos: [makePhoto('photo-1')]
 		});
@@ -603,6 +717,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		uploadPhoto(new File(['x'], 'zweites.jpg', { type: 'image/jpeg' }));
@@ -646,15 +761,84 @@ describe('ReportForm', () => {
 			.toContain('GPS-Koordinaten des Fotos: 50.9413, 6.9583');
 	});
 
+	it('verarbeitet weitere Fotos, während die Adresssuche noch läuft, und sucht nur einmal', async () => {
+		setDefaultMocks();
+		for (const index of [1, 2, 3]) {
+			mockedCreatePhotoEntry.mockResolvedValueOnce({
+				...makePhoto(`gps-${index}`),
+				gps: { lat: 50.9413, lon: 6.9583 + index / 1000 }
+			});
+		}
+		let finishLookup: (address: null) => void = () => {};
+		mockedFetchAddress.mockReturnValue(
+			new Promise((resolve) => {
+				finishLookup = resolve;
+			})
+		);
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhotos(
+			new File(['x'], 'gps-1.jpg', { type: 'image/jpeg' }),
+			new File(['x'], 'gps-2.jpg', { type: 'image/jpeg' }),
+			new File(['x'], 'gps-3.jpg', { type: 'image/jpeg' })
+		);
+
+		await expect
+			.element(page.getByRole('button', { name: 'Zurücksetzen', exact: true }))
+			.toBeEnabled();
+		expect(page.getByRole('button', { name: /vergrößern/ }).elements()).toHaveLength(3);
+		expect(mockedFetchAddress).toHaveBeenCalledTimes(1);
+
+		finishLookup(null);
+		const notesField = document.querySelector<HTMLTextAreaElement>('[id^="notes-"]');
+		await expect.poll(() => notesField?.value).toContain('GPS-Koordinaten des Fotos:');
+		expect(notesField?.value.match(/GPS-Koordinaten des Fotos:/g)).toHaveLength(1);
+	});
+
+	it('übernimmt nach dem Zurücksetzen keine Ergebnisse einer noch laufenden Adresssuche', async () => {
+		setDefaultMocks();
+		mockedCreatePhotoEntry
+			.mockResolvedValueOnce({ ...makePhoto('old'), gps: { lat: 50.9413, lon: 6.9583 } })
+			.mockResolvedValueOnce(makePhoto('new'));
+		let finishLookup: (address: null) => void = () => {};
+		mockedFetchAddress.mockReturnValue(
+			new Promise((resolve) => {
+				finishLookup = resolve;
+			})
+		);
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhoto(new File(['x'], 'old.jpg', { type: 'image/jpeg' }));
+		const resetButton = page.getByRole('button', { name: 'Zurücksetzen', exact: true });
+		await expect.element(resetButton.first()).toBeEnabled();
+		await userEvent.click(resetButton.first());
+		await userEvent.click(resetButton.last());
+		await expect.element(page.getByLabelText('Kennzeichen')).not.toBeInTheDocument();
+
+		finishLookup(null);
+		uploadPhoto(new File(['x'], 'new.jpg', { type: 'image/jpeg' }));
+
+		await expect
+			.poll(() => mockedSaveDraft.mock.calls.length, { timeout: 2000 })
+			.toBeGreaterThan(0);
+		const snapshot = mockedSaveDraft.mock.lastCall?.[0];
+		expect(snapshot?.vehicles).toHaveLength(1);
+		expect(snapshot?.vehicles[0].notes).toBe('');
+		expect(Object.keys(snapshot?.ui.geocodeWarnings ?? {})).toEqual([snapshot?.vehicles[0].id]);
+	});
+
 	it('setzt die Fehleranzeige eines zurückgesetzten Fahrzeugs zurück', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1', licensePlate: '' })],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -671,13 +855,14 @@ describe('ReportForm', () => {
 	it('zeigt eine Fehlermeldung, wenn das Löschen des Entwurfs beim Zurücksetzen fehlschlägt', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1' })],
 			photos: [makePhoto('photo-1')]
 		});
 		mockedClearDraft.mockRejectedValue(new Error('Löschen fehlgeschlagen'));
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Zurücksetzen', exact: true }).first());
@@ -689,12 +874,13 @@ describe('ReportForm', () => {
 	it('schließt den Erfolgsdialog über den Schließen-Button', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1' })],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -710,9 +896,10 @@ describe('ReportForm', () => {
 	it('scrollt zum Foto-Bereich, wenn beim Absenden kein Foto vorhanden ist', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({ vehicles: [], photos: [] });
+		mockDraft({ vehicles: [], photos: [] });
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -726,12 +913,13 @@ describe('ReportForm', () => {
 	it('fokussiert ein fehlerhaftes Profilfeld beim Absenden', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue({ ...validProfile, firstName: '' });
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1' })],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -743,12 +931,13 @@ describe('ReportForm', () => {
 	it('scrollt zum Fahrzeug-Block, wenn ein Feld ohne eigenes Eingabeelement ungültig ist (z.B. Verstoßart)', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1', incidentTypeIds: [] })],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -765,7 +954,7 @@ describe('ReportForm', () => {
 	it('ordnet ein manuell zugewiesenes Foto bei mehreren Fahrzeugen ebenfalls per EXIF zu', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [
 				makeVehicle({ id: 'veh-1', licensePlate: 'K-AA1111' }),
 				makeVehicle({
@@ -784,6 +973,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		// Der Foto-Toggle-Button selbst hat kein aria-label; der zugängliche Name kommt vom
@@ -804,9 +994,10 @@ describe('ReportForm', () => {
 	it('wechselt über den Bearbeiten-Button zurück in den Profil-Bearbeitungsmodus', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({ vehicles: [], photos: [] });
+		mockDraft({ vehicles: [], photos: [] });
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByText(validProfile.email, { exact: true })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Bearbeiten' }));
@@ -817,12 +1008,13 @@ describe('ReportForm', () => {
 
 	it('entfernt ein Foto aus dem Pool und aus der Zuordnung aller Fahrzeuge', async () => {
 		setDefaultMocks();
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1', photoIds: ['photo-1'] })],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Foto photo-1.jpg entfernen' }));
@@ -866,7 +1058,7 @@ describe('ReportForm', () => {
 	it('löst die Adresse eines geteilten Fotos nur einmal auf (Cache) statt bei jeder Zuordnung erneut', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [
 				makeVehicle({
 					id: 'veh-1',
@@ -908,6 +1100,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		// Foto zunächst manuell Fahrzeug 1 zuordnen -> erste (echte) Adressauflösung.
@@ -933,12 +1126,13 @@ describe('ReportForm', () => {
 	it('bricht das komplette Zurücksetzen über Abbrechen ab, ohne den Entwurf zu löschen', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);
-		mockedGetDraft.mockResolvedValue({
+		mockDraft({
 			vehicles: [makeVehicle({ id: 'veh-1' })],
 			photos: [makePhoto('photo-1')]
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Zurücksetzen', exact: true }).first());
@@ -946,5 +1140,478 @@ describe('ReportForm', () => {
 
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 		expect(mockedClearDraft).not.toHaveBeenCalled();
+	});
+	describe('Entwurf beim Verlassen der Seite', () => {
+		const loadedVehicleDraft = (ui: Partial<LoadedDraft['ui']> = {}) =>
+			mockDraft({
+				vehicles: [makeVehicle({ id: 'veh-1' })],
+				photos: [makePhoto('photo-1')],
+				ui: { collapsedVehicleIds: [], scrollY: 0, geocodeWarnings: {}, ...ui }
+			});
+
+		it('speichert bei pagehide sofort, ohne die Entprellzeit abzuwarten', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			loadedVehicleDraft();
+			await renderForm();
+			await resumeDraft();
+			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
+
+			await userEvent.fill(page.getByLabelText('Kennzeichen'), 'K-ZZ9999');
+			window.dispatchEvent(new Event('pagehide'));
+
+			await expect.poll(() => mockedSaveDraft.mock.calls.length, { timeout: 500 }).toBe(1);
+			expect(mockedSaveDraft.mock.calls[0][0].vehicles[0].licensePlate).toBe('K-ZZ9999');
+		});
+
+		it('speichert bei visibilitychange auf hidden sofort, bei visible nicht', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			loadedVehicleDraft();
+			await renderForm();
+			await resumeDraft();
+			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
+			const visibility = vi.spyOn(document, 'visibilityState', 'get');
+
+			try {
+				visibility.mockReturnValue('visible');
+				document.dispatchEvent(new Event('visibilitychange'));
+				expect(mockedSaveDraft).not.toHaveBeenCalled();
+
+				visibility.mockReturnValue('hidden');
+				document.dispatchEvent(new Event('visibilitychange'));
+				await expect.poll(() => mockedSaveDraft.mock.calls.length, { timeout: 500 }).toBe(1);
+			} finally {
+				visibility.mockRestore();
+			}
+		});
+
+		it('speichert angefangene Profileingaben beim Verlassen der Seite', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(undefined);
+			await renderForm();
+			await expect.element(page.getByLabelText('Vorname')).toBeInTheDocument();
+
+			await userEvent.fill(page.getByLabelText('Vorname'), 'Erika');
+			window.dispatchEvent(new Event('pagehide'));
+
+			await expect
+				.poll(() => mockedSaveProfile.mock.calls.at(-1)?.[0].firstName, { timeout: 500 })
+				.toBe('Erika');
+		});
+
+		it('speichert das Profil beim Verlassen nicht erneut, wenn nichts geändert wurde', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			loadedVehicleDraft();
+			await renderForm();
+			await resumeDraft();
+			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
+
+			window.dispatchEvent(new Event('pagehide'));
+			await expect.poll(() => mockedSaveDraft.mock.calls.length, { timeout: 500 }).toBe(1);
+
+			expect(mockedSaveProfile).not.toHaveBeenCalled();
+		});
+
+		it('speichert eine zugeklappte Karte in collapsedVehicleIds', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			loadedVehicleDraft();
+			await renderForm();
+			await resumeDraft();
+			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
+
+			await userEvent.click(page.getByRole('button', { name: 'Fertig' }));
+			await expect
+				.element(page.getByRole('button', { name: 'Bearbeiten' }).last())
+				.toBeInTheDocument();
+			window.dispatchEvent(new Event('pagehide'));
+
+			await expect.poll(() => mockedSaveDraft.mock.calls.length, { timeout: 500 }).toBe(1);
+			expect(mockedSaveDraft.mock.calls[0][0].ui.collapsedVehicleIds).toEqual(['veh-1']);
+		});
+
+		it('stellt zugeklappte Karten, Hinweise und die Scrollposition wieder her', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+			loadedVehicleDraft({ collapsedVehicleIds: ['veh-1'], scrollY: 320 });
+
+			try {
+				await renderForm();
+				await resumeDraft();
+
+				await expect
+					.element(page.getByRole('button', { name: 'Bearbeiten' }).last())
+					.toBeInTheDocument();
+				await expect.element(page.getByLabelText('Kennzeichen')).not.toBeInTheDocument();
+				await expect
+					.poll(() => scrollTo.mock.calls.at(-1)?.[0])
+					.toEqual({ top: 320, behavior: 'instant' });
+			} finally {
+				scrollTo.mockRestore();
+			}
+		});
+
+		it('stellt Adress-Hinweise eines Fahrzeugs wieder her', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			loadedVehicleDraft({ geocodeWarnings: { 'veh-1': 'Wiederhergestellter Hinweis' } });
+
+			await renderForm();
+			await resumeDraft();
+
+			await expect.element(page.getByText('Wiederhergestellter Hinweis')).toBeInTheDocument();
+		});
+
+		it('scrollt ohne gespeicherte Position nicht', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+			loadedVehicleDraft();
+
+			try {
+				await renderForm();
+				await resumeDraft();
+				await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
+				expect(scrollTo).not.toHaveBeenCalled();
+			} finally {
+				scrollTo.mockRestore();
+			}
+		});
+
+		it('verwirft den Zuklapp-Zustand eines entfernten Fahrzeugs', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			mockDraft({
+				vehicles: [
+					makeVehicle({ id: 'veh-1' }),
+					makeVehicle({ id: 'veh-2', licensePlate: 'K-BB2222' })
+				],
+				photos: [makePhoto('photo-1')],
+				ui: { collapsedVehicleIds: ['veh-1', 'veh-2'], scrollY: 0, geocodeWarnings: {} }
+			});
+			await renderForm();
+			await resumeDraft();
+			await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
+
+			await userEvent.click(page.getByRole('button', { name: 'Vorfall entfernen' }).first());
+			await userEvent.click(page.getByRole('button', { name: 'Entfernen', exact: true }));
+			await expect
+				.element(page.getByRole('heading', { name: 'Vorfall 2' }))
+				.not.toBeInTheDocument();
+			window.dispatchEvent(new Event('pagehide'));
+
+			await expect.poll(() => mockedSaveDraft.mock.calls.length, { timeout: 500 }).toBe(1);
+			expect(mockedSaveDraft.mock.calls[0][0].ui.collapsedVehicleIds).toEqual(['veh-2']);
+		});
+
+		it('meldet einen Fehler beim Speichern des Profils beim Verlassen, statt ihn zu werfen', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(undefined);
+			mockedSaveProfile.mockRejectedValueOnce(new Error('Speicher voll'));
+			const logError = vi.spyOn(console, 'error').mockImplementation(() => {});
+			await renderForm();
+			await expect.element(page.getByLabelText('Vorname')).toBeInTheDocument();
+
+			try {
+				await userEvent.fill(page.getByLabelText('Vorname'), 'Erika');
+				window.dispatchEvent(new Event('pagehide'));
+
+				await expect
+					.poll(() => logError.mock.calls.some(([message]) => /Profil/.test(String(message))))
+					.toBe(true);
+			} finally {
+				logError.mockRestore();
+			}
+		});
+
+		it('legt nach dem Zurücksetzen keinen Entwurf aus einer ausstehenden Eingabe wieder an', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			loadedVehicleDraft();
+			await renderForm();
+			await resumeDraft();
+			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
+
+			await userEvent.fill(page.getByLabelText('Kennzeichen'), 'K-ZZ9999');
+			await userEvent.click(
+				page.getByRole('button', { name: 'Zurücksetzen', exact: true }).first()
+			);
+			await userEvent.click(page.getByRole('button', { name: 'Zurücksetzen', exact: true }).last());
+			await expect.element(page.getByLabelText('Kennzeichen')).not.toBeInTheDocument();
+
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+			expect(mockedClearDraft).toHaveBeenCalled();
+			expect(mockedSaveDraft).not.toHaveBeenCalled();
+		});
+
+		it('legt nach vollständigem Versand keinen Entwurf aus einer ausstehenden Eingabe wieder an', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			loadedVehicleDraft();
+			await renderForm();
+			await resumeDraft();
+			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
+
+			await userEvent.fill(page.getByLabelText('Kennzeichen'), 'K-AA2222');
+			await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
+			await expect.poll(() => mockedAddEntry.mock.calls.length).toBe(1);
+
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+			expect(mockedClearDraft).toHaveBeenCalled();
+			expect(mockedSaveDraft).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('Entwurf fortsetzen oder verwerfen', () => {
+		const draftWithTwoVehicles = () =>
+			mockDraft({
+				vehicles: [
+					makeVehicle({ id: 'veh-1' }),
+					makeVehicle({ id: 'veh-2', licensePlate: 'K-BB2222' })
+				],
+				photos: [makePhoto('photo-1')],
+				ui: { collapsedVehicleIds: ['veh-2'], scrollY: 0, geocodeWarnings: {} }
+			});
+
+		it('zeigt statt einer stillen Wiederherstellung den Hinweis und blendet Fotos und Fahrzeuge aus', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+
+			await renderForm();
+
+			await expect
+				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+				.toBeInTheDocument();
+			await expect.element(page.getByText('mit 2 Fahrzeugen und 1 Foto')).toBeInTheDocument();
+			await expect.element(page.getByText(validProfile.email, { exact: true })).toBeInTheDocument();
+			await expect.element(page.getByLabelText('Kennzeichen')).not.toBeInTheDocument();
+			await expect
+				.element(page.getByRole('button', { name: '+ Weiteres Fahrzeug hinzufügen' }))
+				.not.toBeInTheDocument();
+		});
+
+		it('schreibt und löscht den Entwurf nicht, solange der Hinweis offen ist', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+			await expect
+				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+				.toBeInTheDocument();
+
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+			window.dispatchEvent(new Event('pagehide'));
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			expect(mockedSaveDraft).not.toHaveBeenCalled();
+			expect(mockedClearDraft).not.toHaveBeenCalled();
+		});
+
+		it('sperrt Absenden und Zurücksetzen, solange der Hinweis offen ist', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+
+			await renderForm();
+
+			await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeDisabled();
+			await expect
+				.element(page.getByRole('button', { name: 'Zurücksetzen', exact: true }))
+				.toBeDisabled();
+		});
+
+		it('stellt beim Fortsetzen die gespeicherte Scrollposition wieder her', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+			mockDraft({
+				vehicles: [makeVehicle({ id: 'veh-1' })],
+				photos: [makePhoto('photo-1')],
+				ui: { collapsedVehicleIds: [], scrollY: 240, geocodeWarnings: {} }
+			});
+
+			try {
+				await renderForm();
+				expect(scrollTo).not.toHaveBeenCalled();
+
+				await resumeDraft();
+
+				await expect
+					.poll(() => scrollTo.mock.calls.at(-1)?.[0])
+					.toEqual({ top: 240, behavior: 'instant' });
+			} finally {
+				scrollTo.mockRestore();
+			}
+		});
+
+		it('stellt beim Fortsetzen Fahrzeuge und Zuklapp-Zustand wieder her und speichert danach wieder', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			await resumeDraft();
+
+			await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
+			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
+			await expect
+				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+				.not.toBeInTheDocument();
+			await expect.poll(() => mockedSaveDraft.mock.calls.length, { timeout: 2000 }).toBe(1);
+			expect(mockedSaveDraft.mock.calls[0][0].ui.collapsedVehicleIds).toEqual(['veh-2']);
+		});
+
+		it('verwirft nach Bestätigung den Entwurf und zeigt ein leeres Formular', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }));
+			await expect
+				.element(page.getByRole('dialog', { name: 'Entwurf verwerfen?' }))
+				.toBeInTheDocument();
+			expect(mockedClearDraft).not.toHaveBeenCalled();
+			await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }).last());
+
+			await expect
+				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+				.not.toBeInTheDocument();
+			await expect
+				.element(page.getByRole('button', { name: '+ Weiteres Fahrzeug hinzufügen' }))
+				.toBeInTheDocument();
+			await expect.element(page.getByLabelText('Kennzeichen')).not.toBeInTheDocument();
+			expect(mockedClearDraft).toHaveBeenCalled();
+			expect(mockedSaveDraft).not.toHaveBeenCalled();
+		});
+
+		it('zeigt das leere Formular auch, wenn das Löschen des Entwurfs beim Verwerfen fehlschlägt', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			mockedClearDraft.mockRejectedValue(new Error('Löschen fehlgeschlagen'));
+			const logError = vi.spyOn(console, 'error').mockImplementation(() => {});
+			await renderForm();
+
+			try {
+				await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }));
+				await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }).last());
+
+				await expect
+					.element(page.getByRole('button', { name: '+ Weiteres Fahrzeug hinzufügen' }))
+					.toBeInTheDocument();
+				expect(logError).toHaveBeenCalledWith(
+					'Fehler beim Löschen des Entwurfs:',
+					expect.any(Error)
+				);
+			} finally {
+				logError.mockRestore();
+			}
+		});
+
+		it('behält den Hinweis, wenn die Rückfrage abgebrochen wird', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }));
+			await userEvent.click(page.getByRole('button', { name: 'Abbrechen' }));
+
+			await expect
+				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+				.toBeInTheDocument();
+			expect(mockedClearDraft).not.toHaveBeenCalled();
+		});
+
+		it('gibt den Fokus nach „Abbrechen“ an „Verwerfen“ zurück', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			const discardButton = page.getByRole('button', { name: 'Verwerfen' });
+			await userEvent.click(discardButton);
+			await userEvent.click(page.getByRole('button', { name: 'Abbrechen' }));
+
+			await expect.poll(() => document.activeElement).toBe(discardButton.element());
+		});
+
+		it('setzt den Fokus nach „Fortsetzen“ auf die Überschrift der Beweisfotos', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			await resumeDraft();
+
+			await expect.poll(() => document.activeElement?.id).toBe('photo-pool-heading');
+			expect(document.activeElement?.textContent).toContain('Beweisfotos');
+		});
+
+		it('setzt den Fokus nach bestätigtem Verwerfen auf die Überschrift der Beweisfotos', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }));
+			await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }).last());
+
+			await expect.poll(() => document.activeElement?.id).toBe('photo-pool-heading');
+		});
+
+		it('nennt als Grund für die gesperrten Buttons die offene Entwurfs-Entscheidung', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			const reason =
+				'Bitte zuerst entscheiden, ob du den Entwurf fortsetzen oder verwerfen möchtest.';
+			await expect.element(page.getByText(reason)).toBeVisible();
+			const reasonId = document.getElementById('form-actions-disabled-reason')?.id;
+			expect(reasonId).toBeTruthy();
+			await expect
+				.element(page.getByRole('button', { name: 'Absenden' }))
+				.toHaveAccessibleDescription(reason);
+			await expect
+				.element(page.getByRole('button', { name: 'Zurücksetzen', exact: true }))
+				.toHaveAccessibleDescription(reason);
+
+			await resumeDraft();
+			await expect.element(page.getByText(reason)).not.toBeInTheDocument();
+			await expect
+				.element(page.getByRole('button', { name: 'Absenden' }))
+				.not.toHaveAttribute('aria-describedby');
+		});
+	});
+
+	it('nennt als Grund für die gesperrten Buttons die laufende Foto-Verarbeitung', async () => {
+		setDefaultMocks();
+		let finishProcessing: (entry: PhotoEntry) => void = () => {};
+		mockedCreatePhotoEntry.mockReturnValue(
+			new Promise<PhotoEntry>((resolve) => {
+				finishProcessing = resolve;
+			})
+		);
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhoto(new File(['x'], 'slow.jpg', { type: 'image/jpeg' }));
+
+		await expect
+			.element(page.getByRole('button', { name: 'Absenden' }))
+			.toHaveAccessibleDescription('Fotos werden noch verarbeitet …');
+		await expect
+			.element(page.getByRole('button', { name: 'Zurücksetzen', exact: true }))
+			.toHaveAccessibleDescription('Fotos werden noch verarbeitet …');
+
+		finishProcessing(makePhoto('slow'));
+		await expect.element(page.getByText('Fotos werden noch verarbeitet …')).not.toBeInTheDocument();
 	});
 });

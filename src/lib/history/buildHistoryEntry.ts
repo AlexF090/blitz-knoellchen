@@ -1,4 +1,9 @@
 import type { IncidentType } from '$lib/config/cities';
+import {
+	ENDANGERED_PERSON_OPTIONS,
+	IMPAIRMENT_OPTIONS,
+	resolveImpactOptions
+} from '$lib/config/impactOptions';
 import { formatAddress } from '$lib/geocode/formatAddress';
 import { normalizeLicensePlate } from '$lib/validation/formSchema';
 import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
@@ -44,5 +49,13 @@ export const buildHistoryEntry = ({
 	make: vehicle.make,
 	color: vehicle.color,
 	notes: vehicle.notes,
+	impairmentLabels: resolveImpactOptions(IMPAIRMENT_OPTIONS, vehicle.impairmentIds).map(
+		(option) => option.label
+	),
+	endangeredPersonLabels: resolveImpactOptions(
+		ENDANGERED_PERSON_OPTIONS,
+		vehicle.endangeredPersonIds
+	).map((option) => option.label),
+	endangeredPersonsNote: vehicle.endangeredPersonsNote,
 	thumbnails: photos.map((photo) => photo.blob)
 });

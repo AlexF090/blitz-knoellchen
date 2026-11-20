@@ -1,5 +1,8 @@
 import type { GeocodeAddress } from '$lib/geocode/geocodeAddress';
+import { findParkingOnlyIncidentTypes } from '$lib/config/cities';
+import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '$lib/config/impactOptions';
 import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
+import { joinGermanList } from '$lib/format/joinGermanList';
 
 /** Ein verarbeitetes Beweisfoto samt der aus ihm gelesenen Aufnahmedaten. */
 export interface PhotoEntry {
@@ -17,15 +20,8 @@ export interface PhotoEntry {
 /** Höchstzahl Fotos, die einem einzelnen Fahrzeug zugeordnet werden dürfen. */
 export const MAX_PHOTOS_PER_VEHICLE = 3;
 
-/** Höchstzahl Fotos, die in einer einzelnen Dateiauswahl gleichzeitig hinzugefügt werden dürfen. */
-// Unabhängig von MAX_PHOTOS_PER_VEHICLE, das die Zuordnung pro Fahrzeug begrenzt.
-export const MAX_PHOTOS_PER_BATCH = 3;
-
-/** Höchstzahl Fotos im gemeinsamen Pool einer Anzeige mit `vehicleCount` Fahrzeugen. */
-// Der Pool wird von allen Fahrzeugen gemeinsam genutzt (Fotos können geteilt werden) — die
-// Obergrenze skaliert deshalb mit der Fahrzeuganzahl.
-export const getMaxPoolPhotos = (vehicleCount: number): number =>
-	Math.max(vehicleCount, 1) * MAX_PHOTOS_PER_VEHICLE;
+/** Höchstlänge eines Freitextfelds pro Fahrzeug (Notizen, Angaben zu gefährdeten Personen). */
+export const MAX_FREE_TEXT_LENGTH = 2000;
 
 /** Ein angezeigtes Fahrzeug mit Tatzeit, Tatort und gewählten Verstoßarten. */
 export interface VehicleEntry {
@@ -42,6 +38,11 @@ export interface VehicleEntry {
 	color: string;
 	incidentTypeIds: string[];
 	notes?: string;
+	// Optionale Angaben, die die Anzeige stützen; ids stammen aus IMPAIRMENT_OPTIONS bzw.
+	// ENDANGERED_PERSON_OPTIONS, die Notiz ergänzt die Personengruppen als Freitext.
+	impairmentIds: string[];
+	endangeredPersonIds: string[];
+	endangeredPersonsNote?: string;
 	date: string;
 	time: string;
 	// 'parkverstoss' erfordert endTime mit Mindestparkzeit 4 Min., 'halteverstoss' nur `time`.
@@ -61,6 +62,11 @@ export type VehicleErrors = Partial<
 		| 'make'
 		| 'color'
 		| 'incidentTypeIds'
+		| 'impairmentIds'
+		| 'endangeredPersonIds'
+		| 'endangeredPersonsNote'
+		| 'notes'
+		| 'timeMode'
 		| 'date'
 		| 'time'
 		| 'endTime'
@@ -174,6 +180,26 @@ export const validateVehicle = (vehicle: VehicleEntry, photos: PhotoEntry[]): Ve
 		errors.color = 'Farbe ist erforderlich (z. B. „hell"/„dunkel", falls unbekannt).';
 	if (vehicle.incidentTypeIds.length === 0)
 		errors.incidentTypeIds = 'Mindestens eine Verstoßart ist erforderlich.';
+	if (vehicle.impairmentIds.some((id) => !IMPAIRMENT_OPTIONS.some((option) => option.id === id)))
+		errors.impairmentIds = 'Unbekannte Angabe zur Behinderung.';
+	if (
+		vehicle.endangeredPersonIds.some(
+			(id) => !ENDANGERED_PERSON_OPTIONS.some((option) => option.id === id)
+		)
+	)
+		errors.endangeredPersonIds = 'Unbekannte Personengruppe.';
+	if ((vehicle.endangeredPersonsNote?.length ?? 0) > MAX_FREE_TEXT_LENGTH)
+		errors.endangeredPersonsNote = `Höchstens ${MAX_FREE_TEXT_LENGTH} Zeichen.`;
+	if ((vehicle.notes?.length ?? 0) > MAX_FREE_TEXT_LENGTH)
+		errors.notes = `Höchstens ${MAX_FREE_TEXT_LENGTH} Zeichen.`;
+
+	// Wo nur das Parken verboten ist, ist kurzes Halten erlaubt: Ohne Zeitraum gäbe es nichts
+	// anzuzeigen.
+	const parkingOnlyTypes = findParkingOnlyIncidentTypes(vehicle.incidentTypeIds);
+	if (vehicle.timeMode === 'halteverstoss' && parkingOnlyTypes.length > 0) {
+		const labels = joinGermanList(parkingOnlyTypes.map((type) => `„${type.label}“`));
+		errors.timeMode = `${labels} ${parkingOnlyTypes.length === 1 ? 'ist' : 'sind'} nur als Parkverstoß anzeigbar: Bitte „Parkverstoß“ mit Zeitraum wählen.`;
+	}
 
 	if (vehicle.photoIds.length === 0) {
 		errors.photoIds = 'Bitte mindestens ein Foto für dieses Fahrzeug auswählen.';
@@ -254,12 +280,7 @@ export const validateProfileFields = (data: ProfileFields): ProfileErrors => {
 export const validateReportForm = (data: ReportFormData): FormErrors => {
 	const errors: FormErrors = { ...validateProfileFields(data) };
 
-	const maxPoolPhotos = getMaxPoolPhotos(data.vehicles.length);
-	if (data.photos.length === 0) {
-		errors.photos = 'Mindestens ein Foto ist erforderlich.';
-	} else if (data.photos.length > maxPoolPhotos) {
-		errors.photos = `Maximal ${maxPoolPhotos} Fotos insgesamt (max. ${MAX_PHOTOS_PER_VEHICLE} pro Fahrzeug).`;
-	}
+	if (data.photos.length === 0) errors.photos = 'Mindestens ein Foto ist erforderlich.';
 
 	const vehicleErrors = data.vehicles.map((vehicle) => validateVehicle(vehicle, data.photos));
 	if (vehicleErrors.some((v) => Object.keys(v).length > 0)) errors.vehicles = vehicleErrors;

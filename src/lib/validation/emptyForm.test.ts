@@ -18,6 +18,13 @@ describe('createEmptyVehicle', () => {
 		expect(vehicle.licensePlateCountry).toBe('D');
 		expect(vehicle.endTime).toBeUndefined();
 	});
+
+	it('startet ohne Angaben zu Behinderung und gefährdeten Personen', () => {
+		const vehicle = createEmptyVehicle('id');
+		expect(vehicle.impairmentIds).toEqual([]);
+		expect(vehicle.endangeredPersonIds).toEqual([]);
+		expect(vehicle.endangeredPersonsNote).toBe('');
+	});
 });
 
 describe('createEmptyForm', () => {

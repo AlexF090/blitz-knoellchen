@@ -65,6 +65,9 @@ export const buildSendFormData = ({
 	body.set('make', vehicle.make);
 	body.set('color', vehicle.color);
 	for (const id of vehicle.incidentTypeIds) body.append('incidentTypeIds', id);
+	for (const id of vehicle.impairmentIds) body.append('impairmentIds', id);
+	for (const id of vehicle.endangeredPersonIds) body.append('endangeredPersonIds', id);
+	body.set('endangeredPersonsNote', vehicle.endangeredPersonsNote ?? '');
 	body.set('notes', vehicle.notes ?? '');
 	body.set('mode', mode);
 	photos.forEach((photo) => body.append('photos', photo.blob, photo.fileName));
@@ -80,6 +83,11 @@ export interface ParsedSendFormData {
 	mode: AppMode;
 	photoBlobs: File[];
 }
+
+// Nur Textwerte (keine Dateien), ohne Duplikate.
+const getUniqueStrings = (formData: FormData, name: string): string[] => [
+	...new Set(formData.getAll(name).filter((value): value is string => typeof value === 'string'))
+];
 
 /**
  * Liest eine von `buildSendFormData` erzeugte FormData zurück. Sichert nur die Trust-Boundary
@@ -106,6 +114,9 @@ export const parseSendFormData = (formData: FormData): ParsedSendFormData => {
 			make: String(formData.get('make') ?? ''),
 			color: String(formData.get('color') ?? ''),
 			incidentTypeIds: formData.getAll('incidentTypeIds').map(String),
+			impairmentIds: getUniqueStrings(formData, 'impairmentIds'),
+			endangeredPersonIds: getUniqueStrings(formData, 'endangeredPersonIds'),
+			endangeredPersonsNote: String(formData.get('endangeredPersonsNote') ?? '') || undefined,
 			notes: String(formData.get('notes') ?? '') || undefined,
 			date: String(formData.get('date') ?? ''),
 			time: String(formData.get('time') ?? ''),

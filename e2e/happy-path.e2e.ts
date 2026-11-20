@@ -33,8 +33,8 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 	await expect(page.locator('[id^="locationCity-"]')).toHaveValue('Köln');
 	await expect(page.locator('[id^="date-"]')).toHaveValue('2026-03-01');
 
-	await page.getByLabel('Parken auf dem Gehweg').check();
-	await page.getByLabel('Parken im Halteverbot').check();
+	await page.getByLabel('Halten/Parken auf dem Gehweg').check();
+	await page.getByLabel('Halten/Parken im Halteverbot').check();
 	await page.getByLabel('Kennzeichen').fill('K AB 1234');
 	await page.getByLabel('Fahrzeugart').selectOption('PKW');
 	await page.getByLabel('Farbe').fill('Rot');
@@ -48,7 +48,9 @@ test('Happy Path: Foto -> Auto-Fill -> Absenden -> Historie', async ({ page }) =
 	await expect(successDialog).toContainText('Anzeige erfolgreich versendet');
 
 	await successDialog.getByRole('link', { name: 'Zur Historie' }).click();
-	await expect(page.getByText('Parken auf dem Gehweg, Parken im Halteverbot')).toBeVisible();
+	await expect(
+		page.getByText('Halten/Parken auf dem Gehweg, Halten/Parken im Halteverbot')
+	).toBeVisible();
 	await expect(page.getByText('Domkloster 4, 50667 Köln')).toBeVisible();
 	// Kennzeichen-Normalisierung: "K AB 1234" (getippt) -> "K-AB1234" (kanonisches Köln-Format).
 	await expect(page.getByText('K-AB1234 · Unbekannt · Rot')).toBeVisible();

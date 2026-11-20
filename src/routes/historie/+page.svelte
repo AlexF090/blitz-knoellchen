@@ -141,6 +141,21 @@
 						{entry.licensePlate} · {entry.make} · {entry.color}
 					</p>
 				{/if}
+				{#if entry.impairmentLabels?.length}
+					<p class="text-base text-ink-muted">
+						Ausmaß der Behinderung: {entry.impairmentLabels.join(', ')}
+					</p>
+				{/if}
+				{#if entry.endangeredPersonLabels?.length}
+					<p class="text-base text-ink-muted">
+						Gefährdete Personen: {entry.endangeredPersonLabels.join(', ')}
+					</p>
+				{/if}
+				{#if entry.endangeredPersonsNote?.trim()}
+					<p class="text-base whitespace-pre-line text-ink-muted">
+						Weitere Angaben zu gefährdeten Personen: {entry.endangeredPersonsNote.trim()}
+					</p>
+				{/if}
 				<p class="text-base text-ink-muted">{new Date(entry.timestamp).toLocaleString('de-DE')}</p>
 
 				{#if entry.thumbnails.length > 0}

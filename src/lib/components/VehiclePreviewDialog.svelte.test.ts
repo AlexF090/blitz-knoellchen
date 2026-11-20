@@ -106,6 +106,21 @@ describe('VehiclePreviewDialog', () => {
 		expect(dialog.querySelector('pre')?.textContent).toBe(email.body);
 	});
 
+	it('nennt Behinderung und gefährdete Personen in der Vorschau', async () => {
+		const vehicle = makeCompleteVehicle({
+			incidentTypeIds: ['gehweg'],
+			impairmentIds: ['gehweg-blockiert'],
+			endangeredPersonIds: ['kinder-schulweg'],
+			endangeredPersonsNote: 'Grundschule gegenüber'
+		});
+		const dialog = await renderOpened({ ...baseProps(), vehicle });
+
+		const body = dialog.querySelector('pre')?.textContent ?? '';
+		expect(body).toContain('Der Gehweg war vollständig blockiert.');
+		expect(body).toContain('Kinder auf dem Schulweg');
+		expect(body).toContain('Grundschule gegenüber');
+	});
+
 	it('nennt die eigene E-Mail-Adresse in Klammern in der Kopie-Zeile', async () => {
 		await renderOpened({ ...baseProps(), vehicle: makeCompleteVehicle() });
 

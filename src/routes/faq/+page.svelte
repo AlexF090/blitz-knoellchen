@@ -133,7 +133,7 @@
 						>Profil (Name, Anschrift, E-Mail, ggf. Telefon), Historie, Formularentwurf</td
 					>
 					<td class="py-2 pr-3">IndexedDB deines Browsers</td>
-					<td class="py-2 pr-3">Bis du sie selbst löschst (Entwurf: max. 2 Stunden)</td>
+					<td class="py-2 pr-3">Bis du sie selbst löschst (Entwurf: max. 7 Tage)</td>
 					<td class="py-2">Nur du</td>
 				</tr>
 				<tr class="border-b border-border align-top">
@@ -221,7 +221,8 @@
 		oder -Passwort wird dafür nicht benötigt (Details in der
 		<a href={resolve('/datenschutz')} class="underline">Datenschutzerklärung, Abschnitt 5</a>).
 		Zusätzlich liegen dein Profil, die Historie und ein noch nicht abgesendeter Formularentwurf
-		(max. 2 Stunden) lokal in der IndexedDB deines Browsers, nicht auf einem Server. Details in der
+		(max. 7 Tage, beim Öffnen der App kannst du ihn fortsetzen oder verwerfen) lokal in der
+		IndexedDB deines Browsers, nicht auf einem Server. Details in der
 		<a href={resolve('/datenschutz')} class="underline">Datenschutzerklärung (Abschnitt 6)</a>.
 	</p>
 {/snippet}

@@ -38,4 +38,25 @@ describe('buildHistoryEntry', () => {
 		expect(entry.licensePlate).toBe('K-AB1234');
 		expect(entry.thumbnails).toEqual([photoBlob]);
 	});
+
+	it('übernimmt Beschriftungen zu Behinderung und gefährdeten Personen', () => {
+		const entry = buildHistoryEntry({
+			id: 'entry-2',
+			timestamp: 1700000000000,
+			firstName: 'Max',
+			lastName: 'Mustermann',
+			vehicle: {
+				...createEmptyVehicle('vehicle-1'),
+				impairmentIds: ['gehweg-blockiert'],
+				endangeredPersonIds: ['kinder-schulweg'],
+				endangeredPersonsNote: 'Grundschule'
+			},
+			incidentTypes: [],
+			photos: []
+		});
+
+		expect(entry.impairmentLabels).toEqual(['Gehweg vollständig blockiert']);
+		expect(entry.endangeredPersonLabels).toEqual(['Kinder auf dem Schulweg']);
+		expect(entry.endangeredPersonsNote).toBe('Grundschule');
+	});
 });

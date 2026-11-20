@@ -8,6 +8,7 @@
 		buildEmailTemplateInput,
 		resolveVehicleIncidentTypes
 	} from '$lib/email/buildEmailTemplateInput';
+	import { blobSrc } from '$lib/photo/blobSrc';
 	import { buttonSecondary } from '$lib/ui/buttonStyles';
 	import type { PhotoEntry, ProfileFields, VehicleEntry } from '$lib/validation/formSchema';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -102,7 +103,7 @@
 					<div class="mt-1 flex flex-wrap gap-2">
 						{#each photos as photo, photoIndex (photo.id)}
 							<img
-								src={URL.createObjectURL(photo.blob)}
+								{@attach blobSrc(photo.blob)}
 								alt="Beweisfoto {photoIndex + 1} von {photos.length}"
 								loading="lazy"
 								class="max-h-48 w-auto max-w-full rounded-control border border-border object-contain"

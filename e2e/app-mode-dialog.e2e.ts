@@ -25,7 +25,7 @@ const fillCompleteForm = async (page: import('@playwright/test').Page) => {
 	await page.locator('#photo-pool-input').setInputFiles(FIXTURE);
 	await expect(page.locator('[id^="locationStreet-"]')).toHaveValue('Domkloster');
 
-	await page.getByLabel('Parken auf dem Gehweg').check();
+	await page.getByLabel('Halten/Parken auf dem Gehweg').check();
 	await page.getByLabel('Kennzeichen').fill('K-AB 1234');
 	await page.getByLabel('Fahrzeugart').selectOption('PKW');
 	await page.getByLabel('Farbe').fill('Rot');

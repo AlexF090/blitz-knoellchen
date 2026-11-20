@@ -37,7 +37,7 @@ const submitReport = async (page: Page, licensePlate: string) => {
 	await page.locator('#photo-pool-input').setInputFiles(FIXTURE);
 	await expect(page.locator('[id^="locationStreet-"]')).toHaveValue('Domkloster');
 
-	await page.getByLabel('Parken auf dem Gehweg').check();
+	await page.getByLabel('Halten/Parken auf dem Gehweg').check();
 	await page.getByLabel('Kennzeichen').fill(licensePlate);
 	await page.getByLabel('Fahrzeugart').selectOption('PKW');
 	await page.getByLabel('Farbe').fill('Rot');

@@ -110,8 +110,8 @@ Versendete Anzeigen werden clientseitig über `idb` (`src/lib/history/db.ts`) in
 gespeichert — Nachschlage-Komfort, keine dauerhafte Beweisquelle (das ist die abgeschickte
 E-Mail selbst). iOS kann diesen Storage nach längerer Inaktivität evictieren. Es wird nur ein
 komprimiertes Foto-Thumbnail gespeichert, nie das Originalfoto. Das Nutzerprofil (Name,
-Adresse, E-Mail) liegt separat in `localStorage` (`src/lib/profile/profileStore.svelte.ts`),
-damit es beim nächsten Öffnen sofort vorausgefüllt ist.
+Adresse, E-Mail) liegt separat im Store `profile` derselben IndexedDB
+(`src/lib/profile/profileStore.svelte.ts`), damit es beim nächsten Öffnen sofort vorausgefüllt ist.
 
 ### Bildkompression über native Canvas API
 
@@ -206,6 +206,73 @@ Satz für die E-Mail). `buildEmailBody` kombiniert bei mehreren gewählten Verst
 Labels zu einer Aufzählung ("Art des Verstoßes: X, Y") und die Beschreibungen zu einer
 Stichpunktliste im Fließtext — so bleibt der Text auch bei mehreren gleichzeitig vorliegenden
 Verstößen (z. B. Gehweg + Kreuzungsbereich) klar strukturiert.
+
+`emailLabel` und `description` dürfen die Platzhalter `{verb}` und `{noun}` enthalten.
+`applyTimeModeWording` (`src/lib/email/timeModeWording.ts`) ersetzt sie je nach gewählter
+Zeitangabe: Halteverstoß → „hielt“/„Halten“, Parkverstoß → „parkte“/„Parken“. So bleibt der
+E-Mail-Satz zur Auswahl „Halteverstoß“ bzw. „Parkverstoß“ stimmig.
+
+Die Platzhalter tragen alle Verstoßarten, bei denen schon das Halten verboten ist (Gehweg,
+Halteverbot, zweite Reihe, Feuerwehrzufahrt, Radweg); ihr Formular-Label lautet „Halten/Parken
+…“. Parkverbot, Schwerbehinderten-Parkplatz und Kreuzungsbereich verbieten nur das Parken und
+bleiben beim festen „parkte“. Sie tragen in der Konfiguration `parkingOnly: true`;
+`validateVehicle` lehnt sie zusammen mit „Halteverstoß“ ab (Fehler am Zeitmodus, auch
+serverseitig mit 400), weil kurzes Halten dort erlaubt ist und die Anzeige sonst keine Grundlage
+hätte. Die Freitexte „Weitere Angaben“ und „Weitere Angaben zu gefährdeten Personen“ sind auf
+2000 Zeichen begrenzt (`MAX_FREE_TEXT_LENGTH`).
+
+Zwei weitere, optionale Abschnitte ergänzen die E-Mail. „Ausmaß der Behinderung“ ist eine
+Stichpunktliste vollständiger Sätze, „Gefährdete Personen“ ein Satz („Durch das Fahrzeug wurden
+insbesondere X, Y und Z gefährdet bzw. behindert.“) mit optionaler Freitextnotiz. Die Auswahl
+kommt aus `src/lib/config/impactOptions.ts` (`IMPAIRMENT_OPTIONS`, `ENDANGERED_PERSON_OPTIONS`,
+je `label` für die Checkbox und `emailText` für die E-Mail); `joinGermanList` verbindet die
+Aufzählung mit „und“. Ohne Auswahl entfällt der Abschnitt vollständig.
+
+### Entwurf: sofort speichern beim Verlassen, Fortsetzen-Banner, eigener Foto-Store
+
+**Kontext.** Wer mitten im Ausfüllen den Tab wechselt oder die PWA schließt, soll nichts verlieren.
+Ein Entwurf mit vielen Fotos ist groß, und ein still wiederhergestellter Entwurf überrascht, wenn
+er Tage alt ist oder aus einem früheren Vorgang stammt.
+
+**Entscheidung.**
+
+- `createDraftAutosave` (`src/lib/history/draftAutosave.ts`) entprellt das Speichern (800 ms),
+  führt Schreibvorgänge nacheinander aus und kann den vorgemerkten Stand sofort schreiben
+  (`flush`). `ReportForm.svelte` ruft `flush` bei `pagehide` und bei `visibilitychange` auf
+  `hidden` auf und beim Verlassen der Seite (z. B. Wechsel zur Historie).
+- Der Entwurf speichert neben Fahrzeugen und Fotos den Ansichtszustand (zugeklappte Karten,
+  Scrollposition, Adress-Hinweise). Die Fotos liegen in einem eigenen Store `draftPhotos`; ein
+  Speichern schreibt nur die Metadaten neu und legt die Blobs unbekannter Fotos an
+  (`src/lib/history/db.ts`, Schema und Validierung in `src/lib/history/draftSchema.ts`).
+- Beim Öffnen wird ein vorhandener Entwurf nicht still wiederhergestellt: `DraftResumeBanner.svelte`
+  fragt „Fortsetzen oder Verwerfen“. Bis zur Entscheidung ist der Autosave ausgeschaltet, und
+  Absenden und Zurücksetzen sind gesperrt, damit nichts den gespeicherten Entwurf überschreibt
+  oder löscht. „Verwerfen“ löscht Fotos und fragt deshalb über `ConfirmDialog` nach.
+- Aufbewahrung höchstens sieben Tage (`DRAFT_MAX_AGE_MS`): Ein nie abgesendeter Entwurf soll nicht
+  unbegrenzt als Datenschutz-Altlast in der IndexedDB liegen.
+
+**Konsequenzen.**
+
+- `pagehide` ist nur Best-Effort: Chromium bricht IndexedDB-Schreibvorgänge beim Beenden des
+  Renderers ab (in Playwright selbst ein reiner `put` aus `pagehide`). `visibilitychange` auf
+  `hidden` läuft, solange die Seite noch lebt, und ist vor allem auf iOS verlässlicher. Der
+  Debounce bleibt die Grundabsicherung; im ungünstigsten Fall gehen die letzten Änderungen
+  seit dem letzten Debounce-Schreibvorgang verloren. `e2e/draft-persistence.e2e.ts` prüft deshalb
+  den `visibilitychange`-Pfad, nicht das Schließen des Tabs.
+- Zwei Tabs teilen sich einen Entwurfsschlüssel: Der zuletzt schreibende Tab gewinnt.
+- Der Hinweis kostet einen Klick bei jedem Öffnen mit Entwurf; dafür gibt es keine
+  unerwartet wiederhergestellten Altstände.
+
+### Fotos: Pool ohne Obergrenze, höchstens drei pro Fahrzeug
+
+Der Foto-Pool nimmt beliebig viele Fotos auf (`processPhotoQueue.ts` verarbeitet sie nacheinander
+mit Fortschrittsanzeige, ein gescheitertes Foto bricht die übrigen nicht ab). Pro Fahrzeug gelten
+höchstens drei Fotos (`MAX_PHOTOS_PER_VEHICLE` in `formSchema.ts`): Jedes Fahrzeug geht als
+eigener POST an `/api/send`, und Vercel begrenzt die Request-Größe auf 4,5 MB. Die Fotos werden
+vorher komprimiert, drei Fotos bleiben damit sicher darunter. Das erste Foto legt automatisch ein
+Fahrzeug an, weitere Fotos kommen so lange in dieses Fahrzeug, wie es nur eines gibt und Platz hat
+(`autoAssign.ts`); alle übrigen Fotos bleiben im Pool und werden dort als „nicht zugeordnet“ bzw.
+„voll“ gekennzeichnet. Nicht zugeordnete Fotos werden nicht mitgesendet.
 
 ### Hausnummer bei der eigenen Adresse: Pflicht, mit Straße zusammengelegt
 
@@ -346,8 +413,20 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `src/lib/geocode/autocompleteClient.ts`              | Ruft `/api/geocode/autocomplete` vom Client aus auf, fail-quiet                                                                                                 |
 | `src/lib/geocode/httpErrors.ts`                      | Gemeinsame HTTP-Fehlertext-Logik für Reverse-Geocode und Autocomplete                                                                                           |
 | `src/lib/geocode/rateLimiter.ts`                     | Gemeinsames Throttle-Modul (blocking + non-blocking) für beide Geocode-Proxys                                                                                   |
-| `src/lib/history/db.ts`                              | `idb`-Wrapper für die lokale Historie                                                                                                                           |
-| `src/lib/profile/profileStore.svelte.ts`             | `localStorage`-Wrapper mit Svelte-5-Runes                                                                                                                       |
+| `src/lib/history/db.ts`                              | `idb`-Wrapper für Historie, Profil und Entwurf (Stores `entries`, `profile`, `draft`, `draftPhotos`)                                                            |
+| `src/lib/components/DraftResumeBanner.svelte`        | Hinweis „Entwurf fortsetzen?“ beim Öffnen, s. ADR „Entwurf“ oben                                                                                                |
+| `src/lib/components/CheckboxGroupFieldset.svelte`    | Mehrfachauswahl als Checkbox-Gruppe (Ausmaß der Behinderung, gefährdete Personen)                                                                               |
+| `src/lib/config/impactOptions.ts`                    | Auswahllisten für „Ausmaß der Behinderung“ und „Gefährdete Personen“ samt E-Mail-Formulierung                                                                   |
+| `src/lib/email/timeModeWording.ts`                   | Ersetzt `{verb}`/`{noun}` in Verstoßbeschreibungen je nach Halte- oder Parkverstoß                                                                              |
+| `src/lib/format/joinGermanList.ts`                   | Verbindet Aufzählungen mit Komma und „und“                                                                                                                      |
+| `src/lib/format/germanDate.ts`                       | Datums- und Zeitformatierung (`formatIsoDateDMY`, `formatTimeRange`, `formatTimestampDE`)                                                                       |
+| `src/lib/validation/toggleId.ts`                     | Setzt oder entfernt eine id in einer Mehrfachauswahl                                                                                                            |
+| `src/lib/photo/processPhotoQueue.ts`                 | Verarbeitet ausgewählte Fotos nacheinander mit Fortschritt, sammelt gescheiterte                                                                                |
+| `src/lib/photo/autoAssign.ts`                        | Entscheidet, ob ein neues Foto ein Fahrzeug anlegt, dem ersten zugeordnet wird oder im Pool bleibt                                                              |
+| `src/lib/photo/blobSrc.ts`                           | Svelte-Attachment: `blob:`-URL für ein Bild, wird beim Entfernen freigegeben                                                                                    |
+| `src/lib/history/draftSchema.ts`                     | Validierung und Zusammenführung des gespeicherten Entwurfs (Metadaten + Foto-Blobs, Höchstalter)                                                                |
+| `src/lib/history/draftAutosave.ts`                   | Entprelltes Speichern des Entwurfs mit sofortigem `flush`, Schreibvorgänge nacheinander                                                                         |
+| `src/lib/profile/profileStore.svelte.ts`             | Runen-Store für das Melderprofil, persistiert in der IndexedDB (Store `profile`)                                                                                |
 | `src/lib/image/compress.ts`                          | Canvas-basierte Bildkompression                                                                                                                                 |
 | `src/lib/pwa/isIosSafari.ts`                         | Reine, testbare UA-Erkennung für den iOS-Install-Hinweis                                                                                                        |
 | `src/lib/validation/formSchema.ts`                   | Handgeschriebene Formular-Validierung                                                                                                                           |

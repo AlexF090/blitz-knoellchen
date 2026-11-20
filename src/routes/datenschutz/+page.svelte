@@ -109,9 +109,12 @@
 				ein komprimiertes Vorschaubild sowie die Eckdaten der Anzeige lokal in der
 				<em>IndexedDB</em> deines Browsers – nicht auf einem Server. Dein Name, deine Anschrift,
 				E-Mail-Adresse und ggf. Telefonnummer werden zusätzlich als Profil in derselben
-				<em>IndexedDB</em> hinterlegt, damit das Formular beim nächsten Öffnen automatisch vorausgefüllt
-				ist. Ein noch nicht abgesendeter Formularentwurf wird ebenfalls lokal zwischengespeichert und
-				nach spätestens zwei Stunden automatisch verworfen.
+				<em>IndexedDB</em> hinterlegt, damit das Formular beim nächsten Öffnen automatisch
+				vorausgefüllt ist. Ein noch nicht abgesendeter Formularentwurf wird ebenfalls lokal in der
+				<em>IndexedDB</em>
+				zwischengespeichert, bis du ihn absendest oder verwirfst, höchstens aber sieben Tage. Er umfasst
+				die Formularinhalte, die Fotos und den Ansichtszustand (zugeklappte Karten, Scrollposition). Beim
+				Öffnen der App wirst du gefragt, ob du den Entwurf fortsetzen oder verwerfen möchtest.
 			</p>
 			<p class="mt-2">
 				Diese Daten verlassen dein Gerät nicht von selbst und werden ausschließlich beim Absenden

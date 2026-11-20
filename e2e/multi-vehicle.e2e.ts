@@ -43,7 +43,7 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 	await vehicleBlocks.first().getByLabel('Kennzeichen').fill(plateA.replace(/(\d)/, ' $1'));
 	await vehicleBlocks.first().getByLabel('Fahrzeugart').selectOption('PKW');
 	await vehicleBlocks.first().getByLabel('Farbe').fill('Blau');
-	await vehicleBlocks.first().getByLabel('Parken auf dem Gehweg').check();
+	await vehicleBlocks.first().getByLabel('Halten/Parken auf dem Gehweg').check();
 
 	await page.getByRole('button', { name: '+ Weiteres Fahrzeug hinzufügen' }).click();
 	await expect(vehicleBlocks).toHaveCount(2);
@@ -53,7 +53,7 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 	await secondVehicle.getByLabel('Kennzeichen').fill(plateB.replace(/(\d)/, ' $1'));
 	await secondVehicle.getByLabel('Fahrzeugart').selectOption('PKW');
 	await secondVehicle.getByLabel('Farbe').fill('Grün');
-	await secondVehicle.getByLabel('Parken im Halteverbot').check();
+	await secondVehicle.getByLabel('Halten/Parken im Halteverbot').check();
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
 

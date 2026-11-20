@@ -59,6 +59,11 @@ const makeCompleteVehicle = (overrides: Partial<VehicleEntry> = {}): VehicleEntr
 	...overrides
 });
 
+/** Löst einen DOM-Klick aus — Playwright klickt `aria-disabled`-Elemente nicht. */
+const domClick = (element: HTMLElement | SVGElement) => {
+	element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+};
+
 const baseProps = () => ({
 	index: 0,
 	total: 1,
@@ -95,13 +100,84 @@ describe('VehicleBlock', () => {
 		await expect.element(button1).toHaveAttribute('aria-pressed', 'true');
 		await expect.element(button2).toHaveAttribute('aria-pressed', 'true');
 
-		await userEvent.click(button3);
+		// Playwright klickt aria-disabled-Elemente nicht; der DOM-Klick prüft die Schutzabfrage.
+		domClick(button3.element());
 		await expect.element(button3).toHaveAttribute('aria-pressed', 'false');
 
 		expect(onPhotoToggled).toHaveBeenCalledTimes(2);
 		expect(onPhotoToggled).toHaveBeenCalledWith('p1', true);
 		expect(onPhotoToggled).toHaveBeenCalledWith('p2', true);
 		expect(vehicle.photoIds).toEqual(['p1', 'p2']);
+	});
+
+	it('markiert nicht gewählte Fotos als deaktiviert und zeigt einen Hinweis, wenn das Fahrzeug voll ist', async () => {
+		const pool = ['p1', 'p2', 'p3', 'p4'].map((id) => makePhoto(id));
+		const vehicle = $state({ ...createEmptyVehicle('v-full'), photoIds: ['p1', 'p2', 'p3'] });
+
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool, maxPhotos: 3 });
+
+		const blocked = page.getByRole('button', { name: 'Foto p4.jpg auswählen' });
+		await expect.element(blocked).toHaveAttribute('aria-disabled', 'true');
+		await expect
+			.element(page.getByRole('button', { name: 'Foto p1.jpg auswählen' }))
+			.not.toHaveAttribute('aria-disabled');
+		await expect
+			.element(page.getByText('Maximal 3 Fotos pro Fahrzeug – zum Tauschen zuerst eins abwählen.'))
+			.toBeInTheDocument();
+
+		domClick(blocked.element());
+		await expect.element(blocked).toHaveAttribute('aria-pressed', 'false');
+		expect(vehicle.photoIds).toEqual(['p1', 'p2', 'p3']);
+	});
+
+	it('verknüpft gesperrte Foto-Buttons per aria-describedby mit dem Limit-Hinweis', async () => {
+		const pool = ['p1', 'p2', 'p3', 'p4'].map((id) => makePhoto(id));
+		const vehicle = $state({ ...createEmptyVehicle('v-hint'), photoIds: ['p1', 'p2', 'p3'] });
+
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool, maxPhotos: 3 });
+
+		const blocked = page.getByRole('button', { name: 'Foto p4.jpg auswählen' });
+		const hintId = blocked.element().getAttribute('aria-describedby');
+		expect(hintId).toBeTruthy();
+		expect(document.getElementById(hintId!)?.textContent).toContain('Maximal 3 Fotos pro Fahrzeug');
+		await expect
+			.element(page.getByRole('button', { name: 'Foto p1.jpg auswählen' }))
+			.not.toHaveAttribute('aria-describedby');
+	});
+
+	it('zeigt keinen Limit-Hinweis, solange alle Fotos des Pools ausgewählt sind', async () => {
+		const pool = ['p1', 'p2', 'p3'].map((id) => makePhoto(id));
+		const vehicle = $state({ ...createEmptyVehicle('v-all'), photoIds: ['p1', 'p2', 'p3'] });
+
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool, maxPhotos: 3 });
+
+		await expect.element(page.getByText('Maximal 3 Fotos pro Fahrzeug')).not.toBeInTheDocument();
+	});
+
+	it('beschriftet das allgemeine Freitextfeld eindeutig als Angaben zum Vorfall', async () => {
+		const vehicle = $state(makeCompleteVehicle());
+		await render(VehicleBlock, { ...baseProps(), vehicle });
+
+		await expect
+			.element(page.getByLabelText('Weitere Angaben zum Vorfall (optional)'))
+			.toBeInTheDocument();
+		await expect
+			.element(page.getByLabelText('Weitere Angaben zu gefährdeten Personen (optional)'))
+			.toBeInTheDocument();
+	});
+
+	it('gibt die Auswahl wieder frei, sobald ein Foto abgewählt wird', async () => {
+		const pool = ['p1', 'p2', 'p3', 'p4'].map((id) => makePhoto(id));
+		const vehicle = $state({ ...createEmptyVehicle('v-swap'), photoIds: ['p1', 'p2', 'p3'] });
+
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool, maxPhotos: 3 });
+
+		await userEvent.click(page.getByRole('button', { name: 'Foto p1.jpg auswählen' }));
+		const freed = page.getByRole('button', { name: 'Foto p4.jpg auswählen' });
+		await expect.element(freed).not.toHaveAttribute('aria-disabled');
+		await userEvent.click(freed);
+		await expect.element(freed).toHaveAttribute('aria-pressed', 'true');
+		expect(vehicle.photoIds).toEqual(['p2', 'p3', 'p4']);
 	});
 
 	it('entfernt ein bereits ausgewähltes Foto erneut bei Klick', async () => {
@@ -360,7 +436,7 @@ describe('VehicleBlock', () => {
 		await expect.element(page.getByRole('button', { name: 'Bearbeiten' })).toBeInTheDocument();
 	});
 
-	it('fügt bei Enter in „Weitere Angaben“ einen Zeilenumbruch ein, statt die Karte zu schließen', async () => {
+	it('fügt bei Enter in „Weitere Angaben zum Vorfall“ einen Zeilenumbruch ein, statt die Karte zu schließen', async () => {
 		const vehicle = $state(makeCompleteVehicle());
 		await render(VehicleBlock, { ...baseProps(), vehicle });
 
@@ -370,6 +446,24 @@ describe('VehicleBlock', () => {
 
 		expect(vehicle.notes).toBe('Zeile 1\nZeile 2');
 		await expect.element(page.getByRole('button', { name: 'Fertig' })).toBeInTheDocument();
+	});
+
+	it('begrenzt die Freitexte und zeigt deren Fehler am Feld', async () => {
+		const vehicle = $state(makeCompleteVehicle());
+		await render(VehicleBlock, {
+			...baseProps(),
+			vehicle,
+			errors: { notes: 'Höchstens 2000 Zeichen.', endangeredPersonsNote: 'Zu lang.' }
+		});
+
+		for (const field of ['notes', 'endangeredPersonsNote']) {
+			const textarea = document.getElementById(`${field}-${vehicle.id}`);
+			expect(textarea?.getAttribute('maxlength')).toBe('2000');
+			expect(textarea?.getAttribute('aria-invalid')).toBe('true');
+			expect(textarea?.getAttribute('aria-describedby')).toBe(`${field}-${vehicle.id}-error`);
+		}
+		await expect.element(page.getByText('Höchstens 2000 Zeichen.')).toBeInTheDocument();
+		await expect.element(page.getByText('Zu lang.')).toBeInTheDocument();
 	});
 
 	it('lässt die Karte bei Enter-Taste in einem Feld offen, solange Angaben fehlen', async () => {
@@ -423,6 +517,22 @@ describe('VehicleBlock', () => {
 			.toBeInTheDocument();
 	});
 
+	it('verknüpft Hinweis und Fehler der Verstoßart per aria-describedby mit der Gruppe', async () => {
+		const vehicle = $state(makeCompleteVehicle());
+		await render(VehicleBlock, {
+			...baseProps(),
+			vehicle,
+			errors: { incidentTypeIds: 'Mindestens eine Verstoßart ist erforderlich.' }
+		});
+
+		await expect
+			.element(page.getByRole('group', { name: /Verstöße/ }))
+			.toHaveAttribute(
+				'aria-describedby',
+				`incidentTypeIds-${vehicle.id}-hint incidentTypeIds-${vehicle.id}-error`
+			);
+	});
+
 	it('übernimmt eine per Autocomplete ausgewählte Adresse in die Tatort-Felder', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({
 			suggestions: [
@@ -470,5 +580,60 @@ describe('VehicleBlock', () => {
 
 		await expect.element(page.getByRole('button', { name: 'Fertig' })).toBeInTheDocument();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
+	});
+	describe('open (bindbar)', () => {
+		it('ist ohne Vorgabe aufgeklappt', async () => {
+			const vehicle = $state(makeCompleteVehicle());
+			await render(VehicleBlock, { ...baseProps(), vehicle });
+
+			await expect.element(page.getByRole('button', { name: 'Fertig' })).toBeInTheDocument();
+		});
+
+		it('startet zugeklappt, wenn open=false übergeben wird', async () => {
+			const vehicle = $state(makeCompleteVehicle());
+			await render(VehicleBlock, { ...baseProps(), vehicle, open: false });
+
+			await expect.element(page.getByRole('button', { name: 'Bearbeiten' })).toBeInTheDocument();
+		});
+
+		it('meldet Zu- und Aufklappen an den gebundenen Wert', async () => {
+			const vehicle = $state(makeCompleteVehicle());
+			let isOpen = $state(true);
+			const readOpen = () => isOpen;
+			await render(VehicleBlock, {
+				...baseProps(),
+				vehicle,
+				get open() {
+					return isOpen;
+				},
+				set open(value: boolean) {
+					isOpen = value;
+				}
+			});
+
+			await userEvent.click(page.getByRole('button', { name: 'Fertig' }));
+			expect(readOpen()).toBe(false);
+
+			await userEvent.click(page.getByRole('button', { name: 'Bearbeiten' }));
+			expect(readOpen()).toBe(true);
+		});
+
+		it('klappt eine zugeklappte, aber unvollständige Karte wieder auf und meldet es', async () => {
+			const vehicle = $state(makeCompleteVehicle({ licensePlate: '' }));
+			let isOpen = $state(false);
+			const readOpen = () => isOpen;
+			await render(VehicleBlock, {
+				...baseProps(),
+				vehicle,
+				get open() {
+					return isOpen;
+				},
+				set open(value: boolean) {
+					isOpen = value;
+				}
+			});
+
+			await expect.poll(readOpen).toBe(true);
+		});
 	});
 });

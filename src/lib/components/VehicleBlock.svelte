@@ -4,10 +4,12 @@
 	 * und Verstöße. Zugeklappt zeigt sie nur noch die Zusammenfassung.
 	 */
 	import type { City, IncidentType } from '$lib/config/cities';
+	import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '$lib/config/impactOptions';
 	import { INCIDENT_TYPE_ICONS } from '$lib/config/incidentTypeIcons';
 	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
+	import { blobSrc } from '$lib/photo/blobSrc';
 	import { buildVehicleSummaryRows } from '$lib/report/vehicleSummary';
 	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
 	import { inputBase } from '$lib/ui/inputStyles';
@@ -18,9 +20,12 @@
 		VehicleEntry,
 		VehicleErrors
 	} from '$lib/validation/formSchema';
-	import { validateVehicle } from '$lib/validation/formSchema';
+	import { ariaFieldProps } from '$lib/validation/ariaField';
+	import { MAX_FREE_TEXT_LENGTH, validateVehicle } from '$lib/validation/formSchema';
+	import { toggleId } from '$lib/validation/toggleId';
 	import { Eye, RotateCcw, Trash2 } from '@lucide/svelte';
 	import { fade } from 'svelte/transition';
+	import CheckboxGroupFieldset from './CheckboxGroupFieldset.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import FormField from './FormField.svelte';
 	import IncidentLocationFieldset from './IncidentLocationFieldset.svelte';
@@ -46,6 +51,8 @@
 		onReset: () => void;
 		/** Meldet jede Änderung der Fotoauswahl, damit der Aufrufer EXIF-Daten übernehmen kann. */
 		onPhotoToggled?: (photoId: string, selected: boolean) => void;
+		/** Ob die Karte aufgeklappt ist; der Aufrufer kann den Zustand mitführen. */
+		open?: boolean;
 	}
 
 	let {
@@ -62,10 +69,10 @@
 		recipientEmail,
 		onRemove,
 		onReset,
-		onPhotoToggled
+		onPhotoToggled,
+		open = $bindable(true)
 	}: Props = $props();
 
-	let open = $state(true);
 	let resetDialog = $state<HTMLDialogElement | undefined>(undefined);
 	let previewDialog = $state<HTMLDialogElement | undefined>(undefined);
 
@@ -83,10 +90,15 @@
 		else onReset();
 	};
 
-	/** Macht einen Foto-Blob als `src` verwendbar. */
-	const objectUrl = (blob: Blob) => URL.createObjectURL(blob);
-
 	const missingFieldMessages = $derived(Object.values(validateVehicle(vehicle, pool)));
+
+	const isPhotoSelectionFull = $derived(vehicle.photoIds.length >= maxPhotos);
+
+	/** Sobald das Limit erreicht ist und es noch abwählbare Alternativen gibt, sind Fotos gesperrt. */
+	const hasBlockedPhotos = $derived(
+		isPhotoSelectionFull && pool.some((photo) => !vehicle.photoIds.includes(photo.id))
+	);
+	const photoLimitHintId = $derived(`photo-limit-hint-${vehicle.id}`);
 
 	const isComplete = $derived(missingFieldMessages.length === 0);
 
@@ -109,9 +121,7 @@
 
 	/** Setzt oder entfernt eine Verstoßart in der Mehrfachauswahl. */
 	const toggleIncidentType = (id: string, checked: boolean) => {
-		vehicle.incidentTypeIds = checked
-			? [...vehicle.incidentTypeIds, id]
-			: vehicle.incidentTypeIds.filter((existing) => existing !== id);
+		vehicle.incidentTypeIds = toggleId(vehicle.incidentTypeIds, id, checked);
 	};
 
 	/**
@@ -161,7 +171,7 @@
 									{@const photo = pool.find((p) => p.id === photoId)}
 									{#if photo}
 										<img
-											src={objectUrl(photo.blob)}
+											{@attach blobSrc(photo.blob)}
 											alt="Beweisfoto {photoIndex + 1} von {vehicle.photoIds.length}"
 											width="56"
 											height="56"
@@ -198,16 +208,21 @@
 					<div class="mt-1 grid grid-cols-4 gap-2 sm:grid-cols-6 sm:gap-3">
 						{#each pool as photo (photo.id)}
 							{@const selected = vehicle.photoIds.includes(photo.id)}
+							{@const blocked = isPhotoSelectionFull && !selected}
 							<button
 								type="button"
 								onclick={() => togglePhoto(photo.id)}
 								class="relative aspect-square overflow-hidden rounded-control border border-border"
 								class:ring-2={selected}
 								class:ring-primary-500={selected}
+								class:opacity-40={blocked}
+								class:cursor-not-allowed={blocked}
 								aria-pressed={selected}
+								aria-disabled={blocked ? 'true' : undefined}
+								aria-describedby={blocked ? photoLimitHintId : undefined}
 							>
 								<img
-									src={objectUrl(photo.blob)}
+									{@attach blobSrc(photo.blob)}
 									alt="Foto {photo.fileName} auswählen"
 									width="96"
 									height="96"
@@ -224,6 +239,11 @@
 						{/each}
 					</div>
 				{/if}
+				{#if hasBlockedPhotos}
+					<p id={photoLimitHintId} class="mt-1 text-lg text-ink-muted">
+						Maximal {maxPhotos} Fotos pro Fahrzeug – zum Tauschen zuerst eins abwählen.
+					</p>
+				{/if}
 				{#if errors?.photoIds}<p role="alert" class="mt-1 text-lg text-error-fg">
 						{errors.photoIds}
 					</p>{/if}
@@ -233,11 +253,20 @@
 
 			<VehicleDetailsFieldset bind:vehicle {errors} />
 
-			<fieldset class="mt-3 rounded-control border border-border p-3">
+			<fieldset
+				id="incidentTypeIds-{vehicle.id}"
+				tabindex="-1"
+				aria-describedby={errors?.incidentTypeIds
+					? `incidentTypeIds-${vehicle.id}-hint incidentTypeIds-${vehicle.id}-error`
+					: `incidentTypeIds-${vehicle.id}-hint`}
+				class="mt-3 rounded-control border border-border p-3"
+			>
 				<legend class="px-1 text-lg font-medium text-ink">
 					Verstöße <span class="text-error-fg">*</span>
 				</legend>
-				<p class="text-base text-ink-muted">Art des Verstoßes (Mehrfachauswahl möglich)</p>
+				<p id="incidentTypeIds-{vehicle.id}-hint" class="text-base text-ink-muted">
+					Art des Verstoßes (Mehrfachauswahl möglich)
+				</p>
 				<div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
 					{#each incidentTypes as type (type.id)}
 						{@const Icon = INCIDENT_TYPE_ICONS[type.id]}
@@ -257,17 +286,68 @@
 						</label>
 					{/each}
 				</div>
-				{#if errors?.incidentTypeIds}<p role="alert" class="mt-1 text-lg text-error-fg">
+				{#if errors?.incidentTypeIds}<p
+						id="incidentTypeIds-{vehicle.id}-error"
+						role="alert"
+						class="mt-1 text-lg text-error-fg"
+					>
 						{errors.incidentTypeIds}
 					</p>{/if}
 			</fieldset>
 
+			<CheckboxGroupFieldset
+				legend="Ausmaß der Behinderung"
+				hint="Optional (Mehrfachauswahl möglich)"
+				options={IMPAIRMENT_OPTIONS}
+				bind:selectedIds={vehicle.impairmentIds}
+				idPrefix="impairmentIds-{vehicle.id}"
+				error={errors?.impairmentIds}
+			/>
+
+			<CheckboxGroupFieldset
+				legend="Gefährdete Personen"
+				hint="Optional (Mehrfachauswahl möglich)"
+				options={ENDANGERED_PERSON_OPTIONS}
+				bind:selectedIds={vehicle.endangeredPersonIds}
+				idPrefix="endangeredPersonIds-{vehicle.id}"
+				error={errors?.endangeredPersonIds}
+			/>
+
 			<div class="mt-3">
-				<FormField id="notes-{vehicle.id}" label="Weitere Angaben (optional)" wrapperClass="">
+				<FormField
+					id="endangeredPersonsNote-{vehicle.id}"
+					label="Weitere Angaben zu gefährdeten Personen (optional)"
+					wrapperClass=""
+					error={errors?.endangeredPersonsNote}
+				>
+					{#snippet control()}
+						<textarea
+							id="endangeredPersonsNote-{vehicle.id}"
+							name="endangeredPersonsNote-{vehicle.id}"
+							maxlength={MAX_FREE_TEXT_LENGTH}
+							{...ariaFieldProps(
+								`endangeredPersonsNote-${vehicle.id}`,
+								errors?.endangeredPersonsNote
+							)}
+							bind:value={vehicle.endangeredPersonsNote}
+							class={inputBase}></textarea>
+					{/snippet}
+				</FormField>
+			</div>
+
+			<div class="mt-3">
+				<FormField
+					id="notes-{vehicle.id}"
+					label="Weitere Angaben zum Vorfall (optional)"
+					wrapperClass=""
+					error={errors?.notes}
+				>
 					{#snippet control()}
 						<textarea
 							id="notes-{vehicle.id}"
 							name="notes-{vehicle.id}"
+							maxlength={MAX_FREE_TEXT_LENGTH}
+							{...ariaFieldProps(`notes-${vehicle.id}`, errors?.notes)}
 							bind:value={vehicle.notes}
 							class={inputBase}></textarea>
 					{/snippet}

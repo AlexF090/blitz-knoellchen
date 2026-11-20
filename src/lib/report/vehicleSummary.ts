@@ -1,4 +1,9 @@
 import type { IncidentType } from '$lib/config/cities';
+import {
+	ENDANGERED_PERSON_OPTIONS,
+	IMPAIRMENT_OPTIONS,
+	resolveImpactOptions
+} from '$lib/config/impactOptions';
 import { formatIsoDateDMY, formatTimeRange } from '$lib/format/germanDate';
 import { formatAddress } from '$lib/geocode/formatAddress';
 import type { VehicleEntry } from '$lib/validation/formSchema';
@@ -59,7 +64,20 @@ export const buildVehicleSummaryRows = (
 	push('Tatort', address);
 	push('Datum / Uhrzeit', dateTime);
 	push('Art des Verstoßes', incidentLabels);
-	// Auch bei includeEmpty nur mit Inhalt — kein „—"-Platzhalter für ein Freitext-Zusatzfeld.
+	// Optionale Zeilen erscheinen auch bei includeEmpty nur mit Inhalt, ohne „—"-Platzhalter.
+	const impairmentLabels = resolveImpactOptions(IMPAIRMENT_OPTIONS, vehicle.impairmentIds).map(
+		(option) => option.label
+	);
+	if (impairmentLabels.length > 0)
+		rows.push({ label: 'Ausmaß der Behinderung', value: impairmentLabels.join(', ') });
+	const endangeredPersonLabels = resolveImpactOptions(
+		ENDANGERED_PERSON_OPTIONS,
+		vehicle.endangeredPersonIds
+	).map((option) => option.label);
+	const endangeredPersons = [endangeredPersonLabels.join(', '), vehicle.endangeredPersonsNote]
+		.filter(Boolean)
+		.join(' – ');
+	if (endangeredPersons) rows.push({ label: 'Gefährdete Personen', value: endangeredPersons });
 	if (vehicle.notes) rows.push({ label: 'Weitere Angaben', value: vehicle.notes });
 
 	return rows;

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	HOUSE_NUMBER_SUFFIX_PATTERN,
 	isFormValid,
+	MAX_FREE_TEXT_LENGTH,
 	normalizeLicensePlate,
 	validateProfileFields,
 	validateReportForm,
@@ -31,6 +32,8 @@ const makeVehicle = (overrides: Partial<VehicleEntry> = {}, photoIds: string[]):
 	color: 'Rot',
 	incidentTypeIds: ['gehweg'],
 	notes: '',
+	impairmentIds: [],
+	endangeredPersonIds: [],
 	date: '2026-03-01',
 	time: '14:30',
 	timeMode: 'halteverstoss',
@@ -92,36 +95,13 @@ describe('validateReportForm', () => {
 		expect(isFormValid(errors)).toBe(false);
 	});
 
-	it('akzeptiert bis zu drei Fotos im Pool', () => {
-		const photos = [makePhoto(), makePhoto(), makePhoto()];
+	it('akzeptiert einen großen Pool, solange jedes Fahrzeug höchstens drei Fotos nutzt', () => {
+		const photos = Array.from({ length: 20 }, () => makePhoto());
 		const data = makeValidData();
 		const errors = validateReportForm({
 			...data,
 			photos,
-			vehicles: [makeVehicle({}, [photos[0].id])]
-		});
-		expect(isFormValid(errors)).toBe(true);
-	});
-
-	it('meldet mehr als drei Fotos im Pool bei nur einem Fahrzeug', () => {
-		const data = makeValidData();
-		const errors = validateReportForm({
-			...data,
-			photos: [makePhoto(), makePhoto(), makePhoto(), makePhoto()]
-		});
-		expect(errors.photos).toBeDefined();
-	});
-
-	it('erlaubt mehr als drei Fotos im Pool, wenn mehrere Fahrzeuge das rechtfertigen', () => {
-		const photos = [makePhoto(), makePhoto(), makePhoto(), makePhoto()];
-		const data = makeValidData();
-		const errors = validateReportForm({
-			...data,
-			photos,
-			vehicles: [
-				makeVehicle({ licensePlate: 'K-AA 1' }, [photos[0].id, photos[1].id]),
-				makeVehicle({ licensePlate: 'K-BB 2' }, [photos[2].id, photos[3].id])
-			]
+			vehicles: [makeVehicle({}, [photos[0].id, photos[1].id, photos[2].id])]
 		});
 		expect(isFormValid(errors)).toBe(true);
 	});
@@ -155,6 +135,28 @@ describe('validateReportForm', () => {
 		data.vehicles[0].incidentTypeIds = [];
 		const errors = validateReportForm(data);
 		expect(errors.vehicles?.[0].incidentTypeIds).toBeDefined();
+	});
+
+	it('akzeptiert bekannte Behinderungs- und Personen-ids sowie eine Notiz', () => {
+		const data = makeValidData();
+		data.vehicles[0].impairmentIds = ['gehweg-blockiert', 'sicht-verdeckt'];
+		data.vehicles[0].endangeredPersonIds = ['radfahrende'];
+		data.vehicles[0].endangeredPersonsNote = 'Schule in der Nähe';
+		expect(isFormValid(validateReportForm(data))).toBe(true);
+	});
+
+	it('meldet unbekannte Behinderungs-id', () => {
+		const data = makeValidData();
+		data.vehicles[0].impairmentIds = ['gehweg-blockiert', 'gibt-es-nicht'];
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].impairmentIds).toBe('Unbekannte Angabe zur Behinderung.');
+	});
+
+	it('meldet unbekannte Personengruppe', () => {
+		const data = makeValidData();
+		data.vehicles[0].endangeredPersonIds = ['gibt-es-nicht'];
+		const errors = validateReportForm(data);
+		expect(errors.vehicles?.[0].endangeredPersonIds).toBe('Unbekannte Personengruppe.');
 	});
 
 	it('meldet fehlende Foto-Zuordnung pro Fahrzeug', () => {
@@ -365,6 +367,52 @@ describe('validateVehicle: timeMode', () => {
 		expect(errors.time).toBe('Uhrzeit ist ungültig.');
 		expect(errors.endTime).toBeUndefined();
 	});
+
+	it.each(['parkverbot', 'schwerbehindert', 'kreuzung'])(
+		'verlangt bei „%s“ einen Parkverstoß statt eines Halteverstoßes',
+		(incidentTypeId) => {
+			const vehicle = makeVehicle({ incidentTypeIds: ['gehweg', incidentTypeId] }, []);
+			expect(validateVehicle(vehicle, []).timeMode).toContain('Bitte „Parkverstoß“');
+		}
+	);
+
+	it('nennt alle gewählten reinen Parkverstöße in der Meldung', () => {
+		const vehicle = makeVehicle({ incidentTypeIds: ['parkverbot', 'kreuzung'] }, []);
+		expect(validateVehicle(vehicle, []).timeMode).toBe(
+			'„Parken im Parkverbot“ und „Parken im Kreuzungsbereich“ sind nur als Parkverstoß anzeigbar: Bitte „Parkverstoß“ mit Zeitraum wählen.'
+		);
+	});
+
+	it('akzeptiert reine Parkverstöße mit Zeitraum', () => {
+		const vehicle = makeVehicle(
+			{
+				incidentTypeIds: ['parkverbot'],
+				timeMode: 'parkverstoss',
+				time: '14:00',
+				endTime: '14:10'
+			},
+			[]
+		);
+		expect(validateVehicle(vehicle, []).timeMode).toBeUndefined();
+	});
+
+	it('akzeptiert Halteverstöße bei Verstoßarten mit Halteverbot', () => {
+		const vehicle = makeVehicle({ incidentTypeIds: ['gehweg', 'halteverbot'] }, []);
+		expect(validateVehicle(vehicle, []).timeMode).toBeUndefined();
+	});
+});
+
+describe('validateVehicle: Freitexte', () => {
+	it.each(['notes', 'endangeredPersonsNote'] as const)(
+		'akzeptiert %s bis zur Höchstlänge und meldet längere Texte',
+		(field) => {
+			const atLimit = makeVehicle({ [field]: 'a'.repeat(MAX_FREE_TEXT_LENGTH) }, []);
+			expect(validateVehicle(atLimit, [])[field]).toBeUndefined();
+
+			const tooLong = makeVehicle({ [field]: 'a'.repeat(MAX_FREE_TEXT_LENGTH + 1) }, []);
+			expect(validateVehicle(tooLong, [])[field]).toBe('Höchstens 2000 Zeichen.');
+		}
+	);
 });
 
 describe('normalizeLicensePlate', () => {
