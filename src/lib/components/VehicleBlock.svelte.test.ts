@@ -463,6 +463,22 @@ describe('VehicleBlock', () => {
 			.toBeInTheDocument();
 	});
 
+	it('verknüpft Hinweis und Fehler der Verstoßart per aria-describedby mit der Gruppe', async () => {
+		const vehicle = $state(makeCompleteVehicle());
+		await render(VehicleBlock, {
+			...baseProps(),
+			vehicle,
+			errors: { incidentTypeIds: 'Mindestens eine Verstoßart ist erforderlich.' }
+		});
+
+		await expect
+			.element(page.getByRole('group', { name: /Verstöße/ }))
+			.toHaveAttribute(
+				'aria-describedby',
+				`incidentTypeIds-${vehicle.id}-hint incidentTypeIds-${vehicle.id}-error`
+			);
+	});
+
 	it('übernimmt eine per Autocomplete ausgewählte Adresse in die Tatort-Felder', async () => {
 		mockedFetchAddressSuggestions.mockResolvedValue({
 			suggestions: [

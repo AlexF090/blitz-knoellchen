@@ -48,8 +48,33 @@ describe('CheckboxGroupFieldset', () => {
 		await render(CheckboxGroupFieldset, { ...baseProps(), error: 'Unbekannte Angabe.' });
 
 		const group = page.getByRole('group', { name: 'Auswahl' });
-		await expect.element(group).toHaveAttribute('aria-describedby', 'testIds-vehicle-1-error');
+		await expect
+			.element(group)
+			.toHaveAttribute('aria-describedby', 'testIds-vehicle-1-hint testIds-vehicle-1-error');
 		await expect.element(page.getByRole('alert')).toHaveTextContent('Unbekannte Angabe.');
+	});
+
+	it('verknüpft den Hinweis per aria-describedby mit der Gruppe', async () => {
+		await render(CheckboxGroupFieldset, baseProps());
+
+		const group = page.getByRole('group', { name: 'Auswahl' });
+		await expect.element(group).toHaveAttribute('aria-describedby', 'testIds-vehicle-1-hint');
+	});
+
+	it('verknüpft Hinweis und Fehlermeldung gemeinsam mit der Gruppe', async () => {
+		await render(CheckboxGroupFieldset, { ...baseProps(), error: 'Unbekannte Angabe.' });
+
+		const group = page.getByRole('group', { name: 'Auswahl' });
+		await expect
+			.element(group)
+			.toHaveAttribute('aria-describedby', 'testIds-vehicle-1-hint testIds-vehicle-1-error');
+	});
+
+	it('setzt ohne Hinweis und Fehler kein aria-describedby', async () => {
+		await render(CheckboxGroupFieldset, { ...baseProps(), hint: undefined });
+
+		const group = page.getByRole('group', { name: 'Auswahl' });
+		await expect.element(group).not.toHaveAttribute('aria-describedby');
 	});
 
 	it('ist über die Fieldset-Id fokussierbar', async () => {

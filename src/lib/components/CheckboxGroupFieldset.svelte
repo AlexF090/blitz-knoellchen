@@ -18,16 +18,22 @@
 	}
 
 	let { legend, hint, options, selectedIds = $bindable(), idPrefix, error }: Props = $props();
+
+	const describedBy = $derived(
+		[hint ? `${idPrefix}-hint` : undefined, error ? `${idPrefix}-error` : undefined]
+			.filter(Boolean)
+			.join(' ') || undefined
+	);
 </script>
 
 <fieldset
 	id={idPrefix}
 	tabindex="-1"
-	aria-describedby={error ? `${idPrefix}-error` : undefined}
+	aria-describedby={describedBy}
 	class="mt-3 rounded-control border border-border p-3"
 >
 	<legend class="px-1 text-lg font-medium text-ink">{legend}</legend>
-	{#if hint}<p class="text-base text-ink-muted">{hint}</p>{/if}
+	{#if hint}<p id="{idPrefix}-hint" class="text-base text-ink-muted">{hint}</p>{/if}
 	<div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
 		{#each options as option (option.id)}
 			<label class="flex cursor-pointer items-center gap-2 py-2.5 text-lg text-ink">
