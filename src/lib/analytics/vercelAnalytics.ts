@@ -50,15 +50,15 @@ export type PageviewTracker = (route: string | null, path: string) => void;
 
 /**
  * Bindet Analytics ein, falls `enabled`, und liefert die Funktion für Seitenaufrufe. Ausgeschaltet
- * lädt sie nichts und meldet nichts.
+ * lädt sie nichts und meldet nichts. Ohne `host` gilt `window`.
  */
-export const createVercelAnalytics = (
-	enabled: boolean,
-	host: AnalyticsHost = window
-): PageviewTracker => {
+// `window` erst nach der Prüfung lesen: Beim serverseitigen Rendern ruft das Layout die Funktion
+// mit `enabled: false` auf, und dort gibt es kein `window`.
+export const createVercelAnalytics = (enabled: boolean, host?: AnalyticsHost): PageviewTracker => {
 	if (!enabled) return () => {};
-	injectVercelAnalytics(host);
+	const analyticsHost = host ?? window;
+	injectVercelAnalytics(analyticsHost);
 	return (route, path) => {
-		if (route) trackPageview(route, path, host);
+		if (route) trackPageview(route, path, analyticsHost);
 	};
 };
