@@ -9,7 +9,8 @@
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
 	import { fetchAddress } from '$lib/geocode/client';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
-	import { addEntry, clearDraft, getDraft, saveDraft } from '$lib/history/db';
+	import { addEntry, clearDraft, getDraft, saveDraft, type DraftFormData } from '$lib/history/db';
+	import { createDraftAutosave } from '$lib/history/draftAutosave';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { decideAutoAssignment } from '$lib/photo/autoAssign';
 	import { createPhotoEntry } from '$lib/photo/createPhotoEntry';
@@ -66,6 +67,8 @@
 	const photoProcessing = $derived(photoProgress !== null);
 	let photoProcessingError = $state<string | null>(null);
 	let vehicleGeocodeWarnings = $state<Record<string, string>>({});
+	/** Fahrzeug-id -> `true`, wenn die Karte zugeklappt ist; fehlende Einträge gelten als offen. */
+	let collapsedVehicles = $state<Record<string, boolean>>({});
 	let sendError = $state<string | null>(null);
 	let sendResults = $state<VehicleSendResult[]>([]);
 	let submitting = $state(false);
@@ -80,6 +83,7 @@
 	// und schaltet dann auf den Lese-Modus um.
 	$effect(() => {
 		(async () => {
+			let restoredScrollY = 0;
 			try {
 				const [, draft] = await Promise.all([profileStore.load(), getDraft()]);
 				const profile = profileStore.value;
@@ -97,6 +101,11 @@
 				if (draft) {
 					form.vehicles = draft.vehicles;
 					form.photos = draft.photos;
+					collapsedVehicles = Object.fromEntries(
+						draft.ui.collapsedVehicleIds.map((vehicleId) => [vehicleId, true])
+					);
+					vehicleGeocodeWarnings = draft.ui.geocodeWarnings;
+					restoredScrollY = draft.ui.scrollY;
 				}
 			} catch (error) {
 				// Ein defekter/inkompatibler Alt-Entwurf darf das Formular nie dauerhaft im
@@ -105,27 +114,102 @@
 			} finally {
 				formReady = true;
 			}
+			// Erst nach dem Rendern der Karten ist die Seite wieder so hoch wie beim Speichern.
+			await tick();
+			if (restoredScrollY > 0) window.scrollTo({ top: restoredScrollY, behavior: 'instant' });
 		})();
 	});
+
+	/**
+	 * Baut den zu speichernden Entwurf aus dem aktuellen Formularstand; `null`, wenn das Formular
+	 * leer ist und der Entwurf damit entfällt.
+	 */
+	const buildDraftSnapshot = (): DraftFormData | null => {
+		if (form.vehicles.length === 0 && form.photos.length === 0) return null;
+		// $state-Proxys sind nicht structured-clone-fähig (IndexedDB wirft sonst "could not be
+		// cloned") — daher als reine Snapshots speichern.
+		return {
+			vehicles: $state.snapshot(form.vehicles),
+			photos: $state.snapshot(form.photos),
+			ui: {
+				collapsedVehicleIds: form.vehicles
+					.map((vehicle) => vehicle.id)
+					.filter((vehicleId) => collapsedVehicles[vehicleId]),
+				// Beim Speichern gelesen statt per Scroll-Listener mitgeführt: Der Wert ist nur beim
+				// Schreiben nötig.
+				scrollY: window.scrollY,
+				geocodeWarnings: $state.snapshot(vehicleGeocodeWarnings)
+			}
+		};
+	};
+
+	const autosave = createDraftAutosave({
+		delayMs: 800,
+		write: async (snapshot) => {
+			if (snapshot) await saveDraft(snapshot);
+			else await clearDraft();
+		}
+	});
+
+	// Vor dem Laden des Entwurfs darf nichts geschrieben werden, sonst überschriebe der leere
+	// Ausgangszustand den gespeicherten Entwurf.
+	$effect(() => autosave.setEnabled(formReady));
 
 	// Debounced Autosave des Entwurfs in die IndexedDB — überlebt ein Schließen von Tab/PWA
 	// mitten im Ausfüllen.
 	$effect(() => {
 		if (!formReady) return;
-		JSON.stringify(form.vehicles); // erzwingt Tracking aller verschachtelten Fahrzeug-Felder
+		// Erzwingt das Tracking aller verschachtelten Felder; der Snapshot selbst entsteht erst
+		// beim Schreiben und enthält damit den jüngsten Stand.
+		JSON.stringify(form.vehicles);
+		JSON.stringify(collapsedVehicles);
+		JSON.stringify(vehicleGeocodeWarnings);
 		void form.photos.length;
 
-		const timer = setTimeout(() => {
-			if (form.vehicles.length === 0 && form.photos.length === 0) {
-				clearDraft();
-			} else {
-				// $state-Proxys sind nicht structured-clone-fähig (IndexedDB wirft sonst
-				// "could not be cloned") — daher als reine Snapshots speichern.
-				saveDraft($state.snapshot(form.vehicles), $state.snapshot(form.photos));
-			}
-		}, 800);
-		return () => clearTimeout(timer);
+		autosave.schedule(buildDraftSnapshot);
 	});
+
+	/** Hat der Nutzer „Deine Angaben“ geändert, ohne dass sie schon im Profil gespeichert sind? */
+	const hasUnsavedProfileChanges = () => {
+		const stored = profileStore.value;
+		return (
+			form.firstName !== stored.firstName ||
+			form.lastName !== stored.lastName ||
+			form.addressStreet !== stored.addressStreet ||
+			form.addressPostcode !== stored.addressPostcode ||
+			form.addressCity !== stored.addressCity ||
+			form.email !== stored.email ||
+			form.phone !== stored.phone
+		);
+	};
+
+	/** Sichert Entwurf und angefangene Profileingaben, bevor die Seite in den Hintergrund geht. */
+	const persistBeforeLeaving = () => {
+		void autosave.flush();
+		// Profilfelder speichern sonst erst beim Verlassen eines Feldes; ein Tab-Wechsel mitten in
+		// der Eingabe löst kein Blur aus.
+		if (isEditingProfile && hasUnsavedProfileChanges()) {
+			saveProfileFields().catch((error) =>
+				console.error('Fehler beim Speichern des Profils:', error)
+			);
+		}
+	};
+
+	$effect(() => {
+		if (!formReady) return;
+		const onVisibilityChange = () => {
+			if (document.visibilityState === 'hidden') persistBeforeLeaving();
+		};
+		window.addEventListener('pagehide', persistBeforeLeaving);
+		document.addEventListener('visibilitychange', onVisibilityChange);
+		return () => {
+			window.removeEventListener('pagehide', persistBeforeLeaving);
+			document.removeEventListener('visibilitychange', onVisibilityChange);
+		};
+	});
+
+	// Beim Verlassen der Seite (z.B. Wechsel zur Historie) bleibt die letzte Eingabe erhalten.
+	$effect(() => () => void autosave.flush());
 
 	/** Übernimmt die aktuellen „Deine Angaben“-Felder in das dauerhaft gespeicherte Profil. */
 	const saveProfileFields = async () => {
@@ -261,12 +345,21 @@
 			?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	};
 
+	/** Verwirft die Zuklapp-Zustände von Karten, die es nicht mehr gibt. */
+	const pruneCollapsedVehicles = () => {
+		const vehicleIds = new Set(form.vehicles.map((vehicle) => vehicle.id));
+		collapsedVehicles = Object.fromEntries(
+			Object.entries(collapsedVehicles).filter(([vehicleId]) => vehicleIds.has(vehicleId))
+		);
+	};
+
 	/** Entfernt eine Fahrzeug-Karte; die letzte verbleibende bleibt bestehen. */
 	const removeVehicle = (id: string) => {
 		if (form.vehicles.length <= 1) return;
 		const removedIndex = form.vehicles.findIndex((vehicle) => vehicle.id === id);
 		form.vehicles = form.vehicles.filter((vehicle) => vehicle.id !== id);
 		vehicleGeocodeWarnings = pruneWarnings(vehicleGeocodeWarnings, form.vehicles);
+		pruneCollapsedVehicles();
 		// errors.vehicles hängt an der Fahrzeug-POSITION, nicht an der id (s. VehicleBlock
 		// errors={errors.vehicles?.[index]}) — ohne Neuindizierung verschieben sich die Fehler
 		// auf die verbleibenden Fahrzeuge.
@@ -285,6 +378,7 @@
 			vehicle.id === id ? createEmptyVehicle() : vehicle
 		);
 		vehicleGeocodeWarnings = pruneWarnings(vehicleGeocodeWarnings, form.vehicles);
+		pruneCollapsedVehicles();
 		// Das Fahrzeug an dieser Position ist frisch und noch nicht neu validiert — der alte
 		// Fehler-Eintrag an derselben Position würde sonst fälschlich weiter angezeigt.
 		if (resetIndex !== -1 && errors.vehicles) {
@@ -302,6 +396,7 @@
 		form = createEmptyForm();
 		errors = {};
 		vehicleGeocodeWarnings = {};
+		collapsedVehicles = {};
 		sendError = null;
 		sendResults = [];
 		photoProcessingError = null;
@@ -309,6 +404,9 @@
 		submitting = false;
 		isEditingProfile = true;
 		try {
+			// Ein ausstehender Autosave würde den gelöschten Entwurf sonst wieder anlegen.
+			autosave.cancel();
+			await autosave.whenIdle();
 			await clearDraft();
 		} catch (error) {
 			console.error('Fehler beim Löschen des Entwurfs:', error);
@@ -408,10 +506,13 @@
 					photos: [],
 					vehicles: []
 				};
-				await clearDraft();
-			} else {
-				await saveDraft($state.snapshot(form.vehicles), $state.snapshot(form.photos));
 			}
+			pruneCollapsedVehicles();
+			vehicleGeocodeWarnings = pruneWarnings(vehicleGeocodeWarnings, form.vehicles);
+			// Ersetzt einen ausstehenden Autosave und schreibt sofort: Ein leeres Formular löscht
+			// den Entwurf, sonst bleibt der Rest für den erneuten Versuch gespeichert.
+			autosave.schedule(buildDraftSnapshot);
+			await autosave.flush();
 		} finally {
 			submitting = false;
 		}
@@ -502,6 +603,10 @@
 							}}
 							{city}
 							{recipientEmail}
+							bind:open={
+								() => !collapsedVehicles[vehicle.id],
+								(isOpen) => (collapsedVehicles[vehicle.id] = !isOpen)
+							}
 							onRemove={() => removeVehicle(vehicle.id)}
 							onReset={() => resetVehicle(vehicle.id)}
 							onPhotoToggled={(photoId, selected) => {

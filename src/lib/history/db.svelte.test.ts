@@ -12,6 +12,7 @@ import {
 	saveDraft,
 	clearDraft,
 	DRAFT_MAX_AGE_MS,
+	type DraftUiState,
 	type HistoryEntry,
 	type UserProfile
 } from './db';
@@ -25,6 +26,14 @@ const writeRawDraft = async (value: unknown): Promise<void> => {
 	await db.put('draft', { id: 'default', ...(value as object) });
 	db.close();
 };
+
+const emptyUi: DraftUiState = { collapsedVehicleIds: [], scrollY: 0, geocodeWarnings: {} };
+
+const saveDraftOf = (
+	vehicles: VehicleEntry[],
+	photos: PhotoEntry[],
+	ui: DraftUiState = emptyUi
+): Promise<void> => saveDraft({ vehicles, photos, ui });
 
 const makeVehicle = (overrides: Partial<VehicleEntry> = {}): VehicleEntry => ({
 	id: crypto.randomUUID(),
@@ -238,16 +247,51 @@ describe('draft', () => {
 	it('speichert und liest einen Entwurf', async () => {
 		const vehicle = makeVehicle();
 		const photo = makePhoto();
-		await saveDraft([vehicle], [photo]);
+		await saveDraftOf([vehicle], [photo]);
 
 		const draft = await getDraft();
 		expect(draft?.vehicles).toEqual([vehicle]);
 		expect(draft?.photos.map((p) => p.id)).toEqual([photo.id]);
 	});
 
+	it('speichert Oberflächen-Zustand und Speicherzeitpunkt und liest sie wieder', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(1_000_000);
+		const vehicle = makeVehicle();
+		const ui: DraftUiState = {
+			collapsedVehicleIds: [vehicle.id],
+			scrollY: 420,
+			geocodeWarnings: { [vehicle.id]: 'Kein GPS' }
+		};
+		await saveDraftOf([vehicle], [], ui);
+
+		const draft = await getDraft();
+		expect(draft?.ui).toEqual(ui);
+		expect(draft?.savedAt).toBe(1_000_000);
+	});
+
+	it('liefert Standardwerte für den Oberflächen-Zustand eines Entwurfs ohne ui', async () => {
+		await writeRawDraft({ vehicles: [makeVehicle()], photos: [], savedAt: Date.now() });
+
+		expect((await getDraft())?.ui).toEqual(emptyUi);
+	});
+
+	it('hält einen Entwurf sechs Tage lang und verwirft ihn nach acht Tagen', async () => {
+		const day = 24 * 60 * 60 * 1000;
+		vi.useFakeTimers();
+		vi.setSystemTime(0);
+		await saveDraftOf([makeVehicle()], []);
+
+		vi.setSystemTime(6 * day);
+		expect(await getDraft()).toBeDefined();
+
+		vi.setSystemTime(8 * day);
+		expect(await getDraft()).toBeUndefined();
+	});
+
 	it('überschreibt einen bestehenden Entwurf beim erneuten Speichern', async () => {
-		await saveDraft([makeVehicle({ licensePlate: 'K-AA 1' })], []);
-		await saveDraft([makeVehicle({ licensePlate: 'K-BB 2' })], []);
+		await saveDraftOf([makeVehicle({ licensePlate: 'K-AA 1' })], []);
+		await saveDraftOf([makeVehicle({ licensePlate: 'K-BB 2' })], []);
 
 		const draft = await getDraft();
 		expect(draft?.vehicles).toHaveLength(1);
@@ -262,7 +306,7 @@ describe('draft', () => {
 	it('verwirft einen abgelaufenen Entwurf und löscht ihn', async () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(0);
-		await saveDraft([makeVehicle()], []);
+		await saveDraftOf([makeVehicle()], []);
 
 		vi.setSystemTime(DRAFT_MAX_AGE_MS + 1);
 		expect(await getDraft()).toBeUndefined();
@@ -272,7 +316,7 @@ describe('draft', () => {
 	});
 
 	it('löscht einen Entwurf explizit', async () => {
-		await saveDraft([makeVehicle()], []);
+		await saveDraftOf([makeVehicle()], []);
 		await clearDraft();
 		expect(await getDraft()).toBeUndefined();
 	});
@@ -365,7 +409,7 @@ describe('draft', () => {
 
 		it('speichert die Blobs im Foto-Store und nicht im Entwurfsdatensatz', async () => {
 			const photo = makePhoto();
-			await saveDraft([makeVehicle()], [photo]);
+			await saveDraftOf([makeVehicle()], [photo]);
 
 			const db = await openDB('blitz-knoellchen');
 			const record = await db.get('draft', 'default');
@@ -377,10 +421,10 @@ describe('draft', () => {
 
 		it('schreibt den Blob eines bereits gespeicherten Fotos nicht erneut', async () => {
 			const photo = makePhoto({ blob: new Blob(['original'], { type: 'image/jpeg' }) });
-			await saveDraft([makeVehicle()], [photo]);
+			await saveDraftOf([makeVehicle()], [photo]);
 
 			// Gleiche id, anderer Inhalt: Würde der Blob neu geschrieben, läge danach der neue vor.
-			await saveDraft([makeVehicle()], [{ ...photo, blob: new Blob(['ersatz']) }]);
+			await saveDraftOf([makeVehicle()], [{ ...photo, blob: new Blob(['ersatz']) }]);
 
 			const [stored] = await readPhotoBlobs();
 			expect(await stored.blob.text()).toBe('original');
@@ -388,8 +432,8 @@ describe('draft', () => {
 
 		it('aktualisiert die Metadaten eines bereits gespeicherten Fotos', async () => {
 			const photo = makePhoto();
-			await saveDraft([makeVehicle()], [photo]);
-			await saveDraft([makeVehicle()], [{ ...photo, date: '2026-09-11' }]);
+			await saveDraftOf([makeVehicle()], [photo]);
+			await saveDraftOf([makeVehicle()], [{ ...photo, date: '2026-09-11' }]);
 
 			expect((await getDraft())?.photos[0].date).toBe('2026-09-11');
 		});
@@ -397,14 +441,14 @@ describe('draft', () => {
 		it('entfernt ein nicht mehr vorhandenes Foto aus dem Foto-Store', async () => {
 			const kept = makePhoto();
 			const removed = makePhoto();
-			await saveDraft([makeVehicle()], [kept, removed]);
-			await saveDraft([makeVehicle()], [kept]);
+			await saveDraftOf([makeVehicle()], [kept, removed]);
+			await saveDraftOf([makeVehicle()], [kept]);
 
 			expect((await readPhotoBlobs()).map((entry) => entry.id)).toEqual([kept.id]);
 		});
 
 		it('leert beim Löschen des Entwurfs beide Stores', async () => {
-			await saveDraft([makeVehicle()], [makePhoto()]);
+			await saveDraftOf([makeVehicle()], [makePhoto()]);
 			await clearDraft();
 
 			const db = await openDB('blitz-knoellchen');
@@ -415,7 +459,7 @@ describe('draft', () => {
 
 		it('verwirft einen Entwurf, dessen Foto-Blob im Store fehlt, samt Fotos', async () => {
 			const photo = makePhoto();
-			await saveDraft([makeVehicle()], [photo]);
+			await saveDraftOf([makeVehicle()], [photo]);
 			const db = await openDB('blitz-knoellchen');
 			await db.delete('draftPhotos', photo.id);
 			db.close();
@@ -425,7 +469,7 @@ describe('draft', () => {
 		});
 
 		it('räumt beim Verwerfen eines ungültigen Entwurfs den Foto-Store auf', async () => {
-			await saveDraft([makeVehicle()], [makePhoto()]);
+			await saveDraftOf([makeVehicle()], [makePhoto()]);
 			await writeRawDraft({ vehicles: 'nicht-array', photos: [], savedAt: Date.now() });
 
 			expect(await getDraft()).toBeUndefined();

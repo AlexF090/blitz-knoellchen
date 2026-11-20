@@ -50,6 +50,8 @@
 		onReset: () => void;
 		/** Meldet jede Änderung der Fotoauswahl, damit der Aufrufer EXIF-Daten übernehmen kann. */
 		onPhotoToggled?: (photoId: string, selected: boolean) => void;
+		/** Ob die Karte aufgeklappt ist; der Aufrufer kann den Zustand mitführen. */
+		open?: boolean;
 	}
 
 	let {
@@ -66,10 +68,10 @@
 		recipientEmail,
 		onRemove,
 		onReset,
-		onPhotoToggled
+		onPhotoToggled,
+		open = $bindable(true)
 	}: Props = $props();
 
-	let open = $state(true);
 	let resetDialog = $state<HTMLDialogElement | undefined>(undefined);
 	let previewDialog = $state<HTMLDialogElement | undefined>(undefined);
 

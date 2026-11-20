@@ -74,6 +74,8 @@ describe('parseStoredDraft', () => {
 	it('gibt die internen Felder des Stores nicht weiter', () => {
 		expect(Object.keys(parseStoredDraft(makeDraft(), NOW, MAX_AGE) ?? {}).sort()).toEqual([
 			'photos',
+			'savedAt',
+			'ui',
 			'vehicles'
 		]);
 	});
@@ -116,6 +118,70 @@ describe('parseStoredDraft', () => {
 		expect(
 			parseStoredDraft(makeDraft({ savedAt: NOW - MAX_AGE - 1 }), NOW, MAX_AGE)
 		).toBeUndefined();
+	});
+});
+
+describe('parseStoredDraft: ui', () => {
+	const emptyUi = { collapsedVehicleIds: [], scrollY: 0, geocodeWarnings: {} };
+	const parseUi = (ui: unknown) => parseStoredDraft(makeDraft({ ui }), NOW, MAX_AGE)?.ui;
+
+	it('nutzt Standardwerte für einen Entwurf ohne ui', () => {
+		expect(parseStoredDraft(makeDraft(), NOW, MAX_AGE)?.ui).toEqual(emptyUi);
+	});
+
+	it.each([null, 'text', 42, []])('nutzt Standardwerte für das ungültige ui %j', (ui) => {
+		expect(parseUi(ui)).toEqual(emptyUi);
+	});
+
+	it('übernimmt gültigen Oberflächen-Zustand und gibt den Speicherzeitpunkt weiter', () => {
+		const ui = {
+			collapsedVehicleIds: ['v1'],
+			scrollY: 350.5,
+			geocodeWarnings: { v1: 'Kein GPS' }
+		};
+		const draft = parseStoredDraft(makeDraft({ ui }), NOW, MAX_AGE);
+		expect(draft?.ui).toEqual(ui);
+		expect(draft?.savedAt).toBe(NOW);
+	});
+
+	it('filtert zugeklappte ids auf vorhandene Fahrzeuge und entfernt Doppelte und Nicht-Strings', () => {
+		expect(parseUi({ collapsedVehicleIds: ['v1', 'v1', 'weg', 7] })?.collapsedVehicleIds).toEqual([
+			'v1'
+		]);
+	});
+
+	it('ignoriert collapsedVehicleIds, wenn es kein Array ist', () => {
+		expect(parseUi({ collapsedVehicleIds: 'v1' })?.collapsedVehicleIds).toEqual([]);
+	});
+
+	it.each([-5, Number.NaN, Number.POSITIVE_INFINITY, '100', null])(
+		'setzt den ungültigen scrollY %j auf 0',
+		(scrollY) => {
+			expect(parseUi({ scrollY })?.scrollY).toBe(0);
+		}
+	);
+
+	it('behält nur Hinweise zu vorhandenen Fahrzeugen mit Text', () => {
+		expect(
+			parseUi({ geocodeWarnings: { v1: 'Hinweis', weg: 'Hinweis', v2: 5 } })?.geocodeWarnings
+		).toEqual({ v1: 'Hinweis' });
+	});
+
+	it('ignoriert geocodeWarnings, wenn es kein Objekt ist', () => {
+		expect(parseUi({ geocodeWarnings: 'x' })?.geocodeWarnings).toEqual({});
+	});
+});
+
+describe('parseStoredDraft: Altersgrenze von sieben Tagen', () => {
+	const day = 24 * 60 * 60 * 1000;
+	const sevenDays = 7 * day;
+
+	it('lädt einen sechs Tage alten Entwurf', () => {
+		expect(parseStoredDraft(makeDraft({ savedAt: NOW - 6 * day }), NOW, sevenDays)).toBeDefined();
+	});
+
+	it('verwirft einen acht Tage alten Entwurf', () => {
+		expect(parseStoredDraft(makeDraft({ savedAt: NOW - 8 * day }), NOW, sevenDays)).toBeUndefined();
 	});
 });
 

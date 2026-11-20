@@ -511,4 +511,59 @@ describe('VehicleBlock', () => {
 		await expect.element(page.getByRole('button', { name: 'Fertig' })).toBeInTheDocument();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 	});
+	describe('open (bindbar)', () => {
+		it('ist ohne Vorgabe aufgeklappt', async () => {
+			const vehicle = $state(makeCompleteVehicle());
+			await render(VehicleBlock, { ...baseProps(), vehicle });
+
+			await expect.element(page.getByRole('button', { name: 'Fertig' })).toBeInTheDocument();
+		});
+
+		it('startet zugeklappt, wenn open=false übergeben wird', async () => {
+			const vehicle = $state(makeCompleteVehicle());
+			await render(VehicleBlock, { ...baseProps(), vehicle, open: false });
+
+			await expect.element(page.getByRole('button', { name: 'Bearbeiten' })).toBeInTheDocument();
+		});
+
+		it('meldet Zu- und Aufklappen an den gebundenen Wert', async () => {
+			const vehicle = $state(makeCompleteVehicle());
+			let isOpen = $state(true);
+			const readOpen = () => isOpen;
+			await render(VehicleBlock, {
+				...baseProps(),
+				vehicle,
+				get open() {
+					return isOpen;
+				},
+				set open(value: boolean) {
+					isOpen = value;
+				}
+			});
+
+			await userEvent.click(page.getByRole('button', { name: 'Fertig' }));
+			expect(readOpen()).toBe(false);
+
+			await userEvent.click(page.getByRole('button', { name: 'Bearbeiten' }));
+			expect(readOpen()).toBe(true);
+		});
+
+		it('klappt eine zugeklappte, aber unvollständige Karte wieder auf und meldet es', async () => {
+			const vehicle = $state(makeCompleteVehicle({ licensePlate: '' }));
+			let isOpen = $state(false);
+			const readOpen = () => isOpen;
+			await render(VehicleBlock, {
+				...baseProps(),
+				vehicle,
+				get open() {
+					return isOpen;
+				},
+				set open(value: boolean) {
+					isOpen = value;
+				}
+			});
+
+			await expect.poll(readOpen).toBe(true);
+		});
+	});
 });

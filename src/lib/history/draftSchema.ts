@@ -1,6 +1,6 @@
 import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
 import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '$lib/config/impactOptions';
-import type { DraftFormData } from './db';
+import type { DraftUiState, LoadedDraft } from './db';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === 'object' && value !== null;
@@ -38,6 +38,34 @@ const isValidPhoto = (value: unknown): value is PhotoEntry => {
 };
 
 /**
+ * Normalisiert die gespeicherte Oberflächen-Ansicht. Fehlende oder ungültige Teile ergeben
+ * Standardwerte; Einträge zu nicht (mehr) vorhandenen Fahrzeugen fallen weg.
+ */
+const parseUiState = (value: unknown, vehicles: VehicleEntry[]): DraftUiState => {
+	const ui = isRecord(value) ? value : {};
+	const vehicleIds = new Set(vehicles.map((vehicle) => vehicle.id));
+
+	const collapsedVehicleIds = Array.isArray(ui.collapsedVehicleIds)
+		? [...new Set(ui.collapsedVehicleIds)].filter(
+				(id): id is string => typeof id === 'string' && vehicleIds.has(id)
+			)
+		: [];
+	const scrollY =
+		typeof ui.scrollY === 'number' && Number.isFinite(ui.scrollY) && ui.scrollY >= 0
+			? ui.scrollY
+			: 0;
+	const geocodeWarnings: Record<string, string> = {};
+	if (isRecord(ui.geocodeWarnings)) {
+		for (const [vehicleId, warning] of Object.entries(ui.geocodeWarnings)) {
+			if (vehicleIds.has(vehicleId) && typeof warning === 'string') {
+				geocodeWarnings[vehicleId] = warning;
+			}
+		}
+	}
+	return { collapsedVehicleIds, scrollY, geocodeWarnings };
+};
+
+/**
  * Prüft einen aus IndexedDB gelesenen Rohwert und liefert den normalisierten Entwurf.
  * Ungültige oder zu alte Entwürfe ergeben `undefined`.
  */
@@ -45,7 +73,7 @@ export const parseStoredDraft = (
 	raw: unknown,
 	now: number,
 	maxAgeMs: number
-): DraftFormData | undefined => {
+): LoadedDraft | undefined => {
 	if (!isRecord(raw)) return undefined;
 	const { savedAt, vehicles, photos } = raw;
 
@@ -57,15 +85,19 @@ export const parseStoredDraft = (
 	if (!Array.isArray(photos) || !photos.every(isValidPhoto)) return undefined;
 	if (now - savedAt > maxAgeMs) return undefined;
 
+	const normalizedVehicles = vehicles.map((vehicle) => ({
+		...vehicle,
+		impairmentIds: knownIds(vehicle.impairmentIds, IMPAIRMENT_OPTIONS),
+		endangeredPersonIds: knownIds(vehicle.endangeredPersonIds, ENDANGERED_PERSON_OPTIONS),
+		endangeredPersonsNote:
+			typeof vehicle.endangeredPersonsNote === 'string' ? vehicle.endangeredPersonsNote : ''
+	}));
+
 	return {
-		vehicles: vehicles.map((vehicle) => ({
-			...vehicle,
-			impairmentIds: knownIds(vehicle.impairmentIds, IMPAIRMENT_OPTIONS),
-			endangeredPersonIds: knownIds(vehicle.endangeredPersonIds, ENDANGERED_PERSON_OPTIONS),
-			endangeredPersonsNote:
-				typeof vehicle.endangeredPersonsNote === 'string' ? vehicle.endangeredPersonsNote : ''
-		})),
-		photos
+		vehicles: normalizedVehicles,
+		photos,
+		ui: parseUiState(raw.ui, normalizedVehicles),
+		savedAt
 	};
 };
 

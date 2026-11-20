@@ -39,10 +39,26 @@ interface StoredUserProfile extends UserProfile {
 	id: string;
 }
 
+/** Oberflächen-Zustand des Formulars, den ein fortgesetzter Entwurf wiederherstellt. */
+export interface DraftUiState {
+	/** Ids der zugeklappten Fahrzeug-Karten. */
+	collapsedVehicleIds: string[];
+	/** Vertikale Scrollposition der Seite in Pixeln. */
+	scrollY: number;
+	/** Hinweise zur Adressauflösung je Fahrzeug-id. */
+	geocodeWarnings: Record<string, string>;
+}
+
 /** Der zwischengespeicherte, noch nicht abgesendete Formularstand. */
 export interface DraftFormData {
 	vehicles: VehicleEntry[];
 	photos: PhotoEntry[];
+	ui: DraftUiState;
+}
+
+/** Ein gelesener Entwurf samt dem Zeitpunkt (Epoch-Millisekunden), zu dem er gespeichert wurde. */
+export interface LoadedDraft extends DraftFormData {
+	savedAt: number;
 }
 
 /** Foto-Metadaten im Entwurfsdatensatz; der Blob liegt separat im Store `draftPhotos`. */
@@ -52,6 +68,7 @@ interface StoredDraft {
 	id: string;
 	vehicles: VehicleEntry[];
 	photos: StoredDraftPhoto[];
+	ui: DraftUiState;
 	savedAt: number;
 }
 
@@ -90,8 +107,8 @@ const DRAFT_KEY = 'default';
 
 /** Höchstalter eines Entwurfs; ältere werden beim nächsten Laden verworfen. */
 // Ein nie abgesendeter Entwurf soll nicht unbegrenzt als Datenschutz-Altlast in der IndexedDB
-// liegen bleiben.
-export const DRAFT_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+// liegen bleiben; sieben Tage reichen, um die Anzeige später in Ruhe fortzusetzen.
+export const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 let dbPromise: Promise<IDBPDatabase<BlitzKnoellchenDB>> | undefined;
 
@@ -186,7 +203,7 @@ export const saveProfile = async (profile: UserProfile): Promise<void> => {
  * Liest den zwischengespeicherten Entwurf. Ein ungültiger oder zu alter Entwurf wird gelöscht
  * und als `undefined` gemeldet.
  */
-export const getDraft = async (): Promise<DraftFormData | undefined> => {
+export const getDraft = async (): Promise<LoadedDraft | undefined> => {
 	const db = await getDb();
 	const transaction = db.transaction([DRAFT_STORE_NAME, DRAFT_PHOTO_STORE_NAME], 'readwrite');
 	const stored = await transaction.objectStore(DRAFT_STORE_NAME).get(DRAFT_KEY);
@@ -210,7 +227,7 @@ export const getDraft = async (): Promise<DraftFormData | undefined> => {
  * Fotos liegen in einem eigenen Store: Der Autosave schreibt nur Metadaten neu und legt die
  * Blobs bislang unbekannter Fotos an.
  */
-export const saveDraft = async (vehicles: VehicleEntry[], photos: PhotoEntry[]): Promise<void> => {
+export const saveDraft = async ({ vehicles, photos, ui }: DraftFormData): Promise<void> => {
 	const db = await getDb();
 	const transaction = db.transaction([DRAFT_STORE_NAME, DRAFT_PHOTO_STORE_NAME], 'readwrite');
 	const photoStore = transaction.objectStore(DRAFT_PHOTO_STORE_NAME);
@@ -231,6 +248,7 @@ export const saveDraft = async (vehicles: VehicleEntry[], photos: PhotoEntry[]):
 			id: DRAFT_KEY,
 			vehicles,
 			photos: photoMetadata,
+			ui,
 			savedAt: Date.now()
 		}),
 		// Der Blob eines Fotos ändert sich pro id nie (`createPhotoEntry` vergibt für jede
