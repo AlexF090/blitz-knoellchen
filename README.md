@@ -66,14 +66,14 @@ Die App ist als installierbare PWA gebaut und verhält sich vom Homescreen aus w
 
 | Bereich      | Technologie                                                              |
 | ------------ | ------------------------------------------------------------------------ |
-| Framework    | SvelteKit 2, Svelte 5 (Runes-Modus), TypeScript im `strict`-Modus        |
+| Framework    | SvelteKit 3, Svelte 5 (Runes-Modus), TypeScript im `strict`-Modus        |
 | Styling      | Tailwind CSS 4, Design-Tokens ausschließlich in `oklch()`                |
 | Tests        | Vitest (Node- + echtes Browser-Projekt), Playwright (Desktop und Mobile) |
 | Daten        | IndexedDB über `idb` — keine serverseitige Datenhaltung                  |
 | Externe APIs | Brevo (E-Mail-Versand), LocationIQ mit BigDataCloud als Fallback         |
 | Build/Deploy | Vite 8, `@sveltejs/adapter-vercel`, PWA über `@vite-pwa/sveltekit`       |
 
-Acht Runtime-Dependencies insgesamt — jede einzelne ist in den Architekturentscheidungen
+Sieben Runtime-Dependencies insgesamt — jede einzelne ist in den Architekturentscheidungen
 begründet. Die 12 ADRs, die Ordnerstruktur und die Coding-Konventionen stehen in
 [`docs/architektur.md`](./docs/architektur.md).
 

@@ -122,25 +122,48 @@ ausreichen und das die Payload unter dem Vercel-Function-Limit hält.
 ### PWA über `@vite-pwa/sveltekit`
 
 Manifest und Service Worker laufen über das offizielle Vite/SvelteKit-PWA-Modul statt über
-handgeschriebene Konfiguration (`vite.config.ts`). Die Strategie ist bewusst simpel gehalten:
-App-Shell wird vorgecacht, `/api/*` ist explizit `NetworkOnly` (Geocoding/Send dürfen nie
-gecacht werden). iOS/Safari kennt kein `beforeinstallprompt` — bei Erkennung
+handgeschriebene Konfiguration (`vite.config.ts`). Seit Version 2 umhüllt `withPwa(kitOptions,
+pwaOptions)` die SvelteKit-Konfiguration und ruft `sveltekit()` selbst auf; die Workbox-Optionen
+stehen unter `generateSW`. iOS/Safari kennt kein `beforeinstallprompt` — bei Erkennung
 (`src/lib/pwa/isIosSafari.ts`) zeigt `IosInstallBanner.svelte` einen dezenten, dismissable
 Hinweis ("Teilen → Zum Home-Bildschirm") statt eines Modals.
 
-`workbox.manifestTransforms` filtert Dateien ≥ 512 KB aus dem Precache-Manifest heraus (siehe
-nächster Abschnitt zu HEIC) — SvelteKit hasht Chunk-Dateinamen ohne lesbaren Namensanteil,
-daher ist eine Größen- statt Glob-Filterung nötig. `workbox.maximumFileSizeToCacheInBytes` ist
-auf 6 MB angehoben, da Workbox' Standardlimit (2 MiB) bereits vor `manifestTransforms` greift
-und sonst den Build hart abbricht, sobald der `heic-to`-Chunk (mehrere MB durch die gebündelte
-`libheif`-WASM) den `globPatterns`-Scan durchläuft — die Datei bleibt trotzdem außerhalb des
-tatsächlichen Precache.
+Die Strategie ist bewusst simpel gehalten:
+
+- **Registrierung** in `src/hooks.client.ts` (`registerSW` aus `virtual:pwa-register`). Eine
+  HTML-Einbindung greift nicht, weil SvelteKit die Seiten selbst rendert. Eine neue Version wird
+  im Hintergrund aktiv, die offene Seite lädt aber nicht automatisch neu (`onNeedReload` leer):
+  Ein Reload mitten im Ausfüllen kostete Eingaben. Sichtbar wird die neue Version beim nächsten
+  Öffnen oder per Pull-to-Refresh (`src/lib/pwa/reloadLatest.ts`).
+- **Precache nur für Assets** (JS, CSS, Icons, Manifest). Seiten kommen immer vom Server
+  (`navigateFallback: null`): Sie werden serverseitig mit Server-Daten und CSP-Nonce pro Antwort
+  gerendert und liegen nie im Precache. Offline lädt die App deshalb nicht; Absenden braucht
+  ohnehin Netz.
+- **`/api/*` ist `NetworkOnly`** (Geocoding/Send dürfen nie gecacht werden). Die Regel ist eine
+  Pfadprüfung statt einer RegExp, weil Workbox eine RegExp gegen die volle URL prüft.
+- **Größenlimit 512 KiB** (`maximumFileSizeToCacheInBytes`, `throwMaximumFileSizeToCacheInBytes:
+false`): Größere Dateien, vor allem der `heic-to`-Chunk (mehrere MB durch die gebündelte
+  `libheif`-WASM), bleiben ohne Build-Abbruch außerhalb des Precache. SvelteKit hasht
+  Chunk-Dateinamen ohne lesbaren Namensanteil, daher Größen- statt Glob-Filterung.
+- Eigene `globPatterns` brauchen das Präfix `client/`, sonst ergänzt das Plugin ein eigenes
+  Muster und jede Datei steht doppelt im Precache. `globStrict: false`, weil das Plugin immer ein
+  Muster für vorgerenderte Seiten ergänzt und die App keine hat.
+
+### Vercel Web Analytics ohne SDK
+
+`@vercel/analytics` erlaubt in der stabilen Version per Peer-Dependency kein SvelteKit 3.
+Stattdessen lädt `src/lib/analytics/vercelAnalytics.ts` Vercels eigenes Skript
+`/_vercel/insights/script.js` direkt, nur im Production-Build (`createVercelAnalytics(browser &&
+!dev)` in `+layout.svelte`). Das Skript zählt Seitenaufrufe nicht selbst
+(`data-disable-auto-track`); das Layout meldet sie mit Route-Muster, damit das Dashboard nach
+SvelteKit-Route statt nach einzelner Adresse gruppiert — wie zuvor das SDK. Same-origin, daher
+keine CSP-Änderung; eine Dependency weniger.
 
 ### Branding-Assets über `@vite-pwa/assets-generator` statt eigenem Skript
 
 Icons/Favicons wurden ursprünglich über ein eigenes Skript (`scripts/generate-icons.mjs`)
 erzeugt; das ist entfallen. Stattdessen generiert `@vite-pwa/assets-generator` über die
-`pwaAssets`-Option von `SvelteKitPWA` (`vite.config.ts`) alle benötigten Icon-Größen und
+`pwaAssets`-Option von `withPwa` (`vite.config.ts`) alle benötigten Icon-Größen und
 Favicons zur Build-Zeit aus einer einzigen SVG-Quelle (`static/app-icon.svg`) — eine Quelle
 statt mehrerer manuell gepflegter PNG-Exporte, keine separat aufzurufende Skript-Pflicht mehr.
 `static/app-icon.svg` muss direkt in `static/` liegen (SvelteKits Pendant zu Vites
@@ -409,7 +432,7 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `src/lib/image/hasJpegSignature.ts`                  | Prüft die JPEG-Signatur der Anhänge in `/api/send`                                                                                                              |
 | `src/lib/components/branding/`                       | Logo-/Wortmarken-Komponenten (`BrandIcon.svelte`, `LogoLockup.svelte`, `Wordmark.svelte`), s. ADR "Branding-Assets" oben                                        |
 | `src/lib/config/cities.ts`                           | Client-sicherer Städte-Katalog (`incidentTypes`, `buildEmailBody`), **kein** Env-Import                                                                         |
-| `src/lib/config/cities.server.ts`                    | Serverseitige, modusabhängige Empfänger-Zuordnung (`$env/static/private`), getrennt von `cities.ts`                                                             |
+| `src/lib/config/cities.server.ts`                    | Serverseitige, modusabhängige Empfänger-Zuordnung (`$app/env/private`), getrennt von `cities.ts`                                                                |
 | `src/lib/appMode.svelte.ts`                          | Client-Runen-Modul für die Demo-/Live-Modus-Wahl, s. ADR "Live-Modus als Standard" oben                                                                         |
 | `src/lib/components/AppModeDialog.svelte`            | Live-/Demo-Auswahldialog, öffnet sich über das Header-Badge, global in `+layout.svelte`                                                                         |
 | `src/lib/config/vehicleMakes.ts`                     | Kuratierte Marken-Liste für die Marke-`<datalist>` (Fahrzeugbeschreibung), Freitext bleibt möglich                                                              |
@@ -508,8 +531,8 @@ nicht:
 1. In `src/lib/config/cities.ts` einen zweiten Eintrag im `CITIES`-Record ergänzen (`id`,
    `label`, `incidentTypes`, `buildEmailBody`).
 2. In `src/lib/config/cities.server.ts` die zugehörigen Empfänger-E-Mails in
-   `DEMO_RECIPIENT_EMAILS`/`LIVE_RECIPIENT_EMAILS` ergänzen (je eine eigene ENV-Variable, da
-   `$env/static/private` nur serverseitig importierbar ist).
+   `DEMO_RECIPIENT_EMAILS`/`LIVE_RECIPIENT_EMAILS` ergänzen (je eine eigene ENV-Variable in
+   `src/env.ts`, da `$app/env/private` nur serverseitig importierbar ist).
 3. Keine UI zur Stadtauswahl bauen, solange nicht explizit gefordert — das ist bewusst
    außerhalb des aktuellen Scopes (YAGNI).
 
@@ -525,9 +548,15 @@ nicht:
 | `BREVO_API_URL`        | Optional, nur für E2E-Tests: leitet den Versand auf den lokalen Brevo-Mock um. Gehört nicht nach Vercel.           |
 | `SEND_LIMIT_PER_HOUR`  | Optional, nur für E2E-Tests: hebt das Rate-Limit von `/api/send` (Standard 20 pro Stunde und IP) an.               |
 
+Alle Variablen sind in `src/env.ts` per `defineEnvVars` deklariert. Die ersten fünf tragen
+`static: true` und werden zur Build-Zeit eingebacken; `BREVO_API_URL` und
+`SEND_LIMIT_PER_HOUR` werden beim Start gelesen und geprüft (ungültige Werte brechen den Start
+ab, statt still auf den Standard zurückzufallen). Ohne `schema` muss eine Variable gesetzt sein,
+darf aber leer sein.
+
 Immer über `.env.example` dokumentieren, echte Werte nie committen. Serverseitige Secrets
-ausschließlich über `$env/static/private` einbinden (siehe `cities.server.ts`,
-`api/send/+server.ts`, `api/geocode/+server.ts`), niemals über `$env/*/public`.
+ausschließlich über `$app/env/private` einbinden (siehe `cities.server.ts`,
+`api/send/+server.ts`, `api/geocode/+server.ts`), niemals mit `public: true` deklarieren.
 
 ## Umstieg von React/Next.js
 
@@ -543,10 +572,11 @@ auf SvelteKit. Wichtige Entsprechungen für die Wartung ohne tiefe Svelte-Vorerf
   Historie laden clientseitig (IndexedDB ist ohnehin nur im Browser verfügbar).
 - **Runes** (`$state`, `$derived`, `$effect`) ersetzen React-Hooks (`useState`, `useMemo`,
   `useEffect`) für reaktiven State in `.svelte`- bzw. `.svelte.ts`-Dateien.
-- **Env-Trennung:** `$env/static/private` (nur Server, nie im Bundle) vs.
-  `$env/static/public` (auch Client) — strikter als Next.js' `NEXT_PUBLIC_`-Konvention; ein
-  versehentlicher Client-Import von `$env/static/private` schlägt beim Build fehl statt still
-  Secrets zu leaken (Grund für die Trennung `cities.ts`/`cities.server.ts`).
+- **Env-Trennung:** `$app/env/private` (nur Server, nie im Bundle) vs. `$app/env/public`
+  (auch Client, nur für Variablen mit `public: true` in `src/env.ts`) — strikter als Next.js'
+  `NEXT_PUBLIC_`-Konvention; ein versehentlicher Client-Import von `$app/env/private` schlägt
+  beim Build fehl statt still Secrets zu leaken (Grund für die Trennung
+  `cities.ts`/`cities.server.ts`).
 
 ## Bekannte Tooling-Einschränkung
 

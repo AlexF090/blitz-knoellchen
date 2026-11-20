@@ -58,10 +58,15 @@ npm run og-image                       # Link-Vorschaubild static/og-image.png n
 
 ## Fallstricke
 
-- `$env/static/private` wird zur **Build-Zeit** in den Server-Code eingebacken, nicht zur
-  Laufzeit gelesen. Echte Werte aus der lokalen `.env` stecken damit in jedem lokalen Build — so
-  wäre fast eine private Adresse in den README-Screenshots gelandet. Deshalb überschreibt
-  `npm run screenshots` die Adressen schon beim Build.
+- Umgebungsvariablen sind in `src/env.ts` deklariert und werden über `$app/env/private`
+  importiert. Variablen mit `static: true` werden zur **Build-Zeit** in den Server-Code
+  eingebacken, nicht zur Laufzeit gelesen. Echte Werte aus der lokalen `.env` stecken damit in
+  jedem lokalen Build — so wäre fast eine private Adresse in den README-Screenshots gelandet.
+  Deshalb überschreibt `npm run screenshots` die Adressen schon beim Build.
+- Imports aus `src/lib` laufen über `#lib/…` mit Dateiendung (`package.json` → `imports`), z. B.
+  `#lib/validation/formSchema.ts`. Das frühere `$lib` gibt es seit SvelteKit 3 nicht mehr.
+- Der Service Worker ist in den E2E-Tests global blockiert (`playwright.config.ts`), weil
+  `page.route()` seine Anfragen nicht sieht. Nur `e2e/service-worker.e2e.ts` lässt ihn zu.
 - Install-Skripte laufen nur für die versionsgenauen Einträge in `allowScripts` (`package.json`);
   `strict-allow-scripts` in `.npmrc` lässt den Install sonst mit `ESTRICTALLOWSCRIPTS` scheitern.
   Ändert sich die Version eines dort gelisteten Pakets (auch per Dependabot), muss der Eintrag
