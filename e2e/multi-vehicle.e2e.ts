@@ -53,7 +53,7 @@ test('Mehrere Fahrzeuge: ein Foto wird für zwei getrennte Anzeigen verwendet', 
 	await secondVehicle.getByLabel('Kennzeichen').fill(plateB.replace(/(\d)/, ' $1'));
 	await secondVehicle.getByLabel('Fahrzeugart').selectOption('PKW');
 	await secondVehicle.getByLabel('Farbe').fill('Grün');
-	await secondVehicle.getByLabel('Parken im Halteverbot').check();
+	await secondVehicle.getByLabel('Halten/Parken im Halteverbot').check();
 
 	await page.getByRole('button', { name: 'Absenden' }).click();
 

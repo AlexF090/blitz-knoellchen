@@ -207,10 +207,15 @@ Labels zu einer Aufzählung ("Art des Verstoßes: X, Y") und die Beschreibungen 
 Stichpunktliste im Fließtext — so bleibt der Text auch bei mehreren gleichzeitig vorliegenden
 Verstößen (z. B. Gehweg + Kreuzungsbereich) klar strukturiert.
 
-Die `description` darf die Platzhalter `{verb}` und `{Vorgang}` enthalten.
+`emailLabel` und `description` dürfen die Platzhalter `{verb}` und `{Vorgang}` enthalten.
 `applyTimeModeWording` (`src/lib/email/timeModeWording.ts`) ersetzt sie je nach gewählter
 Zeitangabe: Halteverstoß → „hielt“/„Halten“, Parkverstoß → „parkte“/„Parken“. So bleibt der
 E-Mail-Satz zur Auswahl „Halteverstoß“ bzw. „Parkverstoß“ stimmig.
+
+Die Platzhalter tragen alle Verstoßarten, bei denen schon das Halten verboten ist (Gehweg,
+Halteverbot, zweite Reihe, Feuerwehrzufahrt, Radweg); ihr Formular-Label lautet „Halten/Parken
+…“. Parkverbot, Schwerbehinderten-Parkplatz und Kreuzungsbereich verbieten nur das Parken und
+bleiben beim festen „parkte“.
 
 Zwei weitere, optionale Abschnitte ergänzen die E-Mail. „Ausmaß der Behinderung“ ist eine
 Stichpunktliste vollständiger Sätze, „Gefährdete Personen“ ein Satz („Durch das Fahrzeug wurden

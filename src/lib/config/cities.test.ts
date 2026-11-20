@@ -21,6 +21,23 @@ describe('CITIES', () => {
 		}
 	});
 
+	it('formuliert Halteverbots-Verstöße passend zum Halte- oder Parkverstoß', () => {
+		const haltingBanTypes = CITIES.koeln.incidentTypes.filter((type) =>
+			type.label.startsWith('Halten/Parken')
+		);
+		expect(haltingBanTypes.map((type) => type.id)).toEqual([
+			'gehweg',
+			'halteverbot',
+			'zweite-reihe',
+			'feuerwehrzufahrt',
+			'radweg'
+		]);
+		for (const type of haltingBanTypes) {
+			expect(type.emailLabel).toContain('{Vorgang}');
+			expect(type.description).toContain('{verb}');
+		}
+	});
+
 	it('verwendet in Verstoßarten nur bekannte Platzhalter', () => {
 		const knownPlaceholders = ['{verb}', '{Vorgang}'];
 		for (const type of CITIES.koeln.incidentTypes) {

@@ -66,8 +66,9 @@ const KOELN_INCIDENT_TYPES: IncidentType[] = [
 	},
 	{
 		id: 'halteverbot',
-		label: 'Parken im Halteverbot',
-		description: 'Das Fahrzeug parkte in einem durch Verkehrszeichen ausgewiesenen Halteverbot.'
+		label: 'Halten/Parken im Halteverbot',
+		emailLabel: '{Vorgang} im Halteverbot',
+		description: 'Das Fahrzeug {verb} in einem durch Verkehrszeichen ausgewiesenen Halteverbot.'
 	},
 	{
 		id: 'parkverbot',
@@ -76,8 +77,9 @@ const KOELN_INCIDENT_TYPES: IncidentType[] = [
 	},
 	{
 		id: 'zweite-reihe',
-		label: 'Parken in zweiter Reihe',
-		description: 'Das Fahrzeug parkte in zweiter Reihe und behinderte den fließenden Verkehr.'
+		label: 'Halten/Parken in zweiter Reihe',
+		emailLabel: '{Vorgang} in zweiter Reihe',
+		description: 'Das Fahrzeug {verb} in zweiter Reihe und behinderte den fließenden Verkehr.'
 	},
 	{
 		id: 'schwerbehindert',
@@ -87,13 +89,15 @@ const KOELN_INCIDENT_TYPES: IncidentType[] = [
 	},
 	{
 		id: 'feuerwehrzufahrt',
-		label: 'Parken auf der Feuerwehrzufahrt',
-		description: 'Das Fahrzeug parkte auf der Feuerwehrzufahrt und blockierte diese.'
+		label: 'Halten/Parken auf der Feuerwehrzufahrt',
+		emailLabel: '{Vorgang} auf der Feuerwehrzufahrt',
+		description: 'Das Fahrzeug {verb} auf der Feuerwehrzufahrt und blockierte diese.'
 	},
 	{
 		id: 'radweg',
-		label: 'Parken auf dem Radweg',
-		description: 'Das Fahrzeug parkte auf dem Radweg und behinderte den Radverkehr.'
+		label: 'Halten/Parken auf dem Radweg',
+		emailLabel: '{Vorgang} auf dem Radweg',
+		description: 'Das Fahrzeug {verb} auf dem Radweg und behinderte den Radverkehr.'
 	},
 	{
 		id: 'kreuzung',
