@@ -31,7 +31,9 @@ Relevant sind insbesondere:
   und eine `Permissions-Policy` ohne Kamera, Mikrofon, Standort und Payment (`vite.config.ts`,
   `src/lib/server/applySecurityHeaders.ts`).
 - **Keine Server-Persistenz.** Anzeigenhistorie und Entwürfe liegen ausschließlich lokal im
-  Browser (IndexedDB); es gibt keine Datenbank mit Nutzerdaten.
+  Browser (IndexedDB); es gibt keine Datenbank mit Nutzerdaten. Ein nicht abgesendeter Entwurf
+  (Formularinhalte, Fotos, Ansichtszustand) wird höchstens sieben Tage aufbewahrt und beim
+  Öffnen der App zum Fortsetzen oder Verwerfen angeboten.
 
 ## Bekannte Einschränkungen
 

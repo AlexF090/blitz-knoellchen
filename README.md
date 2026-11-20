@@ -51,7 +51,9 @@ Blitz-Knöllchen dreht diesen Ablauf um:
    PLZ und Ort. Fehlt das GPS-Tag oder schlägt das Geocoding fehl, wird das Adressfeld editierbar
    (mit Autocomplete beim Nachbessern).
 3. **Verstoß erfassen.** Eine oder mehrere Verstoßarten, Halte- oder Parkverstoß (inklusive der
-   Mindestparkzeit-Regel), Kennzeichen, Fahrzeugart, Marke und Farbe.
+   Mindestparkzeit-Regel), Kennzeichen, Fahrzeugart, Marke und Farbe, optional das Ausmaß der
+   Behinderung und gefährdete Personen. Ein angefangener Entwurf bleibt bis zu sieben Tage lokal
+   gespeichert; beim nächsten Öffnen lässt er sich fortsetzen oder verwerfen.
 4. **Vorschau und Absenden.** Die fertige E-Mail lässt sich vor dem Versand ansehen. Verschickt
    wird sie serverseitig über Brevo, mit komprimiertem Foto im Anhang, in das Datum und GPS wieder
    eingebettet werden. Der Melder bekommt automatisch eine Kopie.
