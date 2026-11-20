@@ -23,9 +23,9 @@
 	{#if icon.kind === 'sign'}
 		<img src={icon.src} alt="" class="size-6" />
 	{:else if icon.kind === 'emoji'}
-		<span class={['leading-none whitespace-nowrap', emojiCount > 1 ? 'text-xs' : 'text-xl']}
-			>{icon.character}</span
-		>
+		<span class={['leading-none whitespace-nowrap', emojiCount > 1 ? 'text-xs' : 'text-xl']}>
+			{icon.character}
+		</span>
 	{:else}
 		{@const Symbol = icon.component}
 		<Symbol class="size-6 text-ink-muted" />

@@ -89,12 +89,12 @@
 			<p>
 				Beim Absenden werden deine Angaben im Formular – Name, Anschrift, E-Mail-Adresse, ggf.
 				Telefonnummer, Kennzeichen, Tatort, Tatzeit, Verstoßart, ggf. Anmerkungen sowie das
-				Beweisfoto – über einen eigenen Server-Endpunkt an den E-Mail-Versanddienst <strong
-					>Brevo</strong
-				> (Sinch Engage GmbH, EU-Anbieter) übergeben, der die E-Mail im Namen dieser App an die Bußgeldstelle
-				Köln verschickt. Deine E-Mail-Adresse wird dabei als Antwortadresse (Reply-To) sowie als Kopie-Empfänger
-				(Bcc) hinterlegt, damit du automatisch eine Kopie der Anzeige erhältst – dein E-Mail-Postfach
-				oder -Passwort wird dafür nicht benötigt und nicht abgefragt.
+				Beweisfoto – über einen eigenen Server-Endpunkt an den E-Mail-Versanddienst <strong>
+					Brevo
+				</strong> (Sinch Engage GmbH, EU-Anbieter) übergeben, der die E-Mail im Namen dieser App an die
+				Bußgeldstelle Köln verschickt. Deine E-Mail-Adresse wird dabei als Antwortadresse (Reply-To) sowie
+				als Kopie-Empfänger (Bcc) hinterlegt, damit du automatisch eine Kopie der Anzeige erhältst – dein
+				E-Mail-Postfach oder -Passwort wird dafür nicht benötigt und nicht abgefragt.
 			</p>
 			<p class="mt-2">
 				Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erfüllung deines Wunsches, die Anzeige in

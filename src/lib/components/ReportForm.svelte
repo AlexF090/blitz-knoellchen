@@ -811,10 +811,10 @@
 	desktopMaxWidthClass="sm:max-w-lg"
 >
 	<p class="mt-1 text-lg text-ink-muted">
-		Du erhältst eine Kopie per E-Mail von <strong class="font-semibold text-ink"
-			>{senderEmail}</strong
-		>. Falls sie nicht im Posteingang ankommt, prüfe bei Bedarf auch deinen Spam-Ordner. Die Anzeige
-		liegt außerdem in deiner Historie.
+		Du erhältst eine Kopie per E-Mail von <strong class="font-semibold text-ink">
+			{senderEmail}
+		</strong>. Falls sie nicht im Posteingang ankommt, prüfe bei Bedarf auch deinen Spam-Ordner. Die
+		Anzeige liegt außerdem in deiner Historie.
 	</p>
 	{#snippet actions()}
 		<button type="button" onclick={closeSuccessDialog} class="flex-1 {buttonSecondary}">

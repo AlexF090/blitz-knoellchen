@@ -23,9 +23,9 @@
 		<span aria-hidden="true">·</span>
 		<span class="inline-block px-2 py-2">
 			Adressdaten:
-			<a href="https://locationiq.com" target="_blank" rel="noopener noreferrer" class="underline"
-				>LocationIQ</a
-			>
+			<a href="https://locationiq.com" target="_blank" rel="noopener noreferrer" class="underline">
+				LocationIQ
+			</a>
 		</span>
 	</p>
 	<p>v{__APP_VERSION__}</p>

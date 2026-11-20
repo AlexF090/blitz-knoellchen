@@ -234,8 +234,9 @@
 									<span
 										aria-hidden="true"
 										class="absolute inset-0 flex items-center justify-center bg-primary-600/40 text-on-primary"
-										>✓</span
 									>
+										✓
+									</span>
 								{/if}
 							</button>
 						{/each}

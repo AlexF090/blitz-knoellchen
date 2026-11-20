@@ -57,10 +57,10 @@
 </script>
 
 <div class={wrapperClass}>
-	<label for={id} class={labelBase}
-		>{label}
-		{#if required}<span class={requiredMark}>*</span>{/if}</label
-	>
+	<label for={id} class={labelBase}>
+		{label}
+		{#if required}<span class={requiredMark}>*</span>{/if}
+	</label>
 	{#if control}
 		{@render control()}
 	{:else}
