@@ -3,14 +3,14 @@
 	 * Zeigt vor dem Absenden, wie die E-Mail für ein Fahrzeug aussieht: Empfänger, Betreff,
 	 * Nachrichtentext und Anhänge.
 	 */
-	import type { City } from '$lib/config/cities';
+	import type { City } from '#lib/config/cities.ts';
 	import {
 		buildEmailTemplateInput,
 		resolveVehicleIncidentTypes
-	} from '$lib/email/buildEmailTemplateInput';
-	import { blobSrc } from '$lib/photo/blobSrc';
-	import { buttonSecondary } from '$lib/ui/buttonStyles';
-	import type { PhotoEntry, ProfileFields, VehicleEntry } from '$lib/validation/formSchema';
+	} from '#lib/email/buildEmailTemplateInput.ts';
+	import { blobSrc } from '#lib/photo/blobSrc.ts';
+	import { buttonSecondary } from '#lib/ui/buttonStyles.ts';
+	import type { PhotoEntry, ProfileFields, VehicleEntry } from '#lib/validation/formSchema.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	interface Props {

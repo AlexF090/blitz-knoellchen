@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildVehicleSummaryRows } from './vehicleSummary';
-import type { IncidentType } from '$lib/config/cities';
-import type { VehicleEntry } from '$lib/validation/formSchema';
+import type { IncidentType } from '#lib/config/cities.ts';
+import type { VehicleEntry } from '#lib/validation/formSchema.ts';
 
 const incidentTypes: IncidentType[] = [
 	{ id: 'gehweg', label: 'Parken auf dem Gehweg', description: 'x' },

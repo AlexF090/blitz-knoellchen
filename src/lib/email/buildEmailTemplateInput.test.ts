@@ -1,5 +1,5 @@
-import type { IncidentType } from '$lib/config/cities';
-import type { ProfileFields, VehicleEntry } from '$lib/validation/formSchema';
+import type { IncidentType } from '#lib/config/cities.ts';
+import type { ProfileFields, VehicleEntry } from '#lib/validation/formSchema.ts';
 import { describe, expect, it } from 'vitest';
 import { buildEmailTemplateInput, resolveVehicleIncidentTypes } from './buildEmailTemplateInput';
 

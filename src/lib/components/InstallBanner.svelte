@@ -5,8 +5,8 @@
 	 */
 	import { SquarePlus } from '@lucide/svelte';
 	import { fly } from 'svelte/transition';
-	import { transitionDuration } from '$lib/motion/reducedMotion';
-	import { installPrompt } from '$lib/pwa/installPrompt.svelte';
+	import { transitionDuration } from '#lib/motion/reducedMotion.ts';
+	import { installPrompt } from '#lib/pwa/installPrompt.svelte.ts';
 
 	// Bewusst kein dauerhaftes Ausblenden per localStorage — solange die App nicht installiert ist
 	// (installPrompt.canInstall wird erst durch das appinstalled-Event false), soll der Hinweis

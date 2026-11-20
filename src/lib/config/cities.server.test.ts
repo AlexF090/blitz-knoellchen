@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('$env/static/private', () => ({
+vi.mock('$app/env/private', () => ({
 	RECIPIENT_EMAIL_DEMO: 'demo@example.com',
 	RECIPIENT_EMAIL_LIVE: 'live@example.com'
 }));

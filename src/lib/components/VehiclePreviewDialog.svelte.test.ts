@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import { CITIES } from '$lib/config/cities';
+import { CITIES } from '#lib/config/cities.ts';
 import {
 	buildEmailTemplateInput,
 	resolveVehicleIncidentTypes
-} from '$lib/email/buildEmailTemplateInput';
-import { createEmptyVehicle } from '$lib/validation/emptyForm';
-import type { PhotoEntry, ProfileFields, VehicleEntry } from '$lib/validation/formSchema';
+} from '#lib/email/buildEmailTemplateInput.ts';
+import { createEmptyVehicle } from '#lib/validation/emptyForm.ts';
+import type { PhotoEntry, ProfileFields, VehicleEntry } from '#lib/validation/formSchema.ts';
 import VehiclePreviewDialog from './VehiclePreviewDialog.svelte';
 
 const city = CITIES.koeln;

@@ -1,11 +1,11 @@
-import type { City, EmailTemplateInput, IncidentType } from '$lib/config/cities';
+import type { City, EmailTemplateInput, IncidentType } from '#lib/config/cities.ts';
 import {
 	ENDANGERED_PERSON_OPTIONS,
 	IMPAIRMENT_OPTIONS,
 	resolveImpactOptions
-} from '$lib/config/impactOptions';
-import { applyTimeModeWording } from '$lib/email/timeModeWording';
-import type { ProfileFields, VehicleEntry } from '$lib/validation/formSchema';
+} from '#lib/config/impactOptions.ts';
+import { applyTimeModeWording } from '#lib/email/timeModeWording.ts';
+import type { ProfileFields, VehicleEntry } from '#lib/validation/formSchema.ts';
 
 /** Bausteine einer Anzeige: Melderprofil, Fahrzeug und dessen Position in der Gesamtmeldung. */
 export interface BuildEmailTemplateInputOptions {

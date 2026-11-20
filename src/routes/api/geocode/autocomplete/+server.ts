@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
-import { LOCATIONIQ_API_KEY } from '$env/static/private';
-import { createLocationIqAutocompleteProvider } from '$lib/geocode/autocomplete';
-import { LOCATIONIQ_MIN_INTERVAL_MS, shouldThrottle } from '$lib/geocode/rateLimiter';
+import { LOCATIONIQ_API_KEY } from '$app/env/private';
+import { createLocationIqAutocompleteProvider } from '#lib/geocode/autocomplete.ts';
+import { LOCATIONIQ_MIN_INTERVAL_MS, shouldThrottle } from '#lib/geocode/rateLimiter.ts';
 import type { RequestHandler } from './$types';
 
 /**

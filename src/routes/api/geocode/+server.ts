@@ -1,11 +1,11 @@
 import { json } from '@sveltejs/kit';
-import { LOCATIONIQ_API_KEY } from '$env/static/private';
-import { LOCATIONIQ_MIN_INTERVAL_MS, waitForSlot } from '$lib/geocode/rateLimiter';
+import { LOCATIONIQ_API_KEY } from '$app/env/private';
+import { LOCATIONIQ_MIN_INTERVAL_MS, waitForSlot } from '#lib/geocode/rateLimiter.ts';
 import {
 	createBigDataCloudProvider,
 	createLocationIqProvider,
 	reverseGeocode
-} from '$lib/geocode/reverseGeocode';
+} from '#lib/geocode/reverseGeocode.ts';
 import type { RequestHandler } from './$types';
 
 /**

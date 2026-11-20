@@ -1,7 +1,7 @@
 <script lang="ts">
 	/** Zeigt Label/Wert-Paare als Definitionsliste, z.B. die Zusammenfassung eines Fahrzeugs. */
 	import type { Snippet } from 'svelte';
-	import type { SummaryRow } from '$lib/report/vehicleSummary';
+	import type { SummaryRow } from '#lib/report/vehicleSummary.ts';
 
 	interface Props {
 		rows: SummaryRow[];

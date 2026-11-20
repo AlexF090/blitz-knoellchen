@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { ChevronDown } from '@lucide/svelte';
-	import { transitionDuration } from '$lib/motion/reducedMotion';
+	import { transitionDuration } from '#lib/motion/reducedMotion.ts';
 
 	export interface AccordionItem {
 		id: string;

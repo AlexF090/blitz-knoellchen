@@ -1,8 +1,8 @@
-import { parseExif } from '$lib/exif/parseExif';
-import { compressImage } from '$lib/image/compress';
-import { convertHeicToJpeg, isHeicFile } from '$lib/image/convertHeic';
-import { embedExifMetadata } from '$lib/image/embedExif';
-import type { PhotoEntry } from '$lib/validation/formSchema';
+import { parseExif } from '#lib/exif/parseExif.ts';
+import { compressImage } from '#lib/image/compress.ts';
+import { convertHeicToJpeg, isHeicFile } from '#lib/image/convertHeic.ts';
+import { embedExifMetadata } from '#lib/image/embedExif.ts';
+import type { PhotoEntry } from '#lib/validation/formSchema.ts';
 
 /** Signalisiert, dass ein HEIC-Foto nicht in ein verarbeitbares JPEG konvertiert werden konnte. */
 export class HeicConversionError extends Error {}

@@ -1,5 +1,5 @@
-import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
-import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '$lib/config/impactOptions';
+import type { PhotoEntry, VehicleEntry } from '#lib/validation/formSchema.ts';
+import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '#lib/config/impactOptions.ts';
 import type { DraftUiState, LoadedDraft } from './db';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

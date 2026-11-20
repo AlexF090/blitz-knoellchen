@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { RequestEvent } from './$types';
 
-vi.mock('$env/static/private', () => ({ LOCATIONIQ_API_KEY: 'test-key' }));
+vi.mock('$app/env/private', () => ({ LOCATIONIQ_API_KEY: 'test-key' }));
 
 const shouldThrottleMock = vi.fn<(minIntervalMs: number) => boolean>(() => false);
-vi.mock('$lib/geocode/rateLimiter', () => ({
+vi.mock('#lib/geocode/rateLimiter.ts', () => ({
 	LOCATIONIQ_MIN_INTERVAL_MS: 1000,
 	shouldThrottle: (minIntervalMs: number) => shouldThrottleMock(minIntervalMs)
 }));
 
 const searchMock = vi.fn();
-vi.mock('$lib/geocode/autocomplete', () => ({
+vi.mock('#lib/geocode/autocomplete.ts', () => ({
 	createLocationIqAutocompleteProvider: vi.fn(() => ({ search: searchMock }))
 }));
 

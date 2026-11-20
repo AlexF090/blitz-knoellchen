@@ -4,11 +4,11 @@
 	 * Die Suche selbst liegt im addressSuggestionsController.
 	 */
 	import { fly } from 'svelte/transition';
-	import { createAddressSuggestionsController } from '$lib/geocode/addressSuggestionsController';
-	import type { AddressSuggestion } from '$lib/geocode/autocomplete';
-	import { transitionDuration } from '$lib/motion/reducedMotion';
-	import { inputBase } from '$lib/ui/inputStyles';
-	import { ariaFieldProps } from '$lib/validation/ariaField';
+	import { createAddressSuggestionsController } from '#lib/geocode/addressSuggestionsController.ts';
+	import type { AddressSuggestion } from '#lib/geocode/autocomplete.ts';
+	import { transitionDuration } from '#lib/motion/reducedMotion.ts';
+	import { inputBase } from '#lib/ui/inputStyles.ts';
+	import { ariaFieldProps } from '#lib/validation/ariaField.ts';
 	import FormField from './FormField.svelte';
 
 	interface Props {

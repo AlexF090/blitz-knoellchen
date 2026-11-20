@@ -6,7 +6,7 @@
 	 * gecachte App-Shell neu anzuzeigen (reloadLatest.ts).
 	 */
 	import { Loader2 } from '@lucide/svelte';
-	import { reloadWithLatestVersion } from '$lib/pwa/reloadLatest';
+	import { reloadWithLatestVersion } from '#lib/pwa/reloadLatest.ts';
 
 	let { children } = $props();
 

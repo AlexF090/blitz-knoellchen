@@ -10,7 +10,7 @@ vi.mock('virtual:pwa-info', () => ({
 
 // Nur db.svelte.test.ts spricht die echte IndexedDB an. Parallel laufende Testdateien teilen sich
 // dieselbe Datenbank und würden sich sonst gegenseitig die Daten verändern.
-vi.mock('$lib/history/db', () => ({
+vi.mock('#lib/history/db.ts', () => ({
 	getDraft: vi.fn(async () => undefined),
 	saveDraft: vi.fn(),
 	clearDraft: vi.fn(),

@@ -4,9 +4,11 @@ import type { RequestEvent } from './$types';
 // und würde als dynamischer Import im ersten Testfall gegen dessen Timeout laufen.
 import { POST } from './+server';
 
-vi.mock('$env/static/private', () => ({
+vi.mock('$app/env/private', () => ({
 	BREVO_API_KEY: 'test-brevo-key',
-	EMAIL_FROM: 'absender@example.com'
+	BREVO_API_URL: undefined,
+	EMAIL_FROM: 'absender@example.com',
+	SEND_LIMIT_PER_HOUR: undefined
 }));
 
 const getRecipientEmailMock = vi.fn((cityId: string, mode: string) => {
@@ -14,7 +16,7 @@ const getRecipientEmailMock = vi.fn((cityId: string, mode: string) => {
 	void mode;
 	return 'empfaenger@example.com';
 });
-vi.mock('$lib/config/cities.server', () => ({
+vi.mock('#lib/config/cities.server.ts', () => ({
 	getRecipientEmail: (cityId: string, mode: string) => getRecipientEmailMock(cityId, mode)
 }));
 

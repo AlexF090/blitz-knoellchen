@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import SummaryList from './SummaryList.svelte';
-import type { SummaryRow } from '$lib/report/vehicleSummary';
+import type { SummaryRow } from '#lib/report/vehicleSummary.ts';
 
 describe('SummaryList', () => {
 	it('rendert mehrere Zeilen mit Label und Wert', async () => {

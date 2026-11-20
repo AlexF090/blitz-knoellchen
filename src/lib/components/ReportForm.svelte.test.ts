@@ -9,15 +9,15 @@ import {
 	saveDraft,
 	saveProfile,
 	type LoadedDraft
-} from '$lib/history/db';
-import { fetchAddress } from '$lib/geocode/client';
-import { fetchAddressSuggestions } from '$lib/geocode/autocompleteClient';
-import { HeicConversionError, createPhotoEntry } from '$lib/photo/createPhotoEntry';
-import { sendVehicleReport } from '$lib/report/sendClient';
-import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
+} from '#lib/history/db.ts';
+import { fetchAddress } from '#lib/geocode/client.ts';
+import { fetchAddressSuggestions } from '#lib/geocode/autocompleteClient.ts';
+import { HeicConversionError, createPhotoEntry } from '#lib/photo/createPhotoEntry.ts';
+import { sendVehicleReport } from '#lib/report/sendClient.ts';
+import type { PhotoEntry, VehicleEntry } from '#lib/validation/formSchema.ts';
 import ReportForm from './ReportForm.svelte';
 
-vi.mock('$lib/history/db', () => ({
+vi.mock('#lib/history/db.ts', () => ({
 	getDraft: vi.fn(),
 	saveDraft: vi.fn(),
 	clearDraft: vi.fn(),
@@ -26,20 +26,20 @@ vi.mock('$lib/history/db', () => ({
 	saveProfile: vi.fn()
 }));
 
-vi.mock('$lib/geocode/client', () => ({
+vi.mock('#lib/geocode/client.ts', () => ({
 	fetchAddress: vi.fn()
 }));
 
-vi.mock('$lib/geocode/autocompleteClient', () => ({
+vi.mock('#lib/geocode/autocompleteClient.ts', () => ({
 	fetchAddressSuggestions: vi.fn().mockResolvedValue({ suggestions: [], failed: false })
 }));
 
-vi.mock('$lib/report/sendClient', () => ({
+vi.mock('#lib/report/sendClient.ts', () => ({
 	sendVehicleReport: vi.fn()
 }));
 
-vi.mock('$lib/photo/createPhotoEntry', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('$lib/photo/createPhotoEntry')>();
+vi.mock('#lib/photo/createPhotoEntry.ts', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('#lib/photo/createPhotoEntry.ts')>();
 	return { ...actual, createPhotoEntry: vi.fn() };
 });
 

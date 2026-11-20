@@ -1,7 +1,7 @@
-import { CITIES } from '$lib/config/cities';
-import type { HistoryEntry } from '$lib/history/db';
-import { createEmptyForm, createEmptyVehicle } from '$lib/validation/emptyForm';
-import type { PhotoEntry, ReportFormData } from '$lib/validation/formSchema';
+import { CITIES } from '#lib/config/cities.ts';
+import type { HistoryEntry } from '#lib/history/db.ts';
+import { createEmptyForm, createEmptyVehicle } from '#lib/validation/emptyForm.ts';
+import type { PhotoEntry, ReportFormData } from '#lib/validation/formSchema.ts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { submitVehicleReports } from './submitVehicleReports';
 

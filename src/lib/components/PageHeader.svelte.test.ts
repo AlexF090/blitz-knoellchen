@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import { appMode } from '$lib/appMode.svelte';
+import { appMode } from '#lib/appMode.svelte.ts';
 import PageHeader from './PageHeader.svelte';
 
 afterEach(() => {

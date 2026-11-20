@@ -1,4 +1,4 @@
-import type { EmailTemplateInput } from '$lib/config/cities';
+import type { EmailTemplateInput } from '#lib/config/cities.ts';
 import { describe, expect, it } from 'vitest';
 import { buildEmailBody } from './buildEmailBody';
 

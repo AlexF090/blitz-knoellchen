@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('$env/static/private', () => ({ EMAIL_FROM: 'absender@example.com' }));
+vi.mock('$app/env/private', () => ({ EMAIL_FROM: 'absender@example.com' }));
 
 const getRecipientEmailMock = vi.fn(
 	(cityId: string, mode: string) => `${mode}@${cityId}.example.com`
 );
-vi.mock('$lib/config/cities.server', () => ({
+vi.mock('#lib/config/cities.server.ts', () => ({
 	getRecipientEmail: (cityId: string, mode: string) => getRecipientEmailMock(cityId, mode)
 }));
 

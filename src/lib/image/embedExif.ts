@@ -1,4 +1,4 @@
-import type { ParsedExif } from '$lib/exif/parseExif';
+import type { ParsedExif } from '#lib/exif/parseExif.ts';
 import piexif from 'piexifjs';
 
 const pad = (value: number): string => {

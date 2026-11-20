@@ -1,5 +1,5 @@
-import type { Handle } from '@sveltejs/kit';
-import { applySecurityHeaders } from '$lib/server/applySecurityHeaders';
+import type { Handle } from '@sveltejs/kit/hooks';
+import { applySecurityHeaders } from '#lib/server/applySecurityHeaders.ts';
 
 /** Setzt die Sicherheits-Header, die für jede Response gelten sollen. */
 export const handle: Handle = async ({ event, resolve }) => {

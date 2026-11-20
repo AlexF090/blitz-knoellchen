@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getProfile } from '$lib/history/db';
+import { getProfile } from '#lib/history/db.ts';
 import { createProfileStore } from './profileStore.svelte';
-import type { UserProfile } from '$lib/history/db';
+import type { UserProfile } from '#lib/history/db.ts';
 
 // Eigene In-Memory-Fake statt Durchreichen an die echte IndexedDB (via importOriginal): Nur
 // db.svelte.test.ts spricht die echte Datenbank an. Parallel laufende Testdateien teilen sich
 // dieselbe Datenbank und würden sich sonst gegenseitig das Profil überschreiben.
-vi.mock('$lib/history/db', () => {
+vi.mock('#lib/history/db.ts', () => {
 	let stored: UserProfile | undefined;
 	return {
 		getProfile: vi.fn(async () => stored),

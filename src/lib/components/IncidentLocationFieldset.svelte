@@ -3,10 +3,10 @@
 	 * Der Tatort-Block einer Fahrzeug-Karte: Art der Zeitangabe, Zeitpunkt bzw. Zeitraum und die
 	 * Adresse des Verstoßes.
 	 */
-	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
-	import { triggerHaptic } from '$lib/haptics/vibrate';
-	import { fieldErrorBase } from '$lib/ui/inputStyles';
-	import type { VehicleEntry, VehicleErrors } from '$lib/validation/formSchema';
+	import { applyAddressSuggestion } from '#lib/geocode/applyAddressSuggestion.ts';
+	import { triggerHaptic } from '#lib/haptics/vibrate.ts';
+	import { fieldErrorBase } from '#lib/ui/inputStyles.ts';
+	import type { VehicleEntry, VehicleErrors } from '#lib/validation/formSchema.ts';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import FormField from './FormField.svelte';
 	import SegmentedControl from './SegmentedControl.svelte';

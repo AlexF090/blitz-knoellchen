@@ -4,8 +4,8 @@
 	 * gewechselt werden soll; beim Start läuft die App ohne Rückfrage im Live-Modus.
 	 */
 	import { onMount } from 'svelte';
-	import { appMode } from '$lib/appMode.svelte';
-	import { buttonDestructiveSecondary, buttonPrimary } from '$lib/ui/buttonStyles';
+	import { appMode } from '#lib/appMode.svelte.ts';
+	import { buttonDestructiveSecondary, buttonPrimary } from '#lib/ui/buttonStyles.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	let dialog = $state<HTMLDialogElement | undefined>(undefined);

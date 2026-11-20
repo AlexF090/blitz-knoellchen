@@ -1,7 +1,7 @@
-import type { EmailTemplateInput } from '$lib/config/cities';
-import { formatIsoDateDMY } from '$lib/format/germanDate';
-import { joinGermanList } from '$lib/format/joinGermanList';
-import { formatAddress } from '$lib/geocode/formatAddress';
+import type { EmailTemplateInput } from '#lib/config/cities.ts';
+import { formatIsoDateDMY } from '#lib/format/germanDate.ts';
+import { joinGermanList } from '#lib/format/joinGermanList.ts';
+import { formatAddress } from '#lib/geocode/formatAddress.ts';
 
 /** Betreff und Textkörper einer fertig gebauten Anzeigen-E-Mail. */
 export interface EmailContent {

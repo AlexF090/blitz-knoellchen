@@ -1,16 +1,19 @@
 <script lang="ts">
 	import './layout.css';
 	import { pwaAssetsHead } from 'virtual:pwa-assets/head';
-	import { dev } from '$app/environment';
+	import { browser, dev } from '$app/env';
 	import { page } from '$app/state';
-	import { injectAnalytics } from '@vercel/analytics/sveltekit';
-	import AppModeDialog from '$lib/components/AppModeDialog.svelte';
-	import Footer from '$lib/components/Footer.svelte';
-	import InstallBanner from '$lib/components/InstallBanner.svelte';
-	import IosInstallBanner from '$lib/components/IosInstallBanner.svelte';
-	import PullToRefresh from '$lib/components/PullToRefresh.svelte';
+	import { createVercelAnalytics } from '#lib/analytics/vercelAnalytics.ts';
+	import AppModeDialog from '#lib/components/AppModeDialog.svelte';
+	import Footer from '#lib/components/Footer.svelte';
+	import InstallBanner from '#lib/components/InstallBanner.svelte';
+	import IosInstallBanner from '#lib/components/IosInstallBanner.svelte';
+	import PullToRefresh from '#lib/components/PullToRefresh.svelte';
 
-	injectAnalytics({ mode: dev ? 'development' : 'production' });
+	// Nur im Production-Build: Das Skript liefert allein Vercel unter /_vercel aus, lokal gäbe es
+	// einen 404.
+	const trackPageview = createVercelAnalytics(browser && !dev);
+	$effect(() => trackPageview(page.route.id, page.url.pathname));
 
 	let { children } = $props();
 

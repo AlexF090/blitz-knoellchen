@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { ArrowLeft, History } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { appMode } from '$lib/appMode.svelte';
-	import LogoLockup from '$lib/components/branding/LogoLockup.svelte';
+	import { appMode } from '#lib/appMode.svelte.ts';
+	import LogoLockup from '#lib/components/branding/LogoLockup.svelte';
 
 	interface Props {
 		/** Ziel des Icon-Links rechts; muss vom Aufrufer bereits per `resolve()` aufgelöst sein. */

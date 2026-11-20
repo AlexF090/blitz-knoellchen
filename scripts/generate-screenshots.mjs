@@ -107,8 +107,8 @@ const run = async () => {
 	children.push(brevoMock);
 	await waitForServer(`http://localhost:${BREVO_MOCK_PORT}/__mock__/requests?since=0`);
 
-	// Die Empfänger-Adressen MÜSSEN schon beim Build überschrieben werden: sie stammen aus
-	// `$env/static/private` und werden dort fest eingebacken. Ohne das landet die echte Adresse
+	// Die Empfänger-Adressen MÜSSEN schon beim Build überschrieben werden: sie sind in
+	// `src/env.ts` als `static: true` deklariert und werden fest eingebacken. Ohne das landet die echte Adresse
 	// aus der lokalen .env in der E-Mail-Vorschau — und damit in einem Screenshot im README.
 	const app = startProcess('npm', ['run', 'build'], PLACEHOLDER_ENV);
 	children.push(app);

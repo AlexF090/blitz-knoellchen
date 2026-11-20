@@ -4,9 +4,9 @@
 	 * Die Antworten stehen als Snippets am Ende der Datei.
 	 */
 	import { resolve } from '$app/paths';
-	import type { AccordionItem } from '$lib/components/Accordion.svelte';
-	import Accordion from '$lib/components/Accordion.svelte';
-	import PageHeader from '$lib/components/PageHeader.svelte';
+	import type { AccordionItem } from '#lib/components/Accordion.svelte';
+	import Accordion from '#lib/components/Accordion.svelte';
+	import PageHeader from '#lib/components/PageHeader.svelte';
 
 	const generalItems: AccordionItem[] = [
 		{

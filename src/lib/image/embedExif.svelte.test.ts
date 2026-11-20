@@ -1,4 +1,4 @@
-import { parseExif, type ParsedExif } from '$lib/exif/parseExif';
+import { parseExif, type ParsedExif } from '#lib/exif/parseExif.ts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { embedExifMetadata } from './embedExif';
 

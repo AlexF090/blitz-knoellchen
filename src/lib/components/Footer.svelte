@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { installPrompt } from '$lib/pwa/installPrompt.svelte';
+	import { installPrompt } from '#lib/pwa/installPrompt.svelte.ts';
 </script>
 
 <footer

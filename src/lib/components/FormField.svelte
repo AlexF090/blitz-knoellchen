@@ -4,8 +4,8 @@
 	 * Rendert standardmäßig ein `input`; Sonderfälle liefern ihr Control per Snippet.
 	 */
 	import type { Snippet } from 'svelte';
-	import { fieldErrorBase, inputBase, labelBase, requiredMark } from '$lib/ui/inputStyles';
-	import { ariaFieldProps } from '$lib/validation/ariaField';
+	import { fieldErrorBase, inputBase, labelBase, requiredMark } from '#lib/ui/inputStyles.ts';
+	import { ariaFieldProps } from '#lib/validation/ariaField.ts';
 
 	interface Props {
 		/** Dient zugleich als `name` des Eingabefelds und als Basis der Fehler-Id. */

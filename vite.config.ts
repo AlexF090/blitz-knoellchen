@@ -2,8 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-vercel';
-import { sveltekit } from '@sveltejs/kit/vite';
-import { SvelteKitPWA } from '@vite-pwa/sveltekit';
+import { withPwa } from '@vite-pwa/sveltekit';
 import pkg from './package.json' with { type: 'json' };
 
 const appVersion = pkg.version;
@@ -14,122 +13,131 @@ export default defineConfig({
 	},
 	plugins: [
 		tailwindcss(),
-		sveltekit({
-			compilerOptions: {
-				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
-				runes: ({ filename }) =>
-					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
-			},
+		// withPwa ruft sveltekit() selbst auf und verbindet Adapter und Service-Worker-Build.
+		...withPwa(
+			{
+				compilerOptions: {
+					// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
+					runes: ({ filename }) =>
+						filename.split(/[/\\]/).includes('node_modules') ? undefined : true
+				},
 
-			// Fest @sveltejs/adapter-vercel statt adapter-auto (einziges Deployment-Ziel). runtime
-			// explizit gesetzt, sonst rät adapter-vercel anhand der lokalen (z.B. per nvm neueren,
-			// von Vercel noch nicht unterstützten) Node-Version und bricht den Build sonst ab.
-			// Version synchron zu .nvmrc und engines.node halten. Ein Node-Major-Wechsel betrifft alle
-			// drei Stellen und ist bewusst manuell.
-			adapter: adapter({ runtime: 'nodejs24.x' }),
+				// Fest @sveltejs/adapter-vercel statt adapter-auto (einziges Deployment-Ziel). runtime
+				// explizit gesetzt, sonst rät adapter-vercel anhand der lokalen (z.B. per nvm neueren,
+				// von Vercel noch nicht unterstützten) Node-Version und bricht den Build sonst ab.
+				// Version synchron zu .nvmrc und engines.node halten. Ein Node-Major-Wechsel betrifft alle
+				// drei Stellen und ist bewusst manuell.
+				adapter: adapter({ runtime: 'nodejs24.x' }),
 
-			// CSP über SvelteKits eingebaute Unterstützung statt manuell in hooks.server.ts, damit
-			// SvelteKit das von ihm selbst injizierte Bootstrap-<script> automatisch per Nonce/Hash
-			// freischaltet (mode: 'auto' → Nonce bei dynamischem Rendering, Hash bei Prerendering).
-			// Direktiven basieren auf einer vollständigen Durchsicht aller externen Aufrufe:
-			// LocationIQ (api/geocode) und Brevo (api/send) laufen ausschließlich serverseitig, der
-			// Browser ruft nur eigene /api/*-Endpunkte auf. style-src braucht 'unsafe-inline':
-			// dynamische style="..."-Attribute in PullToRefresh.svelte, PhotoLightbox.svelte
-			// (Per-Frame-Transform, nicht hashbar), Wordmark.svelte und app.html. Gilt nur für
-			// HTML-Seiten (SvelteKits Render-Pfad) — die übrigen Sicherheits-Header für alle Responses
-			// inkl. /api/* setzt src/lib/server/applySecurityHeaders.ts.
-			csp: {
-				mode: 'auto',
-				directives: {
-					'default-src': ['self'],
-					'script-src': ['self'],
-					'style-src': ['self', 'unsafe-inline'],
-					'img-src': ['self', 'blob:'],
-					'font-src': ['self'],
-					'connect-src': ['self'],
-					// blob: für den HEIC-Konvertierungs-Worker von heic-to/csp (URL.createObjectURL).
-					'worker-src': ['self', 'blob:'],
-					'manifest-src': ['self'],
-					'object-src': ['none'],
-					'base-uri': ['self'],
-					'form-action': ['self'],
-					'frame-ancestors': ['none']
-					// KEIN `require-trusted-types-for: ['script']`: live gegen den Production-Build
-					// getestet (Chromium/Playwright) — SvelteKits eigener Chunk-Loader weist
-					// dynamisch `script.src` zu (Lazy-Loading der Route-Module), was der Browser
-					// dann mit "This document requires 'TrustedScriptURL' assignment" blockt und die
-					// komplette Client-Hydration verhindert. Eine eigene Trusted-Types-Policy dafür
-					// wäre ein separates, nicht triviales Vorhaben (Policy für den Vite/SvelteKit-
-					// Modul-Loader schreiben) — daher hier bewusst nicht aktiviert. Der Lighthouse-
-					// Befund `trusted-types-xss` bleibt dadurch offen.
-				}
-			}
-		}),
-		SvelteKitPWA({
-			registerType: 'autoUpdate',
-			manifest: {
-				name: 'Blitz-Knöllchen',
-				short_name: 'Blitz-Knöllchen',
-				description: 'Falschparker in rund 30 Sekunden an die Bußgeldstelle Köln melden.',
-				lang: 'de',
-				start_url: '/',
-				display: 'standalone',
-				background_color: 'oklch(100% 0 0)',
-				theme_color: 'oklch(100% 0 0)'
-				// icons: von @vite-pwa/assets-generator generiert, s. pwaAssets unten
-				// (overrideManifestIcons).
-			},
-			pwaAssets: {
-				// Muss direkt in `static/` liegen (SvelteKits Pendant zu Vites `publicDir`) — die
-				// generierten Dateinamen werden root-relativ ins Manifest geschrieben.
-				image: 'static/app-icon.svg',
-				// theme-color wird bereits hell/dunkel-abhängig in +layout.svelte gesetzt.
-				injectThemeColor: false,
-				overrideManifestIcons: true,
-				// Eigenes Preset statt 'minimal-2023': Icon ist bereits randlos/quadratisch mit
-				// eigenem Innenabstand, Standard-Padding würde es zusätzlich verkleinern.
-				preset: {
-					transparent: {
-						sizes: [64, 192, 512],
-						favicons: [[48, 'favicon.ico']],
-						padding: 0,
-						resizeOptions: { background: 'transparent' }
-					},
-					maskable: {
-						sizes: [512],
-						padding: 0,
-						resizeOptions: { background: '#255a54' }
-					},
-					apple: {
-						sizes: [180],
-						padding: 0,
-						resizeOptions: { background: '#255a54' }
+				// CSP über SvelteKits eingebaute Unterstützung statt manuell in hooks.server.ts, damit
+				// SvelteKit das von ihm selbst injizierte Bootstrap-<script> automatisch per Nonce/Hash
+				// freischaltet (mode: 'auto' → Nonce bei dynamischem Rendering, Hash bei Prerendering).
+				// Direktiven basieren auf einer vollständigen Durchsicht aller externen Aufrufe:
+				// LocationIQ (api/geocode) und Brevo (api/send) laufen ausschließlich serverseitig, der
+				// Browser ruft nur eigene /api/*-Endpunkte auf. style-src braucht 'unsafe-inline':
+				// dynamische style="..."-Attribute in PullToRefresh.svelte, PhotoLightbox.svelte
+				// (Per-Frame-Transform, nicht hashbar), Wordmark.svelte und app.html. Gilt nur für
+				// HTML-Seiten (SvelteKits Render-Pfad) — die übrigen Sicherheits-Header für alle Responses
+				// inkl. /api/* setzt src/lib/server/applySecurityHeaders.ts.
+				csp: {
+					mode: 'auto',
+					directives: {
+						'default-src': ['self'],
+						'script-src': ['self'],
+						'style-src': ['self', 'unsafe-inline'],
+						'img-src': ['self', 'blob:'],
+						'font-src': ['self'],
+						'connect-src': ['self'],
+						// blob: für den HEIC-Konvertierungs-Worker von heic-to/csp (URL.createObjectURL).
+						'worker-src': ['self', 'blob:'],
+						'manifest-src': ['self'],
+						'object-src': ['none'],
+						'base-uri': ['self'],
+						'form-action': ['self'],
+						'frame-ancestors': ['none']
+						// KEIN `require-trusted-types-for: ['script']`: live gegen den Production-Build
+						// getestet (Chromium/Playwright) — SvelteKits eigener Chunk-Loader weist
+						// dynamisch `script.src` zu (Lazy-Loading der Route-Module), was der Browser
+						// dann mit "This document requires 'TrustedScriptURL' assignment" blockt und die
+						// komplette Client-Hydration verhindert. Eine eigene Trusted-Types-Policy dafür
+						// wäre ein separates, nicht triviales Vorhaben (Policy für den Vite/SvelteKit-
+						// Modul-Loader schreiben) — daher hier bewusst nicht aktiviert. Der Lighthouse-
+						// Befund `trusted-types-xss` bleibt dadurch offen.
 					}
 				}
 			},
-			workbox: {
-				// Nur die App-Shell vorcachen, kein komplexes Runtime-Caching.
-				globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
-				// Das Vorschaubild brauchen nur Link-Vorschau-Crawler, nicht die App offline.
-				globIgnores: ['**/og-image.png'],
+			{
+				registerType: 'autoUpdate',
+				manifest: {
+					name: 'Blitz-Knöllchen',
+					short_name: 'Blitz-Knöllchen',
+					description: 'Falschparker in rund 30 Sekunden an die Bußgeldstelle Köln melden.',
+					lang: 'de',
+					start_url: '/',
+					display: 'standalone',
+					background_color: 'oklch(100% 0 0)',
+					theme_color: 'oklch(100% 0 0)'
+					// icons: von @vite-pwa/assets-generator generiert, s. pwaAssets unten
+					// (overrideManifestIcons).
+				},
+				pwaAssets: {
+					// Muss direkt in `static/` liegen (SvelteKits Pendant zu Vites `publicDir`) — die
+					// generierten Dateinamen werden root-relativ ins Manifest geschrieben.
+					image: 'static/app-icon.svg',
+					// theme-color wird bereits hell/dunkel-abhängig in +layout.svelte gesetzt.
+					injectThemeColor: false,
+					overrideManifestIcons: true,
+					// Eigenes Preset statt 'minimal-2023': Icon ist bereits randlos/quadratisch mit
+					// eigenem Innenabstand, Standard-Padding würde es zusätzlich verkleinern.
+					preset: {
+						transparent: {
+							sizes: [64, 192, 512],
+							favicons: [[48, 'favicon.ico']],
+							padding: 0,
+							resizeOptions: { background: 'transparent' }
+						},
+						maskable: {
+							sizes: [512],
+							padding: 0,
+							resizeOptions: { background: '#255a54' }
+						},
+						apple: {
+							sizes: [180],
+							padding: 0,
+							resizeOptions: { background: '#255a54' }
+						}
+					}
+				},
 				// heic-to (dynamic import, mehrere MB durch die gebündelte libheif-WASM)
 				// überschreitet Workbox' Standardlimit von 2 MiB, das vor manifestTransforms
 				// greift und den Build sonst abbricht — daher angehoben, bleibt aber trotzdem
 				// außerhalb des Precache (s.u., kein stabiler Chunk-Dateiname für ein Glob).
 				maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-				manifestTransforms: [
-					(entries) => ({ manifest: entries.filter((entry) => (entry.size ?? 0) < 512 * 1024) })
-				],
-				navigateFallbackDenylist: [/^\/api\//],
-				runtimeCaching: [
-					{
-						// /api/* darf nie gecacht werden — Geocoding/Send brauchen immer das Netz.
-						urlPattern: /^\/api\//,
-						handler: 'NetworkOnly'
-					}
-				]
+				generateSW: {
+					// Nur die App-Shell vorcachen, kein komplexes Runtime-Caching. Das Präfix `client/`
+					// verlangt das Plugin; ohne ergänzt es ein eigenes Muster und jede Datei steht doppelt
+					// im Precache.
+					globPatterns: ['client/**/*.{js,css,html,svg,png,ico,webmanifest}'],
+					// Das Vorschaubild brauchen nur Link-Vorschau-Crawler, nicht die App offline.
+					globIgnores: ['**/og-image.png'],
+					// Das Plugin ergänzt immer ein Muster für vorgerenderte Seiten (`prerendered/**`).
+					// Die App rendert alle Seiten serverseitig, das Muster findet also nichts; ohne
+					// diese Option bricht Workbox den Build deshalb ab.
+					globStrict: false,
+					manifestTransforms: [
+						(entries) => ({ manifest: entries.filter((entry) => (entry.size ?? 0) < 512 * 1024) })
+					],
+					navigateFallbackDenylist: [/^\/api\//],
+					runtimeCaching: [
+						{
+							// /api/* darf nie gecacht werden — Geocoding/Send brauchen immer das Netz.
+							urlPattern: /^\/api\//,
+							handler: 'NetworkOnly'
+						}
+					]
+				}
 			}
-		})
+		)
 	],
 	test: {
 		expect: { requireAssertions: true },

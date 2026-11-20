@@ -5,10 +5,10 @@
 	 */
 	import { Share, SquarePlus } from '@lucide/svelte';
 	import { fly } from 'svelte/transition';
-	import { browser } from '$app/environment';
-	import { transitionDuration } from '$lib/motion/reducedMotion';
-	import { isIosSafari } from '$lib/pwa/isIosSafari';
-	import { installPrompt } from '$lib/pwa/installPrompt.svelte';
+	import { browser } from '$app/env';
+	import { transitionDuration } from '#lib/motion/reducedMotion.ts';
+	import { isIosSafari } from '#lib/pwa/isIosSafari.ts';
+	import { installPrompt } from '#lib/pwa/installPrompt.svelte.ts';
 
 	let isIosSafariUser = $state(false);
 	// Bewusst kein dauerhaftes Ausblenden per localStorage — solange die App nicht installiert
