@@ -228,6 +228,18 @@ kommt aus `src/lib/config/impactOptions.ts` (`IMPAIRMENT_OPTIONS`, `ENDANGERED_P
 je `label` für die Checkbox und `emailText` für die E-Mail); `joinGermanList` verbindet die
 Aufzählung mit „und“. Ohne Auswahl entfällt der Abschnitt vollständig.
 
+Alle drei Checkbox-Gruppen (Verstöße, Ausmaß der Behinderung, gefährdete Personen) zeigen vor
+jedem Label ein Icon, damit sich die langen Listen schneller überfliegen lassen. Die Zuordnung
+id → Icon liegt getrennt von den Auswahllisten in `src/lib/config/incidentTypeIcons.ts` und
+`src/lib/config/impactOptionIcons.ts`, weil `cities.ts` und `impactOptions.ts` auch serverseitig im
+E-Mail-Pfad laufen und dort keine Svelte-Komponenten brauchen. Ein `OptionIcon`
+(`src/lib/config/optionIcon.ts`) ist ein amtliches Verkehrszeichen (SVG unter `static/signs`,
+lokal gehostet), ein Emoji oder ein Lucide-Icon, in dieser Rangfolge: Verkehrszeichen dort, wo ein
+einzelnes Schild den Ort des Verstoßes eindeutig zeigt (Zeichen 237, 239, 283, 286, 350), sonst ein
+Emoji, und Lucide nur, wo es kein passendes Emoji gibt (Kreuzungsbereich). Alle Icons stehen in einer
+Spalte fester Breite, damit die Labels bündig bleiben. Die Icons
+sind `aria-hidden`; der zugängliche Name der Checkbox bleibt der Label-Text.
+
 ### Entwurf: sofort speichern beim Verlassen, Fortsetzen-Banner, eigener Foto-Store
 
 **Kontext.** Wer mitten im Ausfüllen den Tab wechselt oder die PWA schließt, soll nichts verlieren.
@@ -417,6 +429,10 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `src/lib/components/DraftResumeBanner.svelte`        | Hinweis „Entwurf fortsetzen?“ beim Öffnen, s. ADR „Entwurf“ oben                                                                                                |
 | `src/lib/components/CheckboxGroupFieldset.svelte`    | Mehrfachauswahl als Checkbox-Gruppe (Ausmaß der Behinderung, gefährdete Personen)                                                                               |
 | `src/lib/config/impactOptions.ts`                    | Auswahllisten für „Ausmaß der Behinderung“ und „Gefährdete Personen“ samt E-Mail-Formulierung                                                                   |
+| `src/lib/config/impactOptionIcons.ts`                | Icons für „Ausmaß der Behinderung“ und „Gefährdete Personen“                                                                                                    |
+| `src/lib/config/incidentTypeIcons.ts`                | Icons der Verstoßarten (Verkehrszeichen, Emoji, Lucide)                                                                                                         |
+| `src/lib/config/optionIcon.ts`                       | Typ `OptionIcon`: Verkehrszeichen, Emoji oder Lucide-Icon                                                                                                       |
+| `src/lib/components/OptionIcon.svelte`               | Dekoratives Icon vor einer Checkbox-Option                                                                                                                      |
 | `src/lib/email/timeModeWording.ts`                   | Ersetzt `{verb}`/`{noun}` in Verstoßbeschreibungen je nach Halte- oder Parkverstoß                                                                              |
 | `src/lib/format/joinGermanList.ts`                   | Verbindet Aufzählungen mit Komma und „und“                                                                                                                      |
 | `src/lib/format/germanDate.ts`                       | Datums- und Zeitformatierung (`formatIsoDateDMY`, `formatTimeRange`, `formatTimestampDE`)                                                                       |

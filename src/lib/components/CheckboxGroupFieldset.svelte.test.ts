@@ -1,3 +1,4 @@
+import { Bike } from '@lucide/svelte';
 import { describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
@@ -84,5 +85,17 @@ describe('CheckboxGroupFieldset', () => {
 		fieldset.focus();
 
 		expect(document.activeElement).toBe(fieldset);
+	});
+
+	it('zeigt Icons nur für Optionen mit Eintrag, ohne den zugänglichen Namen zu ändern', async () => {
+		const { container } = await render(CheckboxGroupFieldset, {
+			...baseProps(),
+			icons: { a: { kind: 'symbol', component: Bike } }
+		});
+
+		await expect.element(page.getByRole('checkbox', { name: 'Option A' })).toBeInTheDocument();
+		const labels = container.querySelectorAll('label');
+		expect(labels[0].querySelector('[aria-hidden="true"] svg')).not.toBeNull();
+		expect(labels[1].querySelector('svg')).toBeNull();
 	});
 });

@@ -5,6 +5,7 @@
 	 */
 	import type { City, IncidentType } from '$lib/config/cities';
 	import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '$lib/config/impactOptions';
+	import { ENDANGERED_PERSON_ICONS, IMPAIRMENT_ICONS } from '$lib/config/impactOptionIcons';
 	import { INCIDENT_TYPE_ICONS } from '$lib/config/incidentTypeIcons';
 	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
@@ -29,6 +30,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import FormField from './FormField.svelte';
 	import IncidentLocationFieldset from './IncidentLocationFieldset.svelte';
+	import OptionIcon from './OptionIcon.svelte';
 	import SummaryList from './SummaryList.svelte';
 	import VehicleDetailsFieldset from './VehicleDetailsFieldset.svelte';
 	import VehiclePreviewDialog from './VehiclePreviewDialog.svelte';
@@ -269,20 +271,16 @@
 				</p>
 				<div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
 					{#each incidentTypes as type (type.id)}
-						{@const Icon = INCIDENT_TYPE_ICONS[type.id]}
+						{@const icon = INCIDENT_TYPE_ICONS[type.id]}
 						<label class="flex cursor-pointer items-center gap-2 py-2.5 text-lg text-ink">
 							<input
 								type="checkbox"
 								checked={vehicle.incidentTypeIds.includes(type.id)}
 								onchange={(e) => toggleIncidentType(type.id, e.currentTarget.checked)}
-								class="size-4 rounded border-border"
+								class="size-4 shrink-0 rounded border-border"
 							/>
-							<span class="flex items-center gap-1.5">
-								{type.label}
-								{#if Icon}
-									<Icon class="size-5 shrink-0" aria-hidden="true" />
-								{/if}
-							</span>
+							{#if icon}<OptionIcon {icon} />{/if}
+							{type.label}
 						</label>
 					{/each}
 				</div>
@@ -299,6 +297,7 @@
 				legend="Ausmaß der Behinderung"
 				hint="Optional (Mehrfachauswahl möglich)"
 				options={IMPAIRMENT_OPTIONS}
+				icons={IMPAIRMENT_ICONS}
 				bind:selectedIds={vehicle.impairmentIds}
 				idPrefix="impairmentIds-{vehicle.id}"
 				error={errors?.impairmentIds}
@@ -308,6 +307,7 @@
 				legend="Gefährdete Personen"
 				hint="Optional (Mehrfachauswahl möglich)"
 				options={ENDANGERED_PERSON_OPTIONS}
+				icons={ENDANGERED_PERSON_ICONS}
 				bind:selectedIds={vehicle.endangeredPersonIds}
 				idPrefix="endangeredPersonIds-{vehicle.id}"
 				error={errors?.endangeredPersonIds}
