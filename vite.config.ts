@@ -226,8 +226,8 @@ export default defineConfig({
 				}, // (a) drei `bind:value` an FormField + Interpolation der VEHICLE_TYPES/VEHICLE_MAKES-Listen
 				'src/lib/components/VehiclePreviewDialog.svelte': { branches: 80 }, // (a) Interpolation in Titel-/alt-Attributen
 				'src/lib/components/icons/*.svelte': { branches: 0 }, // (a) $props()-Default
-				// (b) — `if (oldVersion < 3)` wird von idb nie mit einer neueren Schemaversion
-				// aufgerufen, der false-Zweig ist über die öffentliche API nicht erreichbar.
+				// (b) — Reserve für die Migrationszweige in `upgrade`: je Schemaversion ein Zweig, den
+				// nur ein Test mit Datenbank genau dieses Altstands erreicht.
 				'src/lib/history/db.ts': { branches: 97 },
 				'src/lib/pwa/installPrompt.svelte.ts': { branches: 80 }, // (b) `if (browser)`-SSR-Guard
 				'src/routes/+layout.svelte': { branches: 45 }, // (a) `dev`-Build-Time-Konstante
