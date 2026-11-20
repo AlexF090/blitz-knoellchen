@@ -108,11 +108,14 @@ export default defineConfig({
 						}
 					}
 				},
-				// heic-to (dynamic import, mehrere MB durch die gebündelte libheif-WASM)
-				// überschreitet Workbox' Standardlimit von 2 MiB, das vor manifestTransforms
-				// greift und den Build sonst abbricht — daher angehoben, bleibt aber trotzdem
-				// außerhalb des Precache (s.u., kein stabiler Chunk-Dateiname für ein Glob).
-				maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+				// Registriert wird in src/hooks.client.ts: SvelteKit rendert die Seiten selbst, eine
+				// Einbindung ins HTML greift dort nicht.
+				injectRegister: false,
+				// Große Dateien bleiben außerhalb des Precache, vor allem heic-to (mehrere MB durch die
+				// gebündelte libheif-WASM, nur bei HEIC-Fotos gebraucht). Ohne `throw…: false` bräche
+				// der Build an ihnen ab, statt sie nur auszulassen.
+				maximumFileSizeToCacheInBytes: 512 * 1024,
+				throwMaximumFileSizeToCacheInBytes: false,
 				generateSW: {
 					// Nur die App-Shell vorcachen, kein komplexes Runtime-Caching. Das Präfix `client/`
 					// verlangt das Plugin; ohne ergänzt es ein eigenes Muster und jede Datei steht doppelt
@@ -124,14 +127,16 @@ export default defineConfig({
 					// Die App rendert alle Seiten serverseitig, das Muster findet also nichts; ohne
 					// diese Option bricht Workbox den Build deshalb ab.
 					globStrict: false,
-					manifestTransforms: [
-						(entries) => ({ manifest: entries.filter((entry) => (entry.size ?? 0) < 512 * 1024) })
-					],
-					navigateFallbackDenylist: [/^\/api\//],
+					// Seiten kommen immer vom Server: Sie werden serverseitig gerendert (mit
+					// Server-Daten und CSP-Nonce pro Antwort) und liegen nie im Precache. Der
+					// Standard-Fallback auf `/` ließe deshalb jede Navigation scheitern.
+					navigateFallback: null,
 					runtimeCaching: [
 						{
 							// /api/* darf nie gecacht werden — Geocoding/Send brauchen immer das Netz.
-							urlPattern: /^\/api\//,
+							// Als Funktion statt RegExp: Workbox prüft eine RegExp gegen die volle URL,
+							// ein Muster mit `^/api/` träfe dann nie.
+							urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
 							handler: 'NetworkOnly'
 						}
 					]

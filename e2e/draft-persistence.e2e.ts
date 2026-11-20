@@ -7,8 +7,6 @@ import { test, expect } from './fixtures';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(__dirname, 'fixtures/photo-with-gps.jpg');
 
-test.use({ serviceWorkers: 'block' });
-
 const mockGeocode = (page: Page) =>
 	page.route('**/api/geocode**', (route) =>
 		route.fulfill({
