@@ -5,15 +5,15 @@
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import { resolve } from '$app/paths';
-	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import PhotoLightbox, { type LightboxPhoto } from '$lib/components/PhotoLightbox.svelte';
-	import { clearEntries, deleteEntry, listEntries, type HistoryEntry } from '$lib/history/db';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+	import PageHeader from '#lib/components/PageHeader.svelte';
+	import PhotoLightbox, { type LightboxPhoto } from '#lib/components/PhotoLightbox.svelte';
+	import { clearEntries, deleteEntry, listEntries, type HistoryEntry } from '#lib/history/db.ts';
 	import {
 		buttonDestructive,
 		buttonDestructiveSecondary,
 		buttonSecondary
-	} from '$lib/ui/buttonStyles';
+	} from '#lib/ui/buttonStyles.ts';
 	import { Trash2 } from '@lucide/svelte';
 
 	let entries = $state<HistoryEntry[]>([]);

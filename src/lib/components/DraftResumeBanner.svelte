@@ -3,8 +3,8 @@
 	 * Hinweis auf einen ungesendeten Entwurf beim Öffnen der App: Der Nutzer entscheidet, ob er
 	 * ihn fortsetzt oder verwirft. Die Rückfrage vor dem Verwerfen übernimmt der Aufrufer.
 	 */
-	import { formatTimestampDE } from '$lib/format/germanDate';
-	import { buttonDestructiveSecondary, buttonPrimary } from '$lib/ui/buttonStyles';
+	import { formatTimestampDE } from '#lib/format/germanDate.ts';
+	import { buttonDestructiveSecondary, buttonPrimary } from '#lib/ui/buttonStyles.ts';
 
 	interface Props {
 		/** Zeitpunkt der letzten Speicherung in Millisekunden. */

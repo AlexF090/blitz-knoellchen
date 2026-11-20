@@ -3,9 +3,9 @@
 	 * Der gemeinsame Foto-Pool der Anzeige: Auswahl neuer Dateien, Vorschau-Grid und Lightbox.
 	 * Die Zuordnung einzelner Fotos zu Fahrzeugen passiert nicht hier, sondern in VehicleBlock.
 	 */
-	import { blobSrc } from '$lib/photo/blobSrc';
-	import type { PhotoQueueProgress } from '$lib/photo/processPhotoQueue';
-	import type { PhotoEntry } from '$lib/validation/formSchema';
+	import { blobSrc } from '#lib/photo/blobSrc.ts';
+	import type { PhotoQueueProgress } from '#lib/photo/processPhotoQueue.ts';
+	import type { PhotoEntry } from '#lib/validation/formSchema.ts';
 	import PhotoLightbox from './PhotoLightbox.svelte';
 
 	interface Props {

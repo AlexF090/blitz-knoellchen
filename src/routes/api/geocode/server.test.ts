@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { RequestEvent } from './$types';
 
-vi.mock('$env/static/private', () => ({ LOCATIONIQ_API_KEY: 'test-key' }));
+vi.mock('$app/env/private', () => ({ LOCATIONIQ_API_KEY: 'test-key' }));
 
 const waitForSlotMock = vi.fn<(minIntervalMs: number) => Promise<void>>(async () => {});
-vi.mock('$lib/geocode/rateLimiter', () => ({
+vi.mock('#lib/geocode/rateLimiter.ts', () => ({
 	LOCATIONIQ_MIN_INTERVAL_MS: 1000,
 	waitForSlot: (minIntervalMs: number) => waitForSlotMock(minIntervalMs)
 }));
 
 const reverseGeocodeMock = vi.fn();
-vi.mock('$lib/geocode/reverseGeocode', () => ({
+vi.mock('#lib/geocode/reverseGeocode.ts', () => ({
 	createLocationIqProvider: vi.fn((apiKey: string) => ({ name: 'locationiq', apiKey })),
 	createBigDataCloudProvider: vi.fn(() => ({ name: 'bigdatacloud' })),
 	reverseGeocode: (lat: number, lon: number, providers: unknown[]) =>

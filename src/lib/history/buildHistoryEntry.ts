@@ -1,12 +1,12 @@
-import type { IncidentType } from '$lib/config/cities';
+import type { IncidentType } from '#lib/config/cities.ts';
 import {
 	ENDANGERED_PERSON_OPTIONS,
 	IMPAIRMENT_OPTIONS,
 	resolveImpactOptions
-} from '$lib/config/impactOptions';
-import { formatAddress } from '$lib/geocode/formatAddress';
-import { normalizeLicensePlate } from '$lib/validation/formSchema';
-import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
+} from '#lib/config/impactOptions.ts';
+import { formatAddress } from '#lib/geocode/formatAddress.ts';
+import { normalizeLicensePlate } from '#lib/validation/formSchema.ts';
+import type { PhotoEntry, VehicleEntry } from '#lib/validation/formSchema.ts';
 import type { HistoryEntry } from './db';
 
 /** Rohdaten einer gerade versendeten Anzeige. */

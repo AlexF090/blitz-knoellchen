@@ -16,7 +16,7 @@ import {
 	type HistoryEntry,
 	type UserProfile
 } from './db';
-import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
+import type { PhotoEntry, VehicleEntry } from '#lib/validation/formSchema.ts';
 
 // Schreibt einen rohen, ggf. schema-inkompatiblen Draft-Datensatz direkt in die bestehende
 // IndexedDB — simuliert einen Entwurf aus einer Vorgängerversion, der über getDraft()/saveDraft()
@@ -82,7 +82,7 @@ const makeEntry = (overrides: Partial<HistoryEntry> = {}): HistoryEntry => {
 };
 
 // Diese Datei ist der einzige Test, der die echte IndexedDB anspricht; alle anderen mocken
-// $lib/history/db. Sonst hinge das Ergebnis davon ab, welche Datei zuerst läuft.
+// #lib/history/db.ts. Sonst hinge das Ergebnis davon ab, welche Datei zuerst läuft.
 const LEGACY_ENTRY_ID = 'eintrag-aus-version-2';
 let entriesAfterMigration: HistoryEntry[] = [];
 let profileAfterMigration: UserProfile | undefined;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildEmailBody } from '$lib/email/buildEmailBody';
+import { buildEmailBody } from '#lib/email/buildEmailBody.ts';
 import { CITIES, findParkingOnlyIncidentTypes } from './cities';
 
 describe('CITIES', () => {

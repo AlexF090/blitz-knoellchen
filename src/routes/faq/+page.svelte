@@ -4,9 +4,9 @@
 	 * Die Antworten stehen als Snippets am Ende der Datei.
 	 */
 	import { resolve } from '$app/paths';
-	import type { AccordionItem } from '$lib/components/Accordion.svelte';
-	import Accordion from '$lib/components/Accordion.svelte';
-	import PageHeader from '$lib/components/PageHeader.svelte';
+	import type { AccordionItem } from '#lib/components/Accordion.svelte';
+	import Accordion from '#lib/components/Accordion.svelte';
+	import PageHeader from '#lib/components/PageHeader.svelte';
 
 	const generalItems: AccordionItem[] = [
 		{
@@ -129,9 +129,9 @@
 			<tbody>
 				<tr class="border-b border-border align-top">
 					<td class="py-2 pr-3">Dein Gerät</td>
-					<td class="py-2 pr-3"
-						>Profil (Name, Anschrift, E-Mail, ggf. Telefon), Historie, Formularentwurf</td
-					>
+					<td class="py-2 pr-3">
+						Profil (Name, Anschrift, E-Mail, ggf. Telefon), Historie, Formularentwurf
+					</td>
 					<td class="py-2 pr-3">IndexedDB deines Browsers</td>
 					<td class="py-2 pr-3">Bis du sie selbst löschst (Entwurf: max. 7 Tage)</td>
 					<td class="py-2">Nur du</td>
@@ -152,14 +152,14 @@
 				</tr>
 				<tr class="border-b border-border align-top">
 					<td class="py-2 pr-3">Brevo</td>
-					<td class="py-2 pr-3"
-						>Vollständige Anzeige: Name, Anschrift, E-Mail, Kennzeichen, Tatort, Tatzeit,
-						Verstoßart, Anmerkungen, Foto</td
-					>
+					<td class="py-2 pr-3">
+						Vollständige Anzeige: Name, Anschrift, E-Mail, Kennzeichen, Tatort, Tatzeit, Verstoßart,
+						Anmerkungen, Foto
+					</td>
 					<td class="py-2 pr-3">Bei Brevo (EU-Anbieter), zum Versand</td>
-					<td class="py-2 pr-3"
-						>Logs: max. 1 Monat, dann automatisch gelöscht (vom Betreiber so eingestellt)</td
-					>
+					<td class="py-2 pr-3">
+						Logs: max. 1 Monat, dann automatisch gelöscht (vom Betreiber so eingestellt)
+					</td>
 					<td class="py-2">Brevo als Versanddienstleister</td>
 				</tr>
 				<tr class="border-b border-border align-top">
@@ -178,8 +178,9 @@
 				</tr>
 				<tr class="align-top">
 					<td class="py-2 pr-3">Vercel Web Analytics</td>
-					<td class="py-2 pr-3">Anonyme, aggregierte Seitenaufrufe (ohne Cookies/IP-Speicherung)</td
-					>
+					<td class="py-2 pr-3">
+						Anonyme, aggregierte Seitenaufrufe (ohne Cookies/IP-Speicherung)
+					</td>
 					<td class="py-2 pr-3">Bei Vercel</td>
 					<td class="py-2 pr-3">Aggregiert, keine Zuordnung zu dir möglich</td>
 					<td class="py-2">Vercel</td>
@@ -193,9 +194,9 @@
 		<a href={resolve('/datenschutz')} class="underline">Datenschutzerklärung, Abschnitt 8</a>).
 		Neben deinen eigenen Angaben werden zwangsläufig auch Daten der gemeldeten Person verarbeitet –
 		Kennzeichen, Tatort, Tatzeit und das Beweisfoto, das ggf. auch die Person zeigt – ausschließlich
-		zur Bearbeitung der Anzeige (<a href={resolve('/datenschutz')} class="underline"
-			>Datenschutzerklärung, Abschnitt 9</a
-		>). Wie lange die Daten jeweils aufbewahrt werden, steht in der Tabelle oben; Details in der
+		zur Bearbeitung der Anzeige (<a href={resolve('/datenschutz')} class="underline">
+			Datenschutzerklärung, Abschnitt 9
+		</a>). Wie lange die Daten jeweils aufbewahrt werden, steht in der Tabelle oben; Details in der
 		<a href={resolve('/datenschutz')} class="underline">Datenschutzerklärung (Abschnitt 11)</a>.
 	</p>
 {/snippet}

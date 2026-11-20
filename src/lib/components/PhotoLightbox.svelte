@@ -3,7 +3,7 @@
 	 * Vollbild-Vorschau eines Fotos mit Zoom und Pan per Doppeltipp, Pinch, Mausrad und Tastatur.
 	 * Der Dialog ist offen, solange `photo` gesetzt ist.
 	 */
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 
 	export interface LightboxPhoto {
 		blob: Blob;

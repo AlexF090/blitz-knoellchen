@@ -1,5 +1,5 @@
-import type { AppMode } from '$lib/appMode.svelte';
-import type { VehicleEntry } from '$lib/validation/formSchema';
+import type { AppMode } from '#lib/appMode.svelte.ts';
+import type { VehicleEntry } from '#lib/validation/formSchema.ts';
 
 /** Die Melderdaten, die mit jeder einzelnen Fahrzeug-Anzeige übertragen werden. */
 export interface SendFormProfile {

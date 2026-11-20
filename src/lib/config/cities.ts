@@ -1,4 +1,4 @@
-import { buildEmailBody } from '$lib/email/buildEmailBody';
+import { buildEmailBody } from '#lib/email/buildEmailBody.ts';
 
 /**
  * Eine auswählbare Verstoßart mit Formular-Label und E-Mail-Satz.
@@ -127,7 +127,7 @@ const KOELN_INCIDENT_TYPES: IncidentType[] = [
 
 /** Alle unterstützten Städte, nachschlagbar per `city.id`. */
 // Bewusst ohne recipientEmail: diese Datei wird auch clientseitig importiert (das Formular
-// braucht incidentTypes/label), $env/static/private ist dort verboten — der Empfänger lebt
+// braucht incidentTypes/label), $app/env/private ist dort verboten — der Empfänger lebt
 // darum in cities.server.ts.
 export const CITIES: Record<string, City> = {
 	koeln: {

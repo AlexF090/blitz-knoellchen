@@ -3,7 +3,7 @@ import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import Footer from './Footer.svelte';
 
-// installPrompt ist modul-globaler Runes-State (`$lib/pwa/installPrompt.svelte.ts`). Der
+// installPrompt ist modul-globaler Runes-State (`#lib/pwa/installPrompt.svelte.ts`). Der
 // canInstall-Zustand wird ausschließlich über das reale `beforeinstallprompt`-Event gesetzt —
 // hier additiv getestet (kein Zurücksetzen zwischen den Fällen nötig, da der Install-Button erst
 // nach dem Event erscheint und die anderen Tests keinen Ausgangszustand voraussetzen).

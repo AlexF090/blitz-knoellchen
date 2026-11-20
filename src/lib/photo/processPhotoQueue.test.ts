@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { PhotoEntry } from '$lib/validation/formSchema';
+import type { PhotoEntry } from '#lib/validation/formSchema.ts';
 import { HeicConversionError } from './createPhotoEntry';
 import { processPhotoQueue, type PhotoQueueProgress } from './processPhotoQueue';
 

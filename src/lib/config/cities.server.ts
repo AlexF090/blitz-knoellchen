@@ -1,9 +1,9 @@
-import { RECIPIENT_EMAIL_DEMO, RECIPIENT_EMAIL_LIVE } from '$env/static/private';
-import type { AppMode } from '$lib/appMode.svelte';
+import { RECIPIENT_EMAIL_DEMO, RECIPIENT_EMAIL_LIVE } from '$app/env/private';
+import type { AppMode } from '#lib/appMode.svelte.ts';
 
 export type { AppMode };
 
-// Getrennt von cities.ts, weil $env/static/private niemals von clientseitigem Code importiert
+// Getrennt von cities.ts, weil $app/env/private niemals von clientseitigem Code importiert
 // werden darf (SvelteKit lehnt das beim Build ab). Ein zweiter Städte-Eintrag würde hier zwei
 // weitere env-gestützte Zeilen bekommen.
 const DEMO_RECIPIENT_EMAILS: Record<string, string> = {

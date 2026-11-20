@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import type { PhotoEntry } from '$lib/validation/formSchema';
+import type { PhotoEntry } from '#lib/validation/formSchema.ts';
 import PhotoPool from './PhotoPool.svelte';
 
 const makePhoto = (overrides: Partial<PhotoEntry> = {}): PhotoEntry => ({

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import { isIosSafari } from '$lib/pwa/isIosSafari';
+import { isIosSafari } from '#lib/pwa/isIosSafari.ts';
 import IosInstallBanner from './IosInstallBanner.svelte';
 
-vi.mock('$lib/pwa/isIosSafari', () => ({
+vi.mock('#lib/pwa/isIosSafari.ts', () => ({
 	isIosSafari: vi.fn()
 }));
 

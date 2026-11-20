@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
+import type { PhotoEntry, VehicleEntry } from '#lib/validation/formSchema.ts';
 import { joinPhotoBlobs, parseStoredDraft } from './draftSchema';
 
 const MAX_AGE = 1000;

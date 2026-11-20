@@ -1,4 +1,4 @@
-import { getProfile, saveProfile, type UserProfile } from '$lib/history/db';
+import { getProfile, saveProfile, type UserProfile } from '#lib/history/db.ts';
 
 export type { UserProfile };
 

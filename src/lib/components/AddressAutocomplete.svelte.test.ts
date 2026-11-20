@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import { fetchAddressSuggestions } from '$lib/geocode/autocompleteClient';
-import type { AddressSuggestion } from '$lib/geocode/autocomplete';
+import { fetchAddressSuggestions } from '#lib/geocode/autocompleteClient.ts';
+import type { AddressSuggestion } from '#lib/geocode/autocomplete.ts';
 import AddressAutocomplete from './AddressAutocomplete.svelte';
 
-vi.mock('$lib/geocode/autocompleteClient', () => ({
+vi.mock('#lib/geocode/autocompleteClient.ts', () => ({
 	fetchAddressSuggestions: vi.fn()
 }));
 

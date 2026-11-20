@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
 /** Das noch nicht standardisierte `beforeinstallprompt`-Event, das die PWA-Installation anbietet. */
 export interface BeforeInstallPromptEvent extends Event {

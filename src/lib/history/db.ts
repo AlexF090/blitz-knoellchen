@@ -1,6 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { joinPhotoBlobs, parseStoredDraft } from './draftSchema';
-import type { PhotoEntry, VehicleEntry } from '$lib/validation/formSchema';
+import type { PhotoEntry, VehicleEntry } from '#lib/validation/formSchema.ts';
 
 /** Eine abgesendete Anzeige, wie sie in der lokalen Historie gespeichert wird. */
 export interface HistoryEntry {

@@ -1,4 +1,4 @@
-import type { VehicleEntry } from '$lib/validation/formSchema';
+import type { VehicleEntry } from '#lib/validation/formSchema.ts';
 
 const WORDING: Record<VehicleEntry['timeMode'], { verb: string; noun: string }> = {
 	halteverstoss: { verb: 'hielt', noun: 'Halten' },

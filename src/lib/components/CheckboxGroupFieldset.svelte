@@ -3,11 +3,11 @@
 	 * Eine Mehrfachauswahl als Checkbox-Gruppe mit Legende, Hinweis und Fehlermeldung. Die
 	 * Fieldset-Id ist fokussierbar, damit nach einem Validierungsfehler dorthin gesprungen wird.
 	 */
-	import type { ImpactOption } from '$lib/config/impactOptions';
-	import type { OptionIconMap } from '$lib/config/optionIcon';
+	import type { ImpactOption } from '#lib/config/impactOptions.ts';
+	import type { OptionIconMap } from '#lib/config/optionIcon.ts';
 	import OptionIcon from './OptionIcon.svelte';
-	import { fieldErrorBase } from '$lib/ui/inputStyles';
-	import { toggleId } from '$lib/validation/toggleId';
+	import { fieldErrorBase } from '#lib/ui/inputStyles.ts';
+	import { toggleId } from '#lib/validation/toggleId.ts';
 
 	interface Props {
 		legend: string;

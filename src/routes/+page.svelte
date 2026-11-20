@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { pwaInfo } from 'virtual:pwa-info';
 	import { resolve } from '$app/paths';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import ReportForm from '$lib/components/ReportForm.svelte';
+	import PageHeader from '#lib/components/PageHeader.svelte';
+	import ReportForm from '#lib/components/ReportForm.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();

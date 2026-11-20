@@ -3,27 +3,27 @@
 	 * Eine auf- und zuklappbare Karte pro gemeldetem Fahrzeug: Fotoauswahl, Tatort, Fahrzeugdaten
 	 * und Verstöße. Zugeklappt zeigt sie nur noch die Zusammenfassung.
 	 */
-	import type { City, IncidentType } from '$lib/config/cities';
-	import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '$lib/config/impactOptions';
-	import { ENDANGERED_PERSON_ICONS, IMPAIRMENT_ICONS } from '$lib/config/impactOptionIcons';
-	import { INCIDENT_TYPE_ICONS } from '$lib/config/incidentTypeIcons';
-	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
-	import { triggerHaptic } from '$lib/haptics/vibrate';
-	import { transitionDuration } from '$lib/motion/reducedMotion';
-	import { blobSrc } from '$lib/photo/blobSrc';
-	import { buildVehicleSummaryRows } from '$lib/report/vehicleSummary';
-	import { buttonDestructive, buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
-	import { inputBase } from '$lib/ui/inputStyles';
-	import { onEnterKey } from '$lib/ui/onEnterKey';
+	import type { City, IncidentType } from '#lib/config/cities.ts';
+	import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '#lib/config/impactOptions.ts';
+	import { ENDANGERED_PERSON_ICONS, IMPAIRMENT_ICONS } from '#lib/config/impactOptionIcons.ts';
+	import { INCIDENT_TYPE_ICONS } from '#lib/config/incidentTypeIcons.ts';
+	import { getVehicleAccentClass } from '#lib/config/vehicleColors.ts';
+	import { triggerHaptic } from '#lib/haptics/vibrate.ts';
+	import { transitionDuration } from '#lib/motion/reducedMotion.ts';
+	import { blobSrc } from '#lib/photo/blobSrc.ts';
+	import { buildVehicleSummaryRows } from '#lib/report/vehicleSummary.ts';
+	import { buttonDestructive, buttonPrimary, buttonSecondary } from '#lib/ui/buttonStyles.ts';
+	import { inputBase } from '#lib/ui/inputStyles.ts';
+	import { onEnterKey } from '#lib/ui/onEnterKey.ts';
 	import type {
 		PhotoEntry,
 		ProfileFields,
 		VehicleEntry,
 		VehicleErrors
-	} from '$lib/validation/formSchema';
-	import { ariaFieldProps } from '$lib/validation/ariaField';
-	import { MAX_FREE_TEXT_LENGTH, validateVehicle } from '$lib/validation/formSchema';
-	import { toggleId } from '$lib/validation/toggleId';
+	} from '#lib/validation/formSchema.ts';
+	import { ariaFieldProps } from '#lib/validation/ariaField.ts';
+	import { MAX_FREE_TEXT_LENGTH, validateVehicle } from '#lib/validation/formSchema.ts';
+	import { toggleId } from '#lib/validation/toggleId.ts';
 	import { Eye, RotateCcw, Trash2 } from '@lucide/svelte';
 	import { fade } from 'svelte/transition';
 	import CheckboxGroupFieldset from './CheckboxGroupFieldset.svelte';
@@ -234,8 +234,9 @@
 									<span
 										aria-hidden="true"
 										class="absolute inset-0 flex items-center justify-center bg-primary-600/40 text-on-primary"
-										>✓</span
 									>
+										✓
+									</span>
 								{/if}
 							</button>
 						{/each}

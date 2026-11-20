@@ -1,8 +1,8 @@
-import type { GeocodeAddress } from '$lib/geocode/geocodeAddress';
-import { findParkingOnlyIncidentTypes } from '$lib/config/cities';
-import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '$lib/config/impactOptions';
-import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
-import { joinGermanList } from '$lib/format/joinGermanList';
+import type { GeocodeAddress } from '#lib/geocode/geocodeAddress.ts';
+import { findParkingOnlyIncidentTypes } from '#lib/config/cities.ts';
+import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '#lib/config/impactOptions.ts';
+import { VEHICLE_TYPES } from '#lib/config/vehicleTypes.ts';
+import { joinGermanList } from '#lib/format/joinGermanList.ts';
 
 /** Ein verarbeitetes Beweisfoto samt der aus ihm gelesenen Aufnahmedaten. */
 export interface PhotoEntry {

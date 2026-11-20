@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import { fetchAddressSuggestions } from '$lib/geocode/autocompleteClient';
-import { createEmptyVehicle } from '$lib/validation/emptyForm';
-import type { VehicleEntry } from '$lib/validation/formSchema';
+import { fetchAddressSuggestions } from '#lib/geocode/autocompleteClient.ts';
+import { createEmptyVehicle } from '#lib/validation/emptyForm.ts';
+import type { VehicleEntry } from '#lib/validation/formSchema.ts';
 import IncidentLocationFieldset from './IncidentLocationFieldset.svelte';
 
 // Das Straßenfeld ist ein AddressAutocomplete — echte Netzwerkaufrufe beim Tippen sind hier
 // nicht Testgegenstand, daher wird der Client konsequent gemockt.
-vi.mock('$lib/geocode/autocompleteClient', () => ({
+vi.mock('#lib/geocode/autocompleteClient.ts', () => ({
 	fetchAddressSuggestions: vi.fn().mockResolvedValue({ suggestions: [], failed: false })
 }));
 

@@ -4,12 +4,12 @@
 	 * Hält Entwurf (IndexedDB-Autosave), Validierung und Versand zusammen.
 	 */
 	import { resolve } from '$app/paths';
-	import { appMode } from '$lib/appMode.svelte';
-	import { CITIES } from '$lib/config/cities';
-	import { appendCoordinatesNote } from '$lib/geocode/appendCoordinatesNote';
-	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
-	import { fetchAddress } from '$lib/geocode/client';
-	import { triggerHaptic } from '$lib/haptics/vibrate';
+	import { appMode } from '#lib/appMode.svelte.ts';
+	import { CITIES } from '#lib/config/cities.ts';
+	import { appendCoordinatesNote } from '#lib/geocode/appendCoordinatesNote.ts';
+	import { applyAddressSuggestion } from '#lib/geocode/applyAddressSuggestion.ts';
+	import { fetchAddress } from '#lib/geocode/client.ts';
+	import { triggerHaptic } from '#lib/haptics/vibrate.ts';
 	import {
 		addEntry,
 		clearDraft,
@@ -17,25 +17,25 @@
 		saveDraft,
 		type DraftFormData,
 		type LoadedDraft
-	} from '$lib/history/db';
-	import { createDraftAutosave, DRAFT_AUTOSAVE_DELAY_MS } from '$lib/history/draftAutosave';
-	import { transitionDuration } from '$lib/motion/reducedMotion';
-	import { decideAutoAssignment } from '$lib/photo/autoAssign';
-	import { createPhotoEntry } from '$lib/photo/createPhotoEntry';
-	import { processPhotoQueue, type PhotoQueueProgress } from '$lib/photo/processPhotoQueue';
-	import { createProfileStore } from '$lib/profile/profileStore.svelte';
-	import { PHOTO_WARNINGS, pruneWarnings } from '$lib/report/photoWarnings';
-	import { sendVehicleReport } from '$lib/report/sendClient';
-	import type { VehicleSendResult } from '$lib/report/sendResults';
-	import { submitVehicleReports } from '$lib/report/submitVehicleReports';
+	} from '#lib/history/db.ts';
+	import { createDraftAutosave, DRAFT_AUTOSAVE_DELAY_MS } from '#lib/history/draftAutosave.ts';
+	import { transitionDuration } from '#lib/motion/reducedMotion.ts';
+	import { decideAutoAssignment } from '#lib/photo/autoAssign.ts';
+	import { createPhotoEntry } from '#lib/photo/createPhotoEntry.ts';
+	import { processPhotoQueue, type PhotoQueueProgress } from '#lib/photo/processPhotoQueue.ts';
+	import { createProfileStore } from '#lib/profile/profileStore.svelte.ts';
+	import { PHOTO_WARNINGS, pruneWarnings } from '#lib/report/photoWarnings.ts';
+	import { sendVehicleReport } from '#lib/report/sendClient.ts';
+	import type { VehicleSendResult } from '#lib/report/sendResults.ts';
+	import { submitVehicleReports } from '#lib/report/submitVehicleReports.ts';
 	import {
 		buttonDestructive,
 		buttonDestructiveSecondary,
 		buttonPrimary,
 		buttonSecondary
-	} from '$lib/ui/buttonStyles';
-	import { createEmptyForm, createEmptyVehicle } from '$lib/validation/emptyForm';
-	import { findFirstErrorTarget } from '$lib/validation/fieldOrder';
+	} from '#lib/ui/buttonStyles.ts';
+	import { createEmptyForm, createEmptyVehicle } from '#lib/validation/emptyForm.ts';
+	import { findFirstErrorTarget } from '#lib/validation/fieldOrder.ts';
 	import {
 		isFormValid,
 		MAX_PHOTOS_PER_VEHICLE,
@@ -45,7 +45,7 @@
 		type PhotoEntry,
 		type ReportFormData,
 		type VehicleEntry
-	} from '$lib/validation/formSchema';
+	} from '#lib/validation/formSchema.ts';
 	import { tick } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -811,10 +811,10 @@
 	desktopMaxWidthClass="sm:max-w-lg"
 >
 	<p class="mt-1 text-lg text-ink-muted">
-		Du erhältst eine Kopie per E-Mail von <strong class="font-semibold text-ink"
-			>{senderEmail}</strong
-		>. Falls sie nicht im Posteingang ankommt, prüfe bei Bedarf auch deinen Spam-Ordner. Die Anzeige
-		liegt außerdem in deiner Historie.
+		Du erhältst eine Kopie per E-Mail von <strong class="font-semibold text-ink">
+			{senderEmail}
+		</strong>. Falls sie nicht im Posteingang ankommt, prüfe bei Bedarf auch deinen Spam-Ordner. Die
+		Anzeige liegt außerdem in deiner Historie.
 	</p>
 	{#snippet actions()}
 		<button type="button" onclick={closeSuccessDialog} class="flex-1 {buttonSecondary}">

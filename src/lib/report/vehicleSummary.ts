@@ -1,12 +1,12 @@
-import type { IncidentType } from '$lib/config/cities';
+import type { IncidentType } from '#lib/config/cities.ts';
 import {
 	ENDANGERED_PERSON_OPTIONS,
 	IMPAIRMENT_OPTIONS,
 	resolveImpactOptions
-} from '$lib/config/impactOptions';
-import { formatIsoDateDMY, formatTimeRange } from '$lib/format/germanDate';
-import { formatAddress } from '$lib/geocode/formatAddress';
-import type { VehicleEntry } from '$lib/validation/formSchema';
+} from '#lib/config/impactOptions.ts';
+import { formatIsoDateDMY, formatTimeRange } from '#lib/format/germanDate.ts';
+import { formatAddress } from '#lib/geocode/formatAddress.ts';
+import type { VehicleEntry } from '#lib/validation/formSchema.ts';
 
 /** Eine Beschriftung/Wert-Zeile der Fahrzeug-Zusammenfassung. */
 export interface SummaryRow {

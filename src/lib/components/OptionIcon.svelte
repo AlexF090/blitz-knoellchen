@@ -3,7 +3,7 @@
 	 * Dekoratives Icon vor einer Checkbox-Option: Verkehrszeichen, Emoji oder Lucide-Icon. Für
 	 * Screenreader ausgeblendet, weil das Label daneben die Bedeutung trägt.
 	 */
-	import type { OptionIcon } from '$lib/config/optionIcon';
+	import type { OptionIcon } from '#lib/config/optionIcon.ts';
 
 	interface Props {
 		icon: OptionIcon;
@@ -23,9 +23,9 @@
 	{#if icon.kind === 'sign'}
 		<img src={icon.src} alt="" class="size-6" />
 	{:else if icon.kind === 'emoji'}
-		<span class={['leading-none whitespace-nowrap', emojiCount > 1 ? 'text-xs' : 'text-xl']}
-			>{icon.character}</span
-		>
+		<span class={['leading-none whitespace-nowrap', emojiCount > 1 ? 'text-xs' : 'text-xl']}>
+			{icon.character}
+		</span>
 	{:else}
 		{@const Symbol = icon.component}
 		<Symbol class="size-6 text-ink-muted" />

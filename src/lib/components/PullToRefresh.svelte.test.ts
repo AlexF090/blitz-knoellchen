@@ -1,10 +1,10 @@
 import { createRawSnippet } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import { reloadWithLatestVersion } from '$lib/pwa/reloadLatest';
+import { reloadWithLatestVersion } from '#lib/pwa/reloadLatest.ts';
 import PullToRefresh from './PullToRefresh.svelte';
 
-vi.mock('$lib/pwa/reloadLatest', () => ({
+vi.mock('#lib/pwa/reloadLatest.ts', () => ({
 	reloadWithLatestVersion: vi.fn().mockResolvedValue(undefined)
 }));
 

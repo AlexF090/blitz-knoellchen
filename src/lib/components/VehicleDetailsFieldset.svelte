@@ -2,12 +2,12 @@
 	/**
 	 * Die Fahrzeugangaben einer Fahrzeug-Karte: Kennzeichen, Fahrzeugart, Marke und Farbe.
 	 */
-	import { VEHICLE_MAKES } from '$lib/config/vehicleMakes';
-	import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
-	import { inputBase } from '$lib/ui/inputStyles';
-	import { ariaFieldProps } from '$lib/validation/ariaField';
-	import type { VehicleEntry, VehicleErrors } from '$lib/validation/formSchema';
-	import { normalizeLicensePlate } from '$lib/validation/formSchema';
+	import { VEHICLE_MAKES } from '#lib/config/vehicleMakes.ts';
+	import { VEHICLE_TYPES } from '#lib/config/vehicleTypes.ts';
+	import { inputBase } from '#lib/ui/inputStyles.ts';
+	import { ariaFieldProps } from '#lib/validation/ariaField.ts';
+	import type { VehicleEntry, VehicleErrors } from '#lib/validation/formSchema.ts';
+	import { normalizeLicensePlate } from '#lib/validation/formSchema.ts';
 	import FormField from './FormField.svelte';
 
 	interface Props {

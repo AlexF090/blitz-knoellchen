@@ -5,21 +5,22 @@ const compressImageMock = vi.fn();
 const convertHeicToJpegMock = vi.fn();
 const embedExifMetadataMock = vi.fn();
 
-vi.mock('$lib/exif/parseExif', () => ({
+vi.mock('#lib/exif/parseExif.ts', () => ({
 	parseExif: (...args: unknown[]) => parseExifMock(...args)
 }));
-vi.mock('$lib/image/compress', () => ({
+vi.mock('#lib/image/compress.ts', () => ({
 	compressImage: (...args: unknown[]) => compressImageMock(...args)
 }));
-vi.mock('$lib/image/convertHeic', async () => {
-	const actual =
-		await vi.importActual<typeof import('$lib/image/convertHeic')>('$lib/image/convertHeic');
+vi.mock('#lib/image/convertHeic.ts', async () => {
+	const actual = await vi.importActual<typeof import('#lib/image/convertHeic.ts')>(
+		'#lib/image/convertHeic.ts'
+	);
 	return {
 		...actual,
 		convertHeicToJpeg: (...args: unknown[]) => convertHeicToJpegMock(...args)
 	};
 });
-vi.mock('$lib/image/embedExif', () => ({
+vi.mock('#lib/image/embedExif.ts', () => ({
 	embedExifMetadata: (...args: unknown[]) => embedExifMetadataMock(...args)
 }));
 

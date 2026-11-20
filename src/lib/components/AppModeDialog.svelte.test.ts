@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import { appMode } from '$lib/appMode.svelte';
+import { appMode } from '#lib/appMode.svelte.ts';
 import AppModeDialog from './AppModeDialog.svelte';
 
 // buttonPrimary/buttonDestructiveSecondary sind Modul-Konstanten (immer definierte Strings) —
 // Svelte kompiliert die abgeleiteten class-Attribute dennoch mit einem `?? ''`-Fallback. Nur ein
 // zur Laufzeit fehlender Wert (hier per Mock erzwungen) deckt diesen Fallback-Zweig ab.
-vi.mock('$lib/ui/buttonStyles', () => ({
+vi.mock('#lib/ui/buttonStyles.ts', () => ({
 	buttonPrimary: undefined,
 	buttonDestructiveSecondary: undefined
 }));

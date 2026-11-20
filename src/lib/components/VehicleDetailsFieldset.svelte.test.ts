@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import { VEHICLE_MAKES } from '$lib/config/vehicleMakes';
-import { VEHICLE_TYPES } from '$lib/config/vehicleTypes';
-import { createEmptyVehicle } from '$lib/validation/emptyForm';
-import type { VehicleEntry } from '$lib/validation/formSchema';
+import { VEHICLE_MAKES } from '#lib/config/vehicleMakes.ts';
+import { VEHICLE_TYPES } from '#lib/config/vehicleTypes.ts';
+import { createEmptyVehicle } from '#lib/validation/emptyForm.ts';
+import type { VehicleEntry } from '#lib/validation/formSchema.ts';
 import VehicleDetailsFieldset from './VehicleDetailsFieldset.svelte';
 
 // Die Fahrzeugfelder sind `bind:value`-gebunden — nur ein reaktives Objekt spiegelt die von der

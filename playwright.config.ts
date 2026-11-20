@@ -13,7 +13,10 @@ export default defineConfig({
 		// Bei mehreren webServer-Einträgen leitet Playwright `baseURL` nicht mehr automatisch vom
 		// einzigen `port` ab (anders als bei einem einzelnen webServer-Objekt) — deshalb hier explizit.
 		baseURL: `http://localhost:${APP_PORT}`,
-		trace: 'retain-on-failure'
+		trace: 'retain-on-failure',
+		// Anfragen, die der Service Worker abfängt, sieht page.route() nicht: Gemockte Endpunkte
+		// liefen sonst ins echte Netz. Nur e2e/service-worker.e2e.ts lässt ihn zu.
+		serviceWorkers: 'block'
 	},
 	// Zwei Prozesse: der Brevo-Mock muss stehen, bevor die App-Umgebungsvariable BREVO_API_URL
 	// beim Start von `npm run preview` gelesen wird (s. src/routes/api/send/+server.ts) — echte

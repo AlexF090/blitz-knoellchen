@@ -1,4 +1,4 @@
-import type { PhotoEntry } from '$lib/validation/formSchema';
+import type { PhotoEntry } from '#lib/validation/formSchema.ts';
 import { HeicConversionError } from './createPhotoEntry';
 
 /** Stand der Verarbeitung: `current` ist die laufende Datei (ab 1), `total` die Gesamtzahl. */

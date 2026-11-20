@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import type { HistoryEntry } from '$lib/history/db';
+import type { HistoryEntry } from '#lib/history/db.ts';
 
 const listEntriesMock = vi.fn(async () => [] as HistoryEntry[]);
 const deleteEntryMock = vi.fn(async (id: string) => {
 	void id;
 });
 const clearEntriesMock = vi.fn(async () => {});
-vi.mock('$lib/history/db', () => ({
+vi.mock('#lib/history/db.ts', () => ({
 	listEntries: () => listEntriesMock(),
 	deleteEntry: (id: string) => deleteEntryMock(id),
 	clearEntries: () => clearEntriesMock()

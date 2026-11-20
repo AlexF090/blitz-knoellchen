@@ -3,10 +3,10 @@
 	 * Die Karte „Deine Angaben“ — Name, Anschrift und Kontaktdaten des Anzeigenden, wahlweise im
 	 * Bearbeiten- oder im Lese-Modus.
 	 */
-	import { buttonPrimary, buttonSecondary } from '$lib/ui/buttonStyles';
-	import { onEnterKey } from '$lib/ui/onEnterKey';
-	import type { FormErrors, ReportFormData } from '$lib/validation/formSchema';
-	import { validateProfileFields } from '$lib/validation/formSchema';
+	import { buttonPrimary, buttonSecondary } from '#lib/ui/buttonStyles.ts';
+	import { onEnterKey } from '#lib/ui/onEnterKey.ts';
+	import type { FormErrors, ReportFormData } from '#lib/validation/formSchema.ts';
+	import { validateProfileFields } from '#lib/validation/formSchema.ts';
 	import AddressAutocomplete from './AddressAutocomplete.svelte';
 	import FormField from './FormField.svelte';
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createEmptyVehicle } from '$lib/validation/emptyForm';
+import { createEmptyVehicle } from '#lib/validation/emptyForm.ts';
 import { buildHistoryEntry } from './buildHistoryEntry';
 
 describe('buildHistoryEntry', () => {

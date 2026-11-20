@@ -1,10 +1,10 @@
-import type { AppMode } from '$lib/appMode.svelte';
-import type { City } from '$lib/config/cities';
-import { resolveVehicleIncidentTypes } from '$lib/email/buildEmailTemplateInput';
-import { buildHistoryEntry } from '$lib/history/buildHistoryEntry';
-import type { HistoryEntry } from '$lib/history/db';
-import type { PhotoEntry, ReportFormData } from '$lib/validation/formSchema';
-import { normalizeLicensePlate } from '$lib/validation/formSchema';
+import type { AppMode } from '#lib/appMode.svelte.ts';
+import type { City } from '#lib/config/cities.ts';
+import { resolveVehicleIncidentTypes } from '#lib/email/buildEmailTemplateInput.ts';
+import { buildHistoryEntry } from '#lib/history/buildHistoryEntry.ts';
+import type { HistoryEntry } from '#lib/history/db.ts';
+import type { PhotoEntry, ReportFormData } from '#lib/validation/formSchema.ts';
+import { normalizeLicensePlate } from '#lib/validation/formSchema.ts';
 import { buildSendFormData } from './sendFormData';
 import type { VehicleSendResult } from './sendResults';
 
