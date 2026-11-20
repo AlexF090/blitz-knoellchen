@@ -110,6 +110,9 @@ const mockDraft = (draft: Pick<LoadedDraft, 'vehicles' | 'photos'> & Partial<Loa
 	});
 };
 
+/** Entscheidet im Hinweis auf den gespeicherten Entwurf für „Fortsetzen“. */
+const resumeDraft = () => userEvent.click(page.getByRole('button', { name: 'Fortsetzen' }));
+
 const setDefaultMocks = () => {
 	mockedGetDraft.mockResolvedValue(undefined);
 	mockedGetProfile.mockResolvedValue(undefined);
@@ -166,6 +169,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 
 		await expect.element(page.getByText(validProfile.email, { exact: true })).toBeInTheDocument();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
@@ -305,6 +309,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: '+ Weiteres Fahrzeug hinzufügen' }));
@@ -324,6 +329,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Vorfall entfernen' }).first());
@@ -341,6 +347,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Vorfall zurücksetzen' }));
@@ -359,6 +366,7 @@ describe('ReportForm', () => {
 		mockedSendVehicleReport.mockResolvedValue(true);
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -382,6 +390,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -402,6 +411,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -419,6 +429,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 		const block = document.getElementById('vehicle-block-veh-1') as HTMLElement;
 		const scrollIntoViewSpy = vi.spyOn(block, 'scrollIntoView');
@@ -441,6 +452,7 @@ describe('ReportForm', () => {
 		mockedSendVehicleReport.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -463,6 +475,7 @@ describe('ReportForm', () => {
 		mockedSendVehicleReport.mockResolvedValue(false);
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -486,6 +499,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Zurücksetzen', exact: true }).first());
@@ -507,6 +521,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		// Absenden schlägt fehl: Fahrzeug A (Index 0) ist gültig, Fahrzeug B (Index 1) hat ein
@@ -642,6 +657,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await new Promise((resolve) => setTimeout(resolve, 900));
@@ -676,6 +692,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		uploadPhoto(new File(['x'], 'zweites.jpg', { type: 'image/jpeg' }));
@@ -728,6 +745,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -751,6 +769,7 @@ describe('ReportForm', () => {
 		mockedClearDraft.mockRejectedValue(new Error('Löschen fehlgeschlagen'));
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Zurücksetzen', exact: true }).first());
@@ -768,6 +787,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -786,6 +806,7 @@ describe('ReportForm', () => {
 		mockDraft({ vehicles: [], photos: [] });
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -805,6 +826,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -822,6 +844,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
@@ -857,6 +880,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		// Der Foto-Toggle-Button selbst hat kein aria-label; der zugängliche Name kommt vom
@@ -880,6 +904,7 @@ describe('ReportForm', () => {
 		mockDraft({ vehicles: [], photos: [] });
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByText(validProfile.email, { exact: true })).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Bearbeiten' }));
@@ -896,6 +921,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 		await userEvent.click(page.getByRole('button', { name: 'Foto photo-1.jpg entfernen' }));
@@ -981,6 +1007,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 		// Foto zunächst manuell Fahrzeug 1 zuordnen -> erste (echte) Adressauflösung.
@@ -1012,6 +1039,7 @@ describe('ReportForm', () => {
 		});
 
 		await renderForm();
+		await resumeDraft();
 		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
 
 		await userEvent.click(page.getByRole('button', { name: 'Zurücksetzen', exact: true }).first());
@@ -1033,6 +1061,7 @@ describe('ReportForm', () => {
 			mockedGetProfile.mockResolvedValue(validProfile);
 			loadedVehicleDraft();
 			await renderForm();
+			await resumeDraft();
 			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 			await userEvent.fill(page.getByLabelText('Kennzeichen'), 'K-ZZ9999');
@@ -1047,6 +1076,7 @@ describe('ReportForm', () => {
 			mockedGetProfile.mockResolvedValue(validProfile);
 			loadedVehicleDraft();
 			await renderForm();
+			await resumeDraft();
 			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 			const visibility = vi.spyOn(document, 'visibilityState', 'get');
 
@@ -1082,6 +1112,7 @@ describe('ReportForm', () => {
 			mockedGetProfile.mockResolvedValue(validProfile);
 			loadedVehicleDraft();
 			await renderForm();
+			await resumeDraft();
 			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 			window.dispatchEvent(new Event('pagehide'));
@@ -1095,6 +1126,7 @@ describe('ReportForm', () => {
 			mockedGetProfile.mockResolvedValue(validProfile);
 			loadedVehicleDraft();
 			await renderForm();
+			await resumeDraft();
 			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 			await userEvent.click(page.getByRole('button', { name: 'Fertig' }));
@@ -1115,6 +1147,7 @@ describe('ReportForm', () => {
 
 			try {
 				await renderForm();
+				await resumeDraft();
 
 				await expect
 					.element(page.getByRole('button', { name: 'Bearbeiten' }).last())
@@ -1134,6 +1167,7 @@ describe('ReportForm', () => {
 			loadedVehicleDraft({ geocodeWarnings: { 'veh-1': 'Wiederhergestellter Hinweis' } });
 
 			await renderForm();
+			await resumeDraft();
 
 			await expect.element(page.getByText('Wiederhergestellter Hinweis')).toBeInTheDocument();
 		});
@@ -1146,6 +1180,7 @@ describe('ReportForm', () => {
 
 			try {
 				await renderForm();
+				await resumeDraft();
 				await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 				expect(scrollTo).not.toHaveBeenCalled();
 			} finally {
@@ -1165,6 +1200,7 @@ describe('ReportForm', () => {
 				ui: { collapsedVehicleIds: ['veh-1', 'veh-2'], scrollY: 0, geocodeWarnings: {} }
 			});
 			await renderForm();
+			await resumeDraft();
 			await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
 
 			await userEvent.click(page.getByRole('button', { name: 'Vorfall entfernen' }).first());
@@ -1203,6 +1239,7 @@ describe('ReportForm', () => {
 			mockedGetProfile.mockResolvedValue(validProfile);
 			loadedVehicleDraft();
 			await renderForm();
+			await resumeDraft();
 			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 			await userEvent.fill(page.getByLabelText('Kennzeichen'), 'K-ZZ9999');
@@ -1222,6 +1259,7 @@ describe('ReportForm', () => {
 			mockedGetProfile.mockResolvedValue(validProfile);
 			loadedVehicleDraft();
 			await renderForm();
+			await resumeDraft();
 			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
 
 			await userEvent.fill(page.getByLabelText('Kennzeichen'), 'K-AA2222');
@@ -1231,6 +1269,170 @@ describe('ReportForm', () => {
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 			expect(mockedClearDraft).toHaveBeenCalled();
 			expect(mockedSaveDraft).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('Entwurf fortsetzen oder verwerfen', () => {
+		const draftWithTwoVehicles = () =>
+			mockDraft({
+				vehicles: [
+					makeVehicle({ id: 'veh-1' }),
+					makeVehicle({ id: 'veh-2', licensePlate: 'K-BB2222' })
+				],
+				photos: [makePhoto('photo-1')],
+				ui: { collapsedVehicleIds: ['veh-2'], scrollY: 0, geocodeWarnings: {} }
+			});
+
+		it('zeigt statt einer stillen Wiederherstellung den Hinweis und blendet Fotos und Fahrzeuge aus', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+
+			await renderForm();
+
+			await expect
+				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+				.toBeInTheDocument();
+			await expect.element(page.getByText('2 Fahrzeuge, 1 Foto')).toBeInTheDocument();
+			await expect.element(page.getByText(validProfile.email, { exact: true })).toBeInTheDocument();
+			await expect.element(page.getByLabelText('Kennzeichen')).not.toBeInTheDocument();
+			await expect
+				.element(page.getByRole('button', { name: '+ Weiteres Fahrzeug hinzufügen' }))
+				.not.toBeInTheDocument();
+		});
+
+		it('schreibt und löscht den Entwurf nicht, solange der Hinweis offen ist', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+			await expect
+				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+				.toBeInTheDocument();
+
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+			window.dispatchEvent(new Event('pagehide'));
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			expect(mockedSaveDraft).not.toHaveBeenCalled();
+			expect(mockedClearDraft).not.toHaveBeenCalled();
+		});
+
+		it('sperrt Absenden und Zurücksetzen, solange der Hinweis offen ist', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+
+			await renderForm();
+
+			await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeDisabled();
+			await expect
+				.element(page.getByRole('button', { name: 'Zurücksetzen', exact: true }))
+				.toBeDisabled();
+		});
+
+		it('stellt beim Fortsetzen die gespeicherte Scrollposition wieder her', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+			mockDraft({
+				vehicles: [makeVehicle({ id: 'veh-1' })],
+				photos: [makePhoto('photo-1')],
+				ui: { collapsedVehicleIds: [], scrollY: 240, geocodeWarnings: {} }
+			});
+
+			try {
+				await renderForm();
+				expect(scrollTo).not.toHaveBeenCalled();
+
+				await resumeDraft();
+
+				await expect
+					.poll(() => scrollTo.mock.calls.at(-1)?.[0])
+					.toEqual({ top: 240, behavior: 'instant' });
+			} finally {
+				scrollTo.mockRestore();
+			}
+		});
+
+		it('stellt beim Fortsetzen Fahrzeuge und Zuklapp-Zustand wieder her und speichert danach wieder', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			await resumeDraft();
+
+			await expect.element(page.getByRole('heading', { name: 'Vorfall 2' })).toBeInTheDocument();
+			await expect.element(page.getByLabelText('Kennzeichen')).toHaveValue('K-AA1111');
+			await expect
+				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+				.not.toBeInTheDocument();
+			await expect.poll(() => mockedSaveDraft.mock.calls.length, { timeout: 2000 }).toBe(1);
+			expect(mockedSaveDraft.mock.calls[0][0].ui.collapsedVehicleIds).toEqual(['veh-2']);
+		});
+
+		it('verwirft nach Bestätigung den Entwurf und zeigt ein leeres Formular', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }));
+			await expect
+				.element(page.getByRole('dialog', { name: 'Entwurf verwerfen?' }))
+				.toBeInTheDocument();
+			expect(mockedClearDraft).not.toHaveBeenCalled();
+			await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }).last());
+
+			await expect
+				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+				.not.toBeInTheDocument();
+			await expect
+				.element(page.getByRole('button', { name: '+ Weiteres Fahrzeug hinzufügen' }))
+				.toBeInTheDocument();
+			await expect.element(page.getByLabelText('Kennzeichen')).not.toBeInTheDocument();
+			expect(mockedClearDraft).toHaveBeenCalled();
+			expect(mockedSaveDraft).not.toHaveBeenCalled();
+		});
+
+		it('zeigt das leere Formular auch, wenn das Löschen des Entwurfs beim Verwerfen fehlschlägt', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			mockedClearDraft.mockRejectedValue(new Error('Löschen fehlgeschlagen'));
+			const logError = vi.spyOn(console, 'error').mockImplementation(() => {});
+			await renderForm();
+
+			try {
+				await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }));
+				await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }).last());
+
+				await expect
+					.element(page.getByRole('button', { name: '+ Weiteres Fahrzeug hinzufügen' }))
+					.toBeInTheDocument();
+				expect(logError).toHaveBeenCalledWith(
+					'Fehler beim Löschen des Entwurfs:',
+					expect.any(Error)
+				);
+			} finally {
+				logError.mockRestore();
+			}
+		});
+
+		it('behält den Hinweis, wenn die Rückfrage abgebrochen wird', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }));
+			await userEvent.click(page.getByRole('button', { name: 'Abbrechen' }));
+
+			await expect
+				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
+				.toBeInTheDocument();
+			expect(mockedClearDraft).not.toHaveBeenCalled();
 		});
 	});
 });

@@ -9,7 +9,14 @@
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
 	import { fetchAddress } from '$lib/geocode/client';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
-	import { addEntry, clearDraft, getDraft, saveDraft, type DraftFormData } from '$lib/history/db';
+	import {
+		addEntry,
+		clearDraft,
+		getDraft,
+		saveDraft,
+		type DraftFormData,
+		type LoadedDraft
+	} from '$lib/history/db';
 	import { createDraftAutosave } from '$lib/history/draftAutosave';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
 	import { decideAutoAssignment } from '$lib/photo/autoAssign';
@@ -41,6 +48,7 @@
 	import { tick } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import DraftResumeBanner from './DraftResumeBanner.svelte';
 	import PhotoPool from './PhotoPool.svelte';
 	import ProfileCard from './ProfileCard.svelte';
 	import VehicleBlock from './VehicleBlock.svelte';
@@ -74,6 +82,13 @@
 	let submitting = $state(false);
 	let isEditingProfile = $state(true);
 	let formReady = $state(false);
+	/**
+	 * `pending`: Ein gespeicherter Entwurf wartet auf die Entscheidung des Nutzers und bleibt bis
+	 * dahin unangetastet; `active`: Formular in Benutzung, Autosave aktiv.
+	 */
+	let draftStatus = $state<'loading' | 'pending' | 'active'>('loading');
+	let pendingDraft = $state.raw<LoadedDraft | undefined>(undefined);
+	let discardDialog = $state<HTMLDialogElement | undefined>(undefined);
 	let resetDialog = $state<HTMLDialogElement | undefined>(undefined);
 	let successDialog = $state<HTMLDialogElement | undefined>(undefined);
 	let successCount = $state(0);
@@ -83,7 +98,6 @@
 	// und schaltet dann auf den Lese-Modus um.
 	$effect(() => {
 		(async () => {
-			let restoredScrollY = 0;
 			try {
 				const [, draft] = await Promise.all([profileStore.load(), getDraft()]);
 				const profile = profileStore.value;
@@ -98,27 +112,48 @@
 				const profileErrors = validateProfileFields(form);
 				if (Object.keys(profileErrors).length === 0) isEditingProfile = false;
 
-				if (draft) {
-					form.vehicles = draft.vehicles;
-					form.photos = draft.photos;
-					collapsedVehicles = Object.fromEntries(
-						draft.ui.collapsedVehicleIds.map((vehicleId) => [vehicleId, true])
-					);
-					vehicleGeocodeWarnings = draft.ui.geocodeWarnings;
-					restoredScrollY = draft.ui.scrollY;
-				}
+				pendingDraft = draft;
 			} catch (error) {
 				// Ein defekter/inkompatibler Alt-Entwurf darf das Formular nie dauerhaft im
 				// Lade-Skeleton hängen lassen — im Fehlerfall startet die App leer statt gar nicht.
 				console.error('Fehler beim Laden von Profil/Entwurf:', error);
 			} finally {
+				draftStatus = pendingDraft ? 'pending' : 'active';
 				formReady = true;
 			}
-			// Erst nach dem Rendern der Karten ist die Seite wieder so hoch wie beim Speichern.
-			await tick();
-			if (restoredScrollY > 0) window.scrollTo({ top: restoredScrollY, behavior: 'instant' });
 		})();
 	});
+
+	/** Übernimmt den wartenden Entwurf ins Formular und stellt die Ansicht wieder her. */
+	const resumeDraft = async (draft: LoadedDraft) => {
+		form.vehicles = draft.vehicles;
+		form.photos = draft.photos;
+		collapsedVehicles = Object.fromEntries(
+			draft.ui.collapsedVehicleIds.map((vehicleId) => [vehicleId, true])
+		);
+		vehicleGeocodeWarnings = draft.ui.geocodeWarnings;
+		pendingDraft = undefined;
+		draftStatus = 'active';
+		// Erst nach dem Rendern der Karten ist die Seite wieder so hoch wie beim Speichern.
+		await tick();
+		if (draft.ui.scrollY > 0) window.scrollTo({ top: draft.ui.scrollY, behavior: 'instant' });
+	};
+
+	/** Öffnet die Rückfrage vor dem Verwerfen des Entwurfs, weil dabei die Fotos gelöscht werden. */
+	const openDiscardDialog = () => discardDialog?.showModal();
+
+	/** Löscht den wartenden Entwurf und startet mit leerem Formular. */
+	const confirmDiscard = async () => {
+		discardDialog?.close();
+		triggerHaptic('warning');
+		try {
+			await clearDraft();
+		} catch (error) {
+			console.error('Fehler beim Löschen des Entwurfs:', error);
+		}
+		pendingDraft = undefined;
+		draftStatus = 'active';
+	};
 
 	/**
 	 * Baut den zu speichernden Entwurf aus dem aktuellen Formularstand; `null`, wenn das Formular
@@ -151,14 +186,14 @@
 		}
 	});
 
-	// Vor dem Laden des Entwurfs darf nichts geschrieben werden, sonst überschriebe der leere
-	// Ausgangszustand den gespeicherten Entwurf.
-	$effect(() => autosave.setEnabled(formReady));
+	// Solange der Entwurf nicht geladen ist oder auf die Entscheidung des Nutzers wartet, darf nichts
+	// geschrieben oder gelöscht werden, sonst überschriebe der leere Ausgangszustand ihn.
+	$effect(() => autosave.setEnabled(formReady && draftStatus === 'active'));
 
 	// Debounced Autosave des Entwurfs in die IndexedDB — überlebt ein Schließen von Tab/PWA
 	// mitten im Ausfüllen.
 	$effect(() => {
-		if (!formReady) return;
+		if (!formReady || draftStatus !== 'active') return;
 		// Erzwingt das Tracking aller verschachtelten Felder; der Snapshot selbst entsteht erst
 		// beim Schreiben und enthält damit den jüngsten Stand.
 		JSON.stringify(form.vehicles);
@@ -563,7 +598,18 @@
 			bind:isEditing={isEditingProfile}
 			onPersist={saveProfileFields}
 		/>
+	{/if}
 
+	{#if pendingDraft}
+		{@const draft = pendingDraft}
+		<DraftResumeBanner
+			savedAt={draft.savedAt}
+			vehicleCount={draft.vehicles.length}
+			photoCount={draft.photos.length}
+			onResume={() => resumeDraft(draft)}
+			onDiscard={openDiscardDialog}
+		/>
+	{:else if formReady}
 		<div bind:this={photosCardElement}>
 			<PhotoPool
 				photos={form.photos}
@@ -628,14 +674,14 @@
 			<button
 				type="button"
 				onclick={openResetDialog}
-				disabled={!formReady}
+				disabled={!formReady || draftStatus === 'pending'}
 				class="flex-1 {buttonDestructiveSecondary} disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				Zurücksetzen
 			</button>
 			<button
 				type="submit"
-				disabled={!formReady || submitting || photoProcessing}
+				disabled={!formReady || draftStatus === 'pending' || submitting || photoProcessing}
 				class="flex-1 {buttonPrimary}"
 			>
 				{submitting ? 'Wird gesendet…' : 'Absenden'}
@@ -659,6 +705,24 @@
 		</button>
 		<button type="button" onclick={confirmReset} class="flex-1 {buttonDestructive}">
 			Zurücksetzen
+		</button>
+	{/snippet}
+</ConfirmDialog>
+
+<ConfirmDialog
+	bind:dialog={discardDialog}
+	titleId="discard-draft-dialog-title"
+	title="Entwurf verwerfen?"
+>
+	<p class="mt-1 text-lg text-ink-muted">
+		Alle Fotos und Fahrzeuge/Vorgänge dieses Entwurfs werden unwiderruflich gelöscht.
+	</p>
+	{#snippet actions()}
+		<button type="button" onclick={() => discardDialog?.close()} class="flex-1 {buttonSecondary}">
+			Abbrechen
+		</button>
+		<button type="button" onclick={confirmDiscard} class="flex-1 {buttonDestructive}">
+			Verwerfen
 		</button>
 	{/snippet}
 </ConfirmDialog>
