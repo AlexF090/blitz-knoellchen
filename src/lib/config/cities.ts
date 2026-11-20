@@ -105,6 +105,12 @@ const KOELN_INCIDENT_TYPES: IncidentType[] = [
 		description: 'Das Fahrzeug {verb} auf dem Radweg und behinderte den Radverkehr.'
 	},
 	{
+		id: 'entgegen-fahrtrichtung',
+		label: 'Halten/Parken entgegen der Fahrtrichtung',
+		emailLabel: '{noun} entgegen der Fahrtrichtung',
+		description: 'Das Fahrzeug {verb} entgegen der Fahrtrichtung am linken Fahrbahnrand.'
+	},
+	{
 		id: 'kreuzung',
 		label: 'Parken im Kreuzungsbereich',
 		parkingOnly: true,

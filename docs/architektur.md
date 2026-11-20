@@ -213,7 +213,7 @@ Zeitangabe: Halteverstoß → „hielt“/„Halten“, Parkverstoß → „park
 E-Mail-Satz zur Auswahl „Halteverstoß“ bzw. „Parkverstoß“ stimmig.
 
 Die Platzhalter tragen alle Verstoßarten, bei denen schon das Halten verboten ist (Gehweg,
-Halteverbot, zweite Reihe, Feuerwehrzufahrt, Radweg); ihr Formular-Label lautet „Halten/Parken
+Halteverbot, zweite Reihe, Feuerwehrzufahrt, Radweg, entgegen der Fahrtrichtung); ihr Formular-Label lautet „Halten/Parken
 …“. Parkverbot, Schwerbehinderten-Parkplatz und Kreuzungsbereich verbieten nur das Parken und
 bleiben beim festen „parkte“. Sie tragen in der Konfiguration `parkingOnly: true`;
 `validateVehicle` lehnt sie zusammen mit „Halteverstoß“ ab (Fehler am Zeitmodus, auch

@@ -30,7 +30,8 @@ describe('CITIES', () => {
 			'halteverbot',
 			'zweite-reihe',
 			'feuerwehrzufahrt',
-			'radweg'
+			'radweg',
+			'entgegen-fahrtrichtung'
 		]);
 		for (const type of haltingBanTypes) {
 			expect(type.emailLabel).toContain('{noun}');
