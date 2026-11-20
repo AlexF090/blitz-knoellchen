@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import { LOCATIONIQ_API_KEY } from '$app/env/private';
 import { LOCATIONIQ_MIN_INTERVAL_MS, waitForSlot } from '#lib/geocode/rateLimiter.ts';
 import {
@@ -16,7 +15,7 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 	const lat = Number(url.searchParams.get('lat'));
 	const lon = Number(url.searchParams.get('lon'));
 	if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-		return json({ error: 'lat/lon fehlen oder sind ungültig.' }, { status: 400 });
+		return Response.json({ error: 'lat/lon fehlen oder sind ungültig.' }, { status: 400 });
 	}
 
 	// Blockierend warten statt drosseln: pro Foto fällt nur ein Lookup an, das kurze Warten
@@ -29,6 +28,6 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 	];
 	const result = await reverseGeocode(lat, lon, providers);
 
-	if (!result.address) return json({ error: result.error }, { status: 502 });
-	return json({ address: result.address });
+	if (!result.address) return Response.json({ error: result.error }, { status: 502 });
+	return Response.json({ address: result.address });
 };

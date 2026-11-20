@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import {
 	BREVO_API_KEY,
 	BREVO_API_URL,
@@ -46,7 +45,10 @@ const sendRateLimiter = createFixedWindowRateLimiter({
  */
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	if (!sendRateLimiter.tryConsume(getClientAddress())) {
-		return json({ error: 'Zu viele Anfragen. Bitte später erneut versuchen.' }, { status: 429 });
+		return Response.json(
+			{ error: 'Zu viele Anfragen. Bitte später erneut versuchen.' },
+			{ status: 429 }
+		);
 	}
 
 	const formData = await request.formData();
@@ -84,13 +86,13 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	// eine direkt an diesen Endpunkt gerichtete Anfrage aus.
 	const errors = validateReportForm(data);
 	if (!isFormValid(errors)) {
-		return json({ error: 'Formulardaten sind ungültig.', errors }, { status: 400 });
+		return Response.json({ error: 'Formulardaten sind ungültig.', errors }, { status: 400 });
 	}
 
 	const city = CITIES.koeln;
 	const incidentTypes = resolveVehicleIncidentTypes(city, vehicle);
 	if (incidentTypes.length !== vehicle.incidentTypeIds.length) {
-		return json({ error: 'Unbekannte Verstoßart.' }, { status: 400 });
+		return Response.json({ error: 'Unbekannte Verstoßart.' }, { status: 400 });
 	}
 
 	const { subject, body } = city.buildEmailBody(
@@ -113,7 +115,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		(photo, index) => photo.blob.type === 'image/jpeg' && hasJpegSignature(photoBytes[index])
 	);
 	if (!allPhotosAreJpeg) {
-		return json({ error: 'Nur JPEG-Fotos sind erlaubt.' }, { status: 400 });
+		return Response.json({ error: 'Nur JPEG-Fotos sind erlaubt.' }, { status: 400 });
 	}
 
 	const attachment = photos.map((photo, index) => ({
@@ -143,13 +145,13 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		if (!response.ok) {
 			const errorBody = await response.text();
 			console.error('Brevo-Versand fehlgeschlagen:', response.status, errorBody);
-			return json({ error: 'Versand fehlgeschlagen.' }, { status: 502 });
+			return Response.json({ error: 'Versand fehlgeschlagen.' }, { status: 502 });
 		}
 
-		return json({ ok: true });
+		return Response.json({ ok: true });
 	} catch {
 		// Details bewusst nicht an den Client: die Antwort ginge sonst mit Brevo-Interna an
 		// einen Aufrufer, der damit ohnehin nichts anfangen kann.
-		return json({ error: 'Versand fehlgeschlagen.' }, { status: 502 });
+		return Response.json({ error: 'Versand fehlgeschlagen.' }, { status: 502 });
 	}
 };
