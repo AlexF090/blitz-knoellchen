@@ -66,6 +66,42 @@ describe('buildVehicleSummaryRows: vollständiges Fahrzeug', () => {
 	});
 });
 
+describe('buildVehicleSummaryRows: Auswirkungen', () => {
+	it('zeigt Behinderung und gefährdete Personen samt Hinweis nur bei Inhalt', () => {
+		const rows = buildVehicleSummaryRows(
+			makeVehicle({
+				impairmentIds: ['gehweg-blockiert', 'sicht-verdeckt'],
+				endangeredPersonIds: ['kinder-schulweg', 'radfahrende'],
+				endangeredPersonsNote: 'Grundschule gegenüber'
+			}),
+			incidentTypes,
+			{ includeEmpty: true }
+		);
+		expect(findRow(rows, 'Behinderung')?.value).toBe(
+			'Gehweg vollständig blockiert, Sicht an Kreuzung oder Überweg verdeckt'
+		);
+		expect(findRow(rows, 'Gefährdete Personen')?.value).toBe(
+			'Kinder auf dem Schulweg, Radfahrende – Grundschule gegenüber'
+		);
+	});
+
+	it('zeigt nur den Hinweis, wenn keine Personen gewählt sind', () => {
+		const rows = buildVehicleSummaryRows(
+			makeVehicle({ endangeredPersonsNote: 'Kita nebenan' }),
+			incidentTypes,
+			{ includeEmpty: false }
+		);
+		expect(findRow(rows, 'Gefährdete Personen')?.value).toBe('Kita nebenan');
+		expect(findRow(rows, 'Behinderung')).toBeUndefined();
+	});
+
+	it('blendet beide Zeilen ohne Angaben aus, auch bei includeEmpty: true', () => {
+		const rows = buildVehicleSummaryRows(makeVehicle(), incidentTypes, { includeEmpty: true });
+		expect(findRow(rows, 'Behinderung')).toBeUndefined();
+		expect(findRow(rows, 'Gefährdete Personen')).toBeUndefined();
+	});
+});
+
 describe('buildVehicleSummaryRows: komplett leeres Fahrzeug', () => {
 	const emptyVehicle = makeVehicle({
 		licensePlate: '',

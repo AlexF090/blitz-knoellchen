@@ -357,6 +357,41 @@ describe('ReportForm', () => {
 		expect(document.activeElement?.id).toBe('licensePlate-veh-1');
 	});
 
+	it('fokussiert bei fehlender Verstoßart die zugehörige Checkbox-Gruppe', async () => {
+		setDefaultMocks();
+		mockedGetProfile.mockResolvedValue(validProfile);
+		mockedGetDraft.mockResolvedValue({
+			vehicles: [makeVehicle({ id: 'veh-1', incidentTypeIds: [] })],
+			photos: [makePhoto('photo-1')]
+		});
+
+		await renderForm();
+		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
+
+		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
+
+		expect(mockedSendVehicleReport).not.toHaveBeenCalled();
+		await expect.poll(() => document.activeElement?.id).toBe('incidentTypeIds-veh-1');
+	});
+
+	it('scrollt bei fehlender Fotoauswahl zum Fahrzeugblock, wenn kein Feld fokussierbar ist', async () => {
+		setDefaultMocks();
+		mockedGetProfile.mockResolvedValue(validProfile);
+		mockedGetDraft.mockResolvedValue({
+			vehicles: [makeVehicle({ id: 'veh-1', photoIds: [] })],
+			photos: [makePhoto('photo-1')]
+		});
+
+		await renderForm();
+		await expect.element(page.getByLabelText('Kennzeichen')).toBeInTheDocument();
+		const block = document.getElementById('vehicle-block-veh-1') as HTMLElement;
+		const scrollIntoViewSpy = vi.spyOn(block, 'scrollIntoView');
+
+		await userEvent.click(page.getByRole('button', { name: 'Absenden' }));
+
+		await expect.poll(() => scrollIntoViewSpy).toHaveBeenCalled();
+	});
+
 	it('entfernt bei Teilerfolg nur die erfolgreich gesendeten Fahrzeuge aus dem Formular', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);

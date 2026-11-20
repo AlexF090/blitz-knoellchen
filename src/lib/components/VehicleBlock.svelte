@@ -5,6 +5,7 @@
 	 * und Verstöße. Zugeklappt zeigt sie nur noch die Zusammenfassung.
 	 */
 	import type { City, IncidentType } from '$lib/config/cities';
+	import { ENDANGERED_PERSON_OPTIONS, IMPAIRMENT_OPTIONS } from '$lib/config/impactOptions';
 	import { INCIDENT_TYPE_ICONS } from '$lib/config/incidentTypeIcons';
 	import { getVehicleAccentClass } from '$lib/config/vehicleColors';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
@@ -20,8 +21,10 @@
 		VehicleErrors
 	} from '$lib/validation/formSchema';
 	import { validateVehicle } from '$lib/validation/formSchema';
+	import { toggleId } from '$lib/validation/toggleId';
 	import { Eye, RotateCcw, Trash2 } from '@lucide/svelte';
 	import { fade } from 'svelte/transition';
+	import CheckboxGroupFieldset from './CheckboxGroupFieldset.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import FormField from './FormField.svelte';
 	import IncidentLocationFieldset from './IncidentLocationFieldset.svelte';
@@ -107,9 +110,7 @@
 
 	/** Setzt oder entfernt eine Verstoßart in der Mehrfachauswahl. */
 	const toggleIncidentType = (id: string, checked: boolean) => {
-		vehicle.incidentTypeIds = checked
-			? [...vehicle.incidentTypeIds, id]
-			: vehicle.incidentTypeIds.filter((existing) => existing !== id);
+		vehicle.incidentTypeIds = toggleId(vehicle.incidentTypeIds, id, checked);
 	};
 
 	/**
@@ -231,7 +232,14 @@
 
 			<VehicleDetailsFieldset bind:vehicle {errors} />
 
-			<fieldset class="mt-3 rounded-control border border-border p-3">
+			<fieldset
+				id="incidentTypeIds-{vehicle.id}"
+				tabindex="-1"
+				aria-describedby={errors?.incidentTypeIds
+					? `incidentTypeIds-${vehicle.id}-error`
+					: undefined}
+				class="mt-3 rounded-control border border-border p-3"
+			>
 				<legend class="px-1 text-lg font-medium text-ink">
 					Verstöße <span class="text-error-fg">*</span>
 				</legend>
@@ -255,10 +263,48 @@
 						</label>
 					{/each}
 				</div>
-				{#if errors?.incidentTypeIds}<p role="alert" class="mt-1 text-lg text-error-fg">
+				{#if errors?.incidentTypeIds}<p
+						id="incidentTypeIds-{vehicle.id}-error"
+						role="alert"
+						class="mt-1 text-lg text-error-fg"
+					>
 						{errors.incidentTypeIds}
 					</p>{/if}
 			</fieldset>
+
+			<CheckboxGroupFieldset
+				legend="Ausmaß der Behinderung"
+				hint="Optional (Mehrfachauswahl möglich)"
+				options={IMPAIRMENT_OPTIONS}
+				bind:selectedIds={vehicle.impairmentIds}
+				idPrefix="impairmentIds-{vehicle.id}"
+				error={errors?.impairmentIds}
+			/>
+
+			<CheckboxGroupFieldset
+				legend="Gefährdete Personen"
+				hint="Optional (Mehrfachauswahl möglich)"
+				options={ENDANGERED_PERSON_OPTIONS}
+				bind:selectedIds={vehicle.endangeredPersonIds}
+				idPrefix="endangeredPersonIds-{vehicle.id}"
+				error={errors?.endangeredPersonIds}
+			/>
+
+			<div class="mt-3">
+				<FormField
+					id="endangeredPersonsNote-{vehicle.id}"
+					label="Weitere Angaben zu gefährdeten Personen (optional)"
+					wrapperClass=""
+				>
+					{#snippet control()}
+						<textarea
+							id="endangeredPersonsNote-{vehicle.id}"
+							name="endangeredPersonsNote-{vehicle.id}"
+							bind:value={vehicle.endangeredPersonsNote}
+							class={inputBase}></textarea>
+					{/snippet}
+				</FormField>
+			</div>
 
 			<div class="mt-3">
 				<FormField id="notes-{vehicle.id}" label="Weitere Angaben (optional)" wrapperClass="">
