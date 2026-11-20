@@ -111,6 +111,12 @@ const KOELN_INCIDENT_TYPES: IncidentType[] = [
 		description: 'Das Fahrzeug {verb} entgegen der Fahrtrichtung am linken Fahrbahnrand.'
 	},
 	{
+		id: 'fussgaengerueberweg',
+		label: 'Halten/Parken auf oder vor einem Fußgängerüberweg (Mindestabstand 5 m)',
+		emailLabel: '{noun} auf oder vor einem Fußgängerüberweg',
+		description: 'Das Fahrzeug {verb} auf einem Fußgängerüberweg oder weniger als 5 m davor.'
+	},
+	{
 		id: 'kreuzung',
 		label: 'Parken im Kreuzungsbereich',
 		parkingOnly: true,

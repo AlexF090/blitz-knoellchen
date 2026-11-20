@@ -31,7 +31,8 @@ describe('CITIES', () => {
 			'zweite-reihe',
 			'feuerwehrzufahrt',
 			'radweg',
-			'entgegen-fahrtrichtung'
+			'entgegen-fahrtrichtung',
+			'fussgaengerueberweg'
 		]);
 		for (const type of haltingBanTypes) {
 			expect(type.emailLabel).toContain('{noun}');
