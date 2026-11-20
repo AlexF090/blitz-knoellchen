@@ -112,13 +112,15 @@ const setDefaultMocks = () => {
 	mockedSendVehicleReport.mockResolvedValue(true);
 };
 
-const uploadPhoto = (file: File) => {
+const uploadPhotos = (...files: File[]) => {
 	const input = document.getElementById('photo-pool-input') as HTMLInputElement;
 	const dataTransfer = new DataTransfer();
-	dataTransfer.items.add(file);
+	for (const file of files) dataTransfer.items.add(file);
 	input.files = dataTransfer.files;
 	input.dispatchEvent(new Event('change', { bubbles: true }));
 };
+
+const uploadPhoto = (file: File) => uploadPhotos(file);
 
 // Ohne explizites Unmounten bleiben Komponenten aus vorherigen Tests im DOM (kein automatisches
 // Cleanup zwischen Tests) — das führt zu mehrdeutigen Selektoren und zu Cross-Test-Interferenz
@@ -229,36 +231,60 @@ describe('ReportForm', () => {
 		await expect.element(page.getByText('HEIC kaputt')).toBeInTheDocument();
 	});
 
-	it('lässt einen anderen Fehler als HeicConversionError beim Foto-Hinzufügen durchreichen', async () => {
+	it('meldet einen unerwarteten Verarbeitungsfehler als nicht verarbeitetes Foto, ohne hängen zu bleiben', async () => {
 		setDefaultMocks();
 		mockedCreatePhotoEntry.mockRejectedValue(new Error('Unerwarteter Verarbeitungsfehler'));
 
-		let caughtRejection: unknown;
-		const onUnhandledRejection = (event: PromiseRejectionEvent) => {
-			caughtRejection = event.reason;
-			// Verhindert, dass der Browser-Kontext den Test wegen des (erwarteten) unbehandelten
-			// Rejects als fehlgeschlagen markiert — der generische Fehler soll hier bewusst nicht
-			// von onAddPhoto verschluckt, sondern durchgereicht werden (`throw error;`).
-			event.preventDefault();
-		};
-		window.addEventListener('unhandledrejection', onUnhandledRejection);
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhoto(new File(['x'], 'normal.jpg', { type: 'image/jpeg' }));
 
-		try {
-			await renderForm();
-			await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
-			uploadPhoto(new File(['x'], 'normal.jpg', { type: 'image/jpeg' }));
+		await expect
+			.element(page.getByText('Das Foto konnte nicht verarbeitet werden.'))
+			.toBeInTheDocument();
+		await expect.element(page.getByRole('status')).not.toBeInTheDocument();
+	});
 
-			await expect
-				.poll(() => (caughtRejection as Error | undefined)?.message)
-				.toBe('Unerwarteter Verarbeitungsfehler');
-			// Der finally-Block läuft trotz Rethrow — kein dauerhaft hängender
-			// Verarbeitungs-Zustand (kein sichtbarer "Foto wird verarbeitet…"-Spinner mehr).
-			await expect
-				.element(page.getByRole('status', { name: 'Foto wird verarbeitet…' }))
-				.not.toBeInTheDocument();
-		} finally {
-			window.removeEventListener('unhandledrejection', onUnhandledRejection);
-		}
+	it('übernimmt mehrere gleichzeitig gewählte Fotos in den Pool und ordnet höchstens drei dem Fahrzeug zu', async () => {
+		setDefaultMocks();
+		mockedCreatePhotoEntry.mockImplementation(async (file) => makePhoto(file.name));
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhotos(
+			...['a', 'b', 'c', 'd', 'e'].map((name) => new File(['x'], name, { type: 'image/jpeg' }))
+		);
+
+		await expect
+			.poll(() => document.querySelectorAll('button[aria-label$="vergrößern"]').length)
+			.toBe(5);
+		await expect
+			.poll(() => document.querySelectorAll('button[aria-pressed="true"]').length)
+			.toBe(3);
+		await expect
+			.element(page.getByText('Nicht zugeordnete Fotos werden nicht mitgesendet.'))
+			.toBeInTheDocument();
+	});
+
+	it('übernimmt die übrigen Fotos, wenn eine Datei scheitert, und nennt die gescheiterte', async () => {
+		setDefaultMocks();
+		mockedCreatePhotoEntry.mockImplementation(async (file) => {
+			if (file.name === 'b.heic') throw new HeicConversionError('HEIC kaputt');
+			return makePhoto(file.name);
+		});
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhotos(
+			new File(['x'], 'a.jpg', { type: 'image/jpeg' }),
+			new File(['x'], 'b.heic', { type: 'image/heic' }),
+			new File(['x'], 'c.jpg', { type: 'image/jpeg' })
+		);
+
+		await expect
+			.element(page.getByText('1 von 3 Fotos konnten nicht verarbeitet werden: b.heic'))
+			.toBeInTheDocument();
+		expect(document.querySelectorAll('button[aria-label$="vergrößern"]')).toHaveLength(2);
 	});
 
 	it('fügt per Button ein weiteres Fahrzeug hinzu', async () => {

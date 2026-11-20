@@ -4,23 +4,23 @@
 	 * Der gemeinsame Foto-Pool der Anzeige: Auswahl neuer Dateien, Vorschau-Grid und Lightbox.
 	 * Die Zuordnung einzelner Fotos zu Fahrzeugen passiert nicht hier, sondern in VehicleBlock.
 	 */
-	import { MAX_PHOTOS_PER_BATCH, type PhotoEntry } from '$lib/validation/formSchema';
+	import type { PhotoQueueProgress } from '$lib/photo/processPhotoQueue';
+	import type { PhotoEntry } from '$lib/validation/formSchema';
 	import PhotoLightbox from './PhotoLightbox.svelte';
 
 	interface Props {
 		photos: PhotoEntry[];
-		/** Wie oft ein Foto Fahrzeugen zugeordnet ist — ab 2 erscheint ein Zähler-Badge. */
+		/** Wie oft ein Foto Fahrzeugen zugeordnet ist — bei 0 „nicht zugeordnet“, ab 2 ein Zähler. */
 		usageCounts?: Record<string, number>;
 		/** Validierungsfehler des Pools (z.B. „mindestens ein Foto nötig“). */
 		error?: string | null;
-		/** Fehler beim Verarbeiten einer einzelnen Datei, z.B. gescheiterte HEIC-Konvertierung. */
+		/** Fehler beim Verarbeiten einzelner Dateien, z.B. gescheiterte HEIC-Konvertierung. */
 		processingError?: string | null;
-		/** Zeigt statt des Add-Felds einen Platzhalter mit Spinner. */
-		processing?: boolean;
-		/** Gesamtlimit über alle Fahrzeuge hinweg. */
-		maxPhotos: number;
+		/** Fortschritt der laufenden Verarbeitung; `null`, wenn gerade nichts verarbeitet wird. */
+		progress?: PhotoQueueProgress | null;
 		maxPhotosPerVehicle: number;
-		onAdd: (file: File) => void | Promise<void>;
+		/** Meldet alle auf einmal ausgewählten Dateien. */
+		onAddFiles: (files: File[]) => void | Promise<void>;
 		onRemove: (photoId: string) => void;
 	}
 
@@ -29,41 +29,29 @@
 		usageCounts = {},
 		error = null,
 		processingError = null,
-		processing = false,
-		maxPhotos,
+		progress = null,
 		maxPhotosPerVehicle,
-		onAdd,
+		onAddFiles,
 		onRemove
 	}: Props = $props();
 
 	let fileInput: HTMLInputElement | undefined;
 	let lightboxPhoto: PhotoEntry | null = $state(null);
-	let batchError = $state<string | null>(null);
 
-	/** Übernimmt die ausgewählten Dateien der Reihe nach, begrenzt auf die freien Plätze. */
+	const progressText = $derived(
+		progress ? `Foto ${progress.current} von ${progress.total} wird verarbeitet …` : ''
+	);
+
+	const hasUnassignedPhotos = $derived(photos.some((photo) => !usageCounts[photo.id]));
+
+	/** Gibt alle ausgewählten Dateien gesammelt weiter. */
 	const onFileSelected = async (event: Event) => {
-		const input = event.target as HTMLInputElement;
+		const input = event.currentTarget as HTMLInputElement;
 		const files = Array.from(input.files ?? []);
 		// Leeren, damit dieselbe Datei direkt danach erneut ausgewählt werden kann.
 		input.value = '';
 		if (files.length === 0) return;
-
-		// Das sichtbare Label verschwindet ab maxPhotos, das versteckte File-Input bleibt aber im
-		// DOM bedienbar (Tastatur/AT) — deshalb hier zusätzlich auf das Gesamtlimit clampen, nicht
-		// nur auf MAX_PHOTOS_PER_BATCH.
-		const remainingSlots = Math.max(0, maxPhotos - photos.length);
-		const allowedCount = Math.min(MAX_PHOTOS_PER_BATCH, remainingSlots);
-
-		batchError =
-			files.length > MAX_PHOTOS_PER_BATCH
-				? `Es können maximal ${MAX_PHOTOS_PER_BATCH} Fotos gleichzeitig hinzugefügt werden.`
-				: allowedCount < files.length
-					? `Das Gesamtlimit von ${maxPhotos} Fotos ist bereits erreicht.`
-					: null;
-
-		for (const file of files.slice(0, allowedCount)) {
-			await onAdd(file);
-		}
+		await onAddFiles(files);
 	};
 </script>
 
@@ -74,8 +62,9 @@
 >
 	<h2 class="text-lg font-semibold text-ink md:text-xl">Beweisfotos *</h2>
 	<p class="text-lg text-ink-muted">
-		Mindestens ein Foto ist erforderlich. Pro Fahrzeug können maximal {maxPhotosPerVehicle} Fotos ausgewählt
-		werden.
+		Wähle alle Fotos auf einmal aus — mindestens ein Foto ist erforderlich. Pro Fahrzeug sind
+		maximal
+		{maxPhotosPerVehicle} Fotos möglich.
 	</p>
 
 	<div class="mt-3 grid grid-cols-3 gap-2">
@@ -108,7 +97,13 @@
 						</svg>
 					</span>
 				</button>
-				{#if usageCounts[photo.id] > 1}
+				{#if !usageCounts[photo.id]}
+					<span
+						class="absolute bottom-1 left-1 rounded-full bg-surface px-1.5 py-0.5 text-xs text-ink shadow-card"
+					>
+						nicht zugeordnet
+					</span>
+				{:else if usageCounts[photo.id] > 1}
 					<span
 						aria-label="Verwendet bei {usageCounts[photo.id]} Fahrzeugen"
 						class="absolute top-1 left-1 rounded-full bg-primary-button px-1.5 py-0.5 text-xs text-on-primary"
@@ -127,11 +122,10 @@
 			</div>
 		{/each}
 
-		{#if processing}
+		{#if progress}
 			<div
 				class="relative flex aspect-square items-center justify-center overflow-hidden rounded-control border border-border bg-surface-sunken"
-				role="status"
-				aria-label="Foto wird verarbeitet…"
+				aria-hidden="true"
 			>
 				<svg
 					viewBox="0 0 24 24"
@@ -150,7 +144,7 @@
 			</div>
 		{/if}
 
-		{#if photos.length < maxPhotos && !processing}
+		{#if !progress}
 			<label
 				for="photo-pool-input"
 				class="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-control border-2 border-dashed border-border text-base text-ink-muted"
@@ -167,11 +161,17 @@
 		type="file"
 		accept="image/*"
 		multiple
+		disabled={progress !== null}
 		onchange={onFileSelected}
 		class="sr-only"
 	/>
 
-	{#if batchError}<p role="alert" class="mt-2 text-lg text-error-fg">{batchError}</p>{/if}
+	{#if progress}
+		<p role="status" class="mt-2 text-lg text-ink-muted">{progressText}</p>
+	{/if}
+	{#if hasUnassignedPhotos}
+		<p class="mt-2 text-lg text-ink-muted">Nicht zugeordnete Fotos werden nicht mitgesendet.</p>
+	{/if}
 	{#if processingError}<p role="alert" class="mt-2 text-lg text-error-fg">
 			{processingError}
 		</p>{/if}

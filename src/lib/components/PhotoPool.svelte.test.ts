@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import { MAX_PHOTOS_PER_BATCH, type PhotoEntry } from '$lib/validation/formSchema';
+import type { PhotoEntry } from '$lib/validation/formSchema';
 import PhotoPool from './PhotoPool.svelte';
 
 const makePhoto = (overrides: Partial<PhotoEntry> = {}): PhotoEntry => ({
@@ -24,14 +24,13 @@ const dispatchFileChange = (input: HTMLInputElement, files: File[]) => {
 };
 
 describe('PhotoPool', () => {
-	it('ruft onAdd pro ausgewählter Datei bis zum Batch-Limit auf', async () => {
-		const onAdd = vi.fn();
+	it('ruft onAddFiles einmal mit allen ausgewählten Dateien auf', async () => {
+		const onAddFiles = vi.fn();
 		const onRemove = vi.fn();
 		const { container } = await render(PhotoPool, {
 			photos: [],
-			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
-			onAdd,
+			onAddFiles,
 			onRemove
 		});
 
@@ -39,17 +38,17 @@ describe('PhotoPool', () => {
 		expect(input).not.toBeNull();
 		dispatchFileChange(input!, [makeFile('a.jpg'), makeFile('b.jpg')]);
 
-		await expect.poll(() => onAdd).toBeCalledTimes(2);
+		await expect.poll(() => onAddFiles).toBeCalledTimes(1);
+		expect(onAddFiles.mock.calls[0][0]).toHaveLength(2);
 	});
 
-	it('ruft onAdd nicht auf, wenn die Dateiauswahl leer ist (z.B. Dialog abgebrochen)', async () => {
-		const onAdd = vi.fn();
+	it('ruft onAddFiles nicht auf, wenn die Dateiauswahl leer ist (z.B. Dialog abgebrochen)', async () => {
+		const onAddFiles = vi.fn();
 		const onRemove = vi.fn();
 		const { container } = await render(PhotoPool, {
 			photos: [],
-			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
-			onAdd,
+			onAddFiles,
 			onRemove
 		});
 
@@ -57,94 +56,49 @@ describe('PhotoPool', () => {
 		dispatchFileChange(input!, []);
 
 		await new Promise((resolve) => setTimeout(resolve, 50));
-		expect(onAdd).not.toHaveBeenCalled();
+		expect(onAddFiles).not.toHaveBeenCalled();
 	});
 
-	it('zeigt eine batchError-Meldung, wenn mehr Dateien als MAX_PHOTOS_PER_BATCH ausgewählt werden, und ruft onAdd nur bis zum Batch-Limit auf', async () => {
-		const onAdd = vi.fn();
-		const onRemove = vi.fn();
+	it('meldet viele Dateien ohne Limit gesammelt in einem einzigen Aufruf', async () => {
+		const onAddFiles = vi.fn();
 		const { container } = await render(PhotoPool, {
-			photos: [],
-			maxPhotos: 9,
+			photos: [makePhoto(), makePhoto(), makePhoto()],
 			maxPhotosPerVehicle: 3,
-			onAdd,
-			onRemove
+			onAddFiles,
+			onRemove: vi.fn()
 		});
 
 		const input = container.querySelector<HTMLInputElement>('#photo-pool-input');
-		const files = Array.from({ length: MAX_PHOTOS_PER_BATCH + 1 }, (_, index) =>
-			makeFile(`f${index}.jpg`)
-		);
+		const files = Array.from({ length: 12 }, (_, index) => makeFile(`f${index}.jpg`));
 		dispatchFileChange(input!, files);
 
-		await expect
-			.element(
-				page.getByText(
-					`Es können maximal ${MAX_PHOTOS_PER_BATCH} Fotos gleichzeitig hinzugefügt werden.`
-				)
-			)
-			.toBeInTheDocument();
-		await expect.poll(() => onAdd).toBeCalledTimes(MAX_PHOTOS_PER_BATCH);
+		await expect.poll(() => onAddFiles).toBeCalledTimes(1);
+		expect(onAddFiles.mock.calls[0][0].map((file: File) => file.name)).toEqual(
+			files.map((file) => file.name)
+		);
 	});
 
-	it('ruft onAdd NICHT auf, wenn das Gesamtlimit maxPhotos bereits erreicht ist (Bug-Fix)', async () => {
-		const onAdd = vi.fn();
-		const onRemove = vi.fn();
-		const photos = [makePhoto(), makePhoto()];
-		const { container } = await render(PhotoPool, {
-			photos,
-			maxPhotos: 2,
+	it('nennt kein Pool-Limit, sondern das Limit pro Fahrzeug', async () => {
+		await render(PhotoPool, {
+			photos: [],
 			maxPhotosPerVehicle: 3,
-			onAdd,
-			onRemove
+			onAddFiles: vi.fn(),
+			onRemove: vi.fn()
 		});
 
-		// Das sichtbare Label ist ausgeblendet, das Input-Element bleibt aber im DOM bedienbar —
-		// genau dieser Pfad (Datei-Auswahl direkt über das versteckte Input) muss trotz erreichtem
-		// maxPhotos verhindert werden.
-		const input = container.querySelector<HTMLInputElement>('#photo-pool-input');
-		expect(input).not.toBeNull();
-		dispatchFileChange(input!, [makeFile('c.jpg')]);
-
-		await expect
-			.element(page.getByText('Das Gesamtlimit von 2 Fotos ist bereits erreicht.'))
-			.toBeInTheDocument();
-		// Kurz warten, damit ein evtl. asynchroner (fehlerhafter) onAdd-Aufruf Zeit hätte zu laufen.
-		await new Promise((resolve) => setTimeout(resolve, 50));
-		expect(onAdd).not.toHaveBeenCalled();
-	});
-
-	it('clamped auf die verbleibenden Slots und zeigt die Gesamtlimit-Meldung, wenn maxPhotos fast erreicht ist (Bug-Fix)', async () => {
-		const onAdd = vi.fn();
-		const onRemove = vi.fn();
-		const photos = [makePhoto()];
-		const { container } = await render(PhotoPool, {
-			photos,
-			maxPhotos: 2,
-			maxPhotosPerVehicle: 3,
-			onAdd,
-			onRemove
-		});
-
-		const input = container.querySelector<HTMLInputElement>('#photo-pool-input');
-		dispatchFileChange(input!, [makeFile('a.jpg'), makeFile('b.jpg')]);
-
-		await expect.poll(() => onAdd).toBeCalledTimes(1);
-		await expect
-			.element(page.getByText('Das Gesamtlimit von 2 Fotos ist bereits erreicht.'))
-			.toBeInTheDocument();
+		await expect.element(page.getByText('maximal 3 Fotos möglich')).toBeInTheDocument();
+		await expect.element(page.getByText('Gesamtlimit')).not.toBeInTheDocument();
 	});
 
 	it('zeigt error- und processingError-Props als Alerts an', async () => {
-		const onAdd = vi.fn();
+		const onAddFiles = vi.fn();
 		const onRemove = vi.fn();
 		await render(PhotoPool, {
 			photos: [],
-			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
 			error: 'Mindestens ein Foto ist erforderlich.',
 			processingError: 'Foto konnte nicht verarbeitet werden.',
-			onAdd,
+			onAddFiles,
 			onRemove
 		});
 
@@ -156,32 +110,72 @@ describe('PhotoPool', () => {
 			.toBeInTheDocument();
 	});
 
-	it('zeigt einen Spinner, solange processing=true ist, und blendet das Auswahl-Label aus', async () => {
-		const onAdd = vi.fn();
-		const onRemove = vi.fn();
-		await render(PhotoPool, {
+	it('zeigt den Fortschritt als Status und sperrt die Dateiauswahl, solange verarbeitet wird', async () => {
+		const { container } = await render(PhotoPool, {
 			photos: [],
-			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
-			processing: true,
-			onAdd,
-			onRemove
+			progress: { current: 2, total: 5 },
+			onAddFiles: vi.fn(),
+			onRemove: vi.fn()
 		});
 
 		await expect
-			.element(page.getByRole('status', { name: 'Foto wird verarbeitet…' }))
+			.element(page.getByRole('status'))
+			.toMatchTextContent('Foto 2 von 5 wird verarbeitet …');
+		expect(container.querySelector<HTMLInputElement>('#photo-pool-input')?.disabled).toBe(true);
+	});
+
+	it('zeigt ohne laufende Verarbeitung keinen Status und lässt die Auswahl zu', async () => {
+		const { container } = await render(PhotoPool, {
+			photos: [],
+			maxPhotosPerVehicle: 3,
+			onAddFiles: vi.fn(),
+			onRemove: vi.fn()
+		});
+
+		await expect.element(page.getByRole('status')).not.toBeInTheDocument();
+		expect(container.querySelector<HTMLInputElement>('#photo-pool-input')?.disabled).toBe(false);
+	});
+
+	it('kennzeichnet nicht zugeordnete Fotos und weist darauf hin, dass sie nicht mitgesendet werden', async () => {
+		const assigned = makePhoto({ fileName: 'zugeordnet.jpg' });
+		const unassigned = makePhoto({ fileName: 'offen.jpg' });
+		await render(PhotoPool, {
+			photos: [assigned, unassigned],
+			usageCounts: { [assigned.id]: 1 },
+			maxPhotosPerVehicle: 3,
+			onAddFiles: vi.fn(),
+			onRemove: vi.fn()
+		});
+
+		await expect.element(page.getByText('nicht zugeordnet', { exact: true })).toBeInTheDocument();
+		await expect
+			.element(page.getByText('Nicht zugeordnete Fotos werden nicht mitgesendet.'))
 			.toBeInTheDocument();
 	});
 
+	it('zeigt keinen Hinweis, wenn alle Fotos zugeordnet sind', async () => {
+		const photo = makePhoto();
+		await render(PhotoPool, {
+			photos: [photo],
+			usageCounts: { [photo.id]: 1 },
+			maxPhotosPerVehicle: 3,
+			onAddFiles: vi.fn(),
+			onRemove: vi.fn()
+		});
+
+		await expect.element(page.getByText('nicht zugeordnet')).not.toBeInTheDocument();
+		await expect.element(page.getByText('Nicht zugeordnete Fotos')).not.toBeInTheDocument();
+	});
+
 	it('ruft onRemove mit der korrekten photoId auf', async () => {
-		const onAdd = vi.fn();
+		const onAddFiles = vi.fn();
 		const onRemove = vi.fn();
 		const photo = makePhoto({ fileName: 'zuentfernen.jpg' });
 		await render(PhotoPool, {
 			photos: [photo],
-			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
-			onAdd,
+			onAddFiles,
 			onRemove
 		});
 
@@ -192,14 +186,13 @@ describe('PhotoPool', () => {
 	});
 
 	it('öffnet die Lightbox beim Klick auf ein Foto', async () => {
-		const onAdd = vi.fn();
+		const onAddFiles = vi.fn();
 		const onRemove = vi.fn();
 		const photo = makePhoto({ fileName: 'gross.jpg' });
 		await render(PhotoPool, {
 			photos: [photo],
-			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
-			onAdd,
+			onAddFiles,
 			onRemove
 		});
 
@@ -210,14 +203,13 @@ describe('PhotoPool', () => {
 	});
 
 	it('schließt die Lightbox wieder (onClose), wenn sie über den Backdrop geschlossen wird', async () => {
-		const onAdd = vi.fn();
+		const onAddFiles = vi.fn();
 		const onRemove = vi.fn();
 		const photo = makePhoto({ fileName: 'gross.jpg' });
 		const { container } = await render(PhotoPool, {
 			photos: [photo],
-			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
-			onAdd,
+			onAddFiles,
 			onRemove
 		});
 
@@ -232,15 +224,14 @@ describe('PhotoPool', () => {
 	});
 
 	it('zeigt das usageCounts-Badge mit dem korrekten Wert an, wenn ein Foto mehrfach genutzt wird', async () => {
-		const onAdd = vi.fn();
+		const onAddFiles = vi.fn();
 		const onRemove = vi.fn();
 		const photo = makePhoto();
 		await render(PhotoPool, {
 			photos: [photo],
 			usageCounts: { [photo.id]: 2 },
-			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
-			onAdd,
+			onAddFiles,
 			onRemove
 		});
 
@@ -248,15 +239,14 @@ describe('PhotoPool', () => {
 	});
 
 	it('zeigt kein Badge, wenn usageCounts für das Foto <= 1 ist', async () => {
-		const onAdd = vi.fn();
+		const onAddFiles = vi.fn();
 		const onRemove = vi.fn();
 		const photo = makePhoto();
 		await render(PhotoPool, {
 			photos: [photo],
 			usageCounts: { [photo.id]: 1 },
-			maxPhotos: 9,
 			maxPhotosPerVehicle: 3,
-			onAdd,
+			onAddFiles,
 			onRemove
 		});
 

@@ -11,7 +11,9 @@
 	import { triggerHaptic } from '$lib/haptics/vibrate';
 	import { addEntry, clearDraft, getDraft, saveDraft } from '$lib/history/db';
 	import { transitionDuration } from '$lib/motion/reducedMotion';
-	import { createPhotoEntry, HeicConversionError } from '$lib/photo/createPhotoEntry';
+	import { decideAutoAssignment } from '$lib/photo/autoAssign';
+	import { createPhotoEntry } from '$lib/photo/createPhotoEntry';
+	import { processPhotoQueue, type PhotoQueueProgress } from '$lib/photo/processPhotoQueue';
 	import { createProfileStore } from '$lib/profile/profileStore.svelte';
 	import { PHOTO_WARNINGS, pruneWarnings } from '$lib/report/photoWarnings';
 	import { sendVehicleReport } from '$lib/report/sendClient';
@@ -26,7 +28,6 @@
 	import { createEmptyForm, createEmptyVehicle } from '$lib/validation/emptyForm';
 	import { findFirstErrorTarget } from '$lib/validation/fieldOrder';
 	import {
-		getMaxPoolPhotos,
 		isFormValid,
 		MAX_PHOTOS_PER_VEHICLE,
 		validateProfileFields,
@@ -61,7 +62,8 @@
 	let form = $state<ReportFormData>(createEmptyForm());
 	let errors = $state<FormErrors>({});
 	let photosCardElement = $state<HTMLDivElement | undefined>(undefined);
-	let photoProcessing = $state(false);
+	let photoProgress = $state<PhotoQueueProgress | null>(null);
+	const photoProcessing = $derived(photoProgress !== null);
 	let photoProcessingError = $state<string | null>(null);
 	let vehicleGeocodeWarnings = $state<Record<string, string>>({});
 	let sendError = $state<string | null>(null);
@@ -190,44 +192,54 @@
 		}
 	};
 
-	/**
-	 * Legt aus einer ausgewählten Datei einen Pool-Eintrag an und ordnet ihn — soweit eindeutig —
-	 * direkt einem Fahrzeug zu.
-	 */
-	const onAddPhoto = async (file: File) => {
-		photoProcessingError = null;
-		photoProcessing = true;
-		let entry: PhotoEntry;
-		try {
-			entry = await createPhotoEntry(file);
-			form.photos = [...form.photos, entry];
-			errors = { ...errors, photos: undefined };
-		} catch (error) {
-			if (!(error instanceof HeicConversionError)) throw error;
-			photoProcessingError = error.message;
-			return;
-		} finally {
-			// Schon hier freigeben: das Bild ist fertig prozessiert und im Grid sichtbar, die
-			// nachfolgende Adressauflösung (Netzwerk-Geocoding) darf das Add-Label nicht länger
-			// blockieren — sonst „hängt“ der Spinner sichtbar an dessen Stelle weiter.
-			photoProcessing = false;
-		}
+	/** Nimmt einen verarbeiteten Eintrag in den Pool auf und ordnet ihn — soweit eindeutig — zu. */
+	const addPhotoEntry = async (entry: PhotoEntry) => {
+		form.photos = [...form.photos, entry];
+		errors = { ...errors, photos: undefined };
 
-		// Erstes Foto: legt die erste Fahrzeug-Karte an, die bis dahin nicht existiert.
-		if (form.vehicles.length === 0) {
+		const assignment = decideAutoAssignment({
+			vehicleCount: form.vehicles.length,
+			firstVehiclePhotoCount: form.vehicles[0]?.photoIds.length ?? 0,
+			maxPhotosPerVehicle: MAX_PHOTOS_PER_VEHICLE
+		});
+
+		if (assignment === 'create-vehicle') {
+			// Erstes Foto: legt die erste Fahrzeug-Karte an, die bis dahin nicht existiert.
 			const vehicle = createEmptyVehicle();
 			vehicle.photoIds = [entry.id];
 			form.vehicles = [vehicle];
 			// Nach der Zuweisung ist form.vehicles[0] die reaktive Proxy-Version — die lokale
 			// `vehicle`-Referenz bleibt roh, Mutationen darauf würden vom UI nicht bemerkt.
 			await applyPhotoExifToVehicle(form.vehicles[0], entry.id);
-		} else if (
-			// Bei genau einem Fahrzeug ist die Zuordnung eindeutig — direkt automatisch übernehmen.
-			form.vehicles.length === 1 &&
-			form.vehicles[0].photoIds.length < MAX_PHOTOS_PER_VEHICLE
-		) {
+		} else if (assignment === 'append-first') {
 			form.vehicles[0].photoIds = [...form.vehicles[0].photoIds, entry.id];
 			await applyPhotoExifToVehicle(form.vehicles[0], entry.id);
+		}
+	};
+
+	/**
+	 * Verarbeitet alle ausgewählten Dateien nacheinander, legt sie im Pool ab und meldet
+	 * gescheiterte Dateien gesammelt.
+	 */
+	const onAddFiles = async (files: File[]) => {
+		photoProcessingError = null;
+		try {
+			const { failed } = await processPhotoQueue(files, {
+				process: createPhotoEntry,
+				onEntry: addPhotoEntry,
+				onProgress: (progress) => (photoProgress = progress)
+			});
+			if (failed.length > 0) {
+				// Bei genau einer Datei ist deren konkrete Meldung (z.B. HEIC-Hinweis) hilfreicher.
+				photoProcessingError =
+					files.length === 1
+						? failed[0].message
+						: `${failed.length} von ${files.length} Fotos konnten nicht verarbeitet werden: ${failed
+								.map((failure) => failure.fileName)
+								.join(', ')}`;
+			}
+		} finally {
+			photoProgress = null;
 		}
 	};
 
@@ -293,7 +305,7 @@
 		sendError = null;
 		sendResults = [];
 		photoProcessingError = null;
-		photoProcessing = false;
+		photoProgress = null;
 		submitting = false;
 		isEditingProfile = true;
 		try {
@@ -457,10 +469,9 @@
 				{usageCounts}
 				error={errors.photos}
 				processingError={photoProcessingError}
-				processing={photoProcessing}
-				maxPhotos={getMaxPoolPhotos(form.vehicles.length)}
+				progress={photoProgress}
 				maxPhotosPerVehicle={MAX_PHOTOS_PER_VEHICLE}
-				onAdd={onAddPhoto}
+				{onAddFiles}
 				onRemove={onRemovePhoto}
 			/>
 		</div>

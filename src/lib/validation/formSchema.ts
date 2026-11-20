@@ -18,16 +18,6 @@ export interface PhotoEntry {
 /** Höchstzahl Fotos, die einem einzelnen Fahrzeug zugeordnet werden dürfen. */
 export const MAX_PHOTOS_PER_VEHICLE = 3;
 
-/** Höchstzahl Fotos, die in einer einzelnen Dateiauswahl gleichzeitig hinzugefügt werden dürfen. */
-// Unabhängig von MAX_PHOTOS_PER_VEHICLE, das die Zuordnung pro Fahrzeug begrenzt.
-export const MAX_PHOTOS_PER_BATCH = 3;
-
-/** Höchstzahl Fotos im gemeinsamen Pool einer Anzeige mit `vehicleCount` Fahrzeugen. */
-// Der Pool wird von allen Fahrzeugen gemeinsam genutzt (Fotos können geteilt werden) — die
-// Obergrenze skaliert deshalb mit der Fahrzeuganzahl.
-export const getMaxPoolPhotos = (vehicleCount: number): number =>
-	Math.max(vehicleCount, 1) * MAX_PHOTOS_PER_VEHICLE;
-
 /** Ein angezeigtes Fahrzeug mit Tatzeit, Tatort und gewählten Verstoßarten. */
 export interface VehicleEntry {
 	id: string;
@@ -270,12 +260,7 @@ export const validateProfileFields = (data: ProfileFields): ProfileErrors => {
 export const validateReportForm = (data: ReportFormData): FormErrors => {
 	const errors: FormErrors = { ...validateProfileFields(data) };
 
-	const maxPoolPhotos = getMaxPoolPhotos(data.vehicles.length);
-	if (data.photos.length === 0) {
-		errors.photos = 'Mindestens ein Foto ist erforderlich.';
-	} else if (data.photos.length > maxPoolPhotos) {
-		errors.photos = `Maximal ${maxPoolPhotos} Fotos insgesamt (max. ${MAX_PHOTOS_PER_VEHICLE} pro Fahrzeug).`;
-	}
+	if (data.photos.length === 0) errors.photos = 'Mindestens ein Foto ist erforderlich.';
 
 	const vehicleErrors = data.vehicles.map((vehicle) => validateVehicle(vehicle, data.photos));
 	if (vehicleErrors.some((v) => Object.keys(v).length > 0)) errors.vehicles = vehicleErrors;

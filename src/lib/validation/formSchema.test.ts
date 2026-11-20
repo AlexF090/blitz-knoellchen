@@ -94,36 +94,13 @@ describe('validateReportForm', () => {
 		expect(isFormValid(errors)).toBe(false);
 	});
 
-	it('akzeptiert bis zu drei Fotos im Pool', () => {
-		const photos = [makePhoto(), makePhoto(), makePhoto()];
+	it('akzeptiert einen großen Pool, solange jedes Fahrzeug höchstens drei Fotos nutzt', () => {
+		const photos = Array.from({ length: 20 }, () => makePhoto());
 		const data = makeValidData();
 		const errors = validateReportForm({
 			...data,
 			photos,
-			vehicles: [makeVehicle({}, [photos[0].id])]
-		});
-		expect(isFormValid(errors)).toBe(true);
-	});
-
-	it('meldet mehr als drei Fotos im Pool bei nur einem Fahrzeug', () => {
-		const data = makeValidData();
-		const errors = validateReportForm({
-			...data,
-			photos: [makePhoto(), makePhoto(), makePhoto(), makePhoto()]
-		});
-		expect(errors.photos).toBeDefined();
-	});
-
-	it('erlaubt mehr als drei Fotos im Pool, wenn mehrere Fahrzeuge das rechtfertigen', () => {
-		const photos = [makePhoto(), makePhoto(), makePhoto(), makePhoto()];
-		const data = makeValidData();
-		const errors = validateReportForm({
-			...data,
-			photos,
-			vehicles: [
-				makeVehicle({ licensePlate: 'K-AA 1' }, [photos[0].id, photos[1].id]),
-				makeVehicle({ licensePlate: 'K-BB 2' }, [photos[2].id, photos[3].id])
-			]
+			vehicles: [makeVehicle({}, [photos[0].id, photos[1].id, photos[2].id])]
 		});
 		expect(isFormValid(errors)).toBe(true);
 	});
