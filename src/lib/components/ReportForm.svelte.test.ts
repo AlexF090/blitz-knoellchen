@@ -276,7 +276,7 @@ describe('ReportForm', () => {
 		await expect
 			.element(page.getByText('Das Foto konnte nicht verarbeitet werden.'))
 			.toBeInTheDocument();
-		await expect.element(page.getByRole('status')).not.toBeInTheDocument();
+		await expect.poll(() => page.getByRole('status').element().textContent).toBe('');
 	});
 
 	it('übernimmt mehrere gleichzeitig gewählte Fotos in den Pool und ordnet höchstens drei dem Fahrzeug zu', async () => {
@@ -290,7 +290,10 @@ describe('ReportForm', () => {
 		);
 
 		await expect
-			.poll(() => document.querySelectorAll('button[aria-label$="vergrößern"]').length)
+			.poll(
+				() =>
+					document.querySelectorAll('button[aria-label^="Foto "][aria-label*="vergrößern"]').length
+			)
 			.toBe(5);
 		await expect
 			.poll(() => document.querySelectorAll('button[aria-pressed="true"]').length)
@@ -318,7 +321,9 @@ describe('ReportForm', () => {
 		await expect
 			.element(page.getByText('1 von 3 Fotos konnten nicht verarbeitet werden: b.heic'))
 			.toBeInTheDocument();
-		expect(document.querySelectorAll('button[aria-label$="vergrößern"]')).toHaveLength(2);
+		expect(
+			document.querySelectorAll('button[aria-label^="Foto "][aria-label*="vergrößern"]')
+		).toHaveLength(2);
 	});
 
 	it('fügt per Button ein weiteres Fahrzeug hinzu', async () => {
@@ -1453,6 +1458,43 @@ describe('ReportForm', () => {
 				.element(page.getByRole('region', { name: 'Entwurf fortsetzen?' }))
 				.toBeInTheDocument();
 			expect(mockedClearDraft).not.toHaveBeenCalled();
+		});
+
+		it('gibt den Fokus nach „Abbrechen“ an „Verwerfen“ zurück', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			const discardButton = page.getByRole('button', { name: 'Verwerfen' });
+			await userEvent.click(discardButton);
+			await userEvent.click(page.getByRole('button', { name: 'Abbrechen' }));
+
+			await expect.poll(() => document.activeElement).toBe(discardButton.element());
+		});
+
+		it('setzt den Fokus nach „Fortsetzen“ auf die Überschrift der Beweisfotos', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			await resumeDraft();
+
+			await expect.poll(() => document.activeElement?.id).toBe('photo-pool-heading');
+			expect(document.activeElement?.textContent).toContain('Beweisfotos');
+		});
+
+		it('setzt den Fokus nach bestätigtem Verwerfen auf die Überschrift der Beweisfotos', async () => {
+			setDefaultMocks();
+			mockedGetProfile.mockResolvedValue(validProfile);
+			draftWithTwoVehicles();
+			await renderForm();
+
+			await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }));
+			await userEvent.click(page.getByRole('button', { name: 'Verwerfen' }).last());
+
+			await expect.poll(() => document.activeElement?.id).toBe('photo-pool-heading');
 		});
 	});
 });

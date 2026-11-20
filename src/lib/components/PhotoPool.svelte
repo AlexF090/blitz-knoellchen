@@ -42,6 +42,30 @@
 		progress ? `Foto ${progress.current} von ${progress.total} wird verarbeitet …` : ''
 	);
 
+	const photoCountLabel = (count: number) => (count === 1 ? '1 Foto' : `${count} Fotos`);
+
+	/**
+	 * Ansage für Bildschirmleser: nur Start und Ende der Verarbeitung, nicht jedes einzelne Foto.
+	 * Die Live-Region bleibt dauerhaft eingehängt, weil Änderungen an einer neu eingefügten Region
+	 * nicht zuverlässig vorgelesen werden.
+	 */
+	let announcement = $state('');
+	let announcedTotal = 0;
+
+	$effect(() => {
+		if (progress) {
+			if (announcedTotal > 0) return;
+			announcedTotal = progress.total;
+			announcement = `${photoCountLabel(progress.total)} ${progress.total === 1 ? 'wird' : 'werden'} verarbeitet …`;
+			return;
+		}
+		if (announcedTotal === 0) return;
+		// Bei Fehlern spricht die Fehlermeldung (role="alert"); eine Erfolgsmeldung daneben wäre
+		// widersprüchlich und doppelt.
+		announcement = processingError ? '' : `${photoCountLabel(announcedTotal)} verarbeitet`;
+		announcedTotal = 0;
+	});
+
 	const hasUnassignedPhotos = $derived(photos.some((photo) => !usageCounts[photo.id]));
 
 	/** Gibt alle ausgewählten Dateien gesammelt weiter. */
@@ -60,7 +84,9 @@
 	class:border-2={error}
 	class:border-error-fg={error}
 >
-	<h2 class="text-lg font-semibold text-ink md:text-xl">Beweisfotos *</h2>
+	<h2 id="photo-pool-heading" tabindex="-1" class="text-lg font-semibold text-ink md:text-xl">
+		Beweisfotos *
+	</h2>
 	<p class="text-lg text-ink-muted">
 		Wähle alle Fotos auf einmal aus — mindestens ein Foto ist erforderlich. Pro Fahrzeug sind
 		maximal
@@ -73,7 +99,9 @@
 				<button
 					type="button"
 					onclick={() => (lightboxPhoto = photo)}
-					aria-label="Foto {photo.fileName} vergrößern"
+					aria-label="Foto {photo.fileName} vergrößern{usageCounts[photo.id]
+						? ''
+						: ', nicht zugeordnet'}"
 					class="group block size-full overflow-hidden rounded-control border border-border"
 				>
 					<img {@attach blobSrc(photo.blob)} alt="" class="size-full object-cover" />
@@ -99,7 +127,8 @@
 				</button>
 				{#if !usageCounts[photo.id]}
 					<span
-						class="absolute bottom-1 left-1 rounded-full bg-surface px-1.5 py-0.5 text-xs text-ink shadow-card"
+						aria-hidden="true"
+						class="absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] rounded-control bg-surface px-1.5 py-0.5 text-sm leading-tight text-ink shadow-card"
 					>
 						nicht zugeordnet
 					</span>
@@ -144,30 +173,30 @@
 			</div>
 		{/if}
 
-		{#if !progress}
-			<label
-				for="photo-pool-input"
-				class="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-control border-2 border-dashed border-border text-base text-ink-muted"
-			>
-				<span class="text-xl">+</span>
-				Foto
-			</label>
-		{/if}
+		<!-- Bleibt auch während der Verarbeitung eingehängt, damit der Fokus nicht verloren geht; das
+		sr-only-Eingabefeld liegt im Label, damit dessen Fokusring sichtbar wird. -->
+		<label
+			for="photo-pool-input"
+			class="relative flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-control border-2 border-dashed border-border text-base text-ink-muted has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary-600"
+		>
+			<span class="text-xl" aria-hidden="true">+</span>
+			Foto
+			<input
+				bind:this={fileInput}
+				id="photo-pool-input"
+				type="file"
+				accept="image/*"
+				multiple
+				disabled={progress !== null}
+				onchange={onFileSelected}
+				class="sr-only"
+			/>
+		</label>
 	</div>
 
-	<input
-		bind:this={fileInput}
-		id="photo-pool-input"
-		type="file"
-		accept="image/*"
-		multiple
-		disabled={progress !== null}
-		onchange={onFileSelected}
-		class="sr-only"
-	/>
-
+	<p role="status" class="sr-only">{announcement}</p>
 	{#if progress}
-		<p role="status" class="mt-2 text-lg text-ink-muted">{progressText}</p>
+		<p aria-hidden="true" class="mt-2 text-lg text-ink-muted">{progressText}</p>
 	{/if}
 	{#if hasUnassignedPhotos}
 		<p class="mt-2 text-lg text-ink-muted">Nicht zugeordnete Fotos werden nicht mitgesendet.</p>

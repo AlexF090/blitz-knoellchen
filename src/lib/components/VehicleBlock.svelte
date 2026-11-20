@@ -93,6 +93,12 @@
 
 	const isPhotoSelectionFull = $derived(vehicle.photoIds.length >= maxPhotos);
 
+	/** Sobald das Limit erreicht ist und es noch abwählbare Alternativen gibt, sind Fotos gesperrt. */
+	const hasBlockedPhotos = $derived(
+		isPhotoSelectionFull && pool.some((photo) => !vehicle.photoIds.includes(photo.id))
+	);
+	const photoLimitHintId = $derived(`photo-limit-hint-${vehicle.id}`);
+
 	const isComplete = $derived(missingFieldMessages.length === 0);
 
 	// Werden Angaben nachträglich unvollständig (z.B. ein Foto wird andernorts aus dem Pool
@@ -212,6 +218,7 @@
 								class:cursor-not-allowed={blocked}
 								aria-pressed={selected}
 								aria-disabled={blocked ? 'true' : undefined}
+								aria-describedby={blocked ? photoLimitHintId : undefined}
 							>
 								<img
 									{@attach blobSrc(photo.blob)}
@@ -231,8 +238,8 @@
 						{/each}
 					</div>
 				{/if}
-				{#if isPhotoSelectionFull && pool.length > maxPhotos}
-					<p class="mt-1 text-lg text-ink-muted">
+				{#if hasBlockedPhotos}
+					<p id={photoLimitHintId} class="mt-1 text-lg text-ink-muted">
 						Maximal {maxPhotos} Fotos pro Fahrzeug – zum Tauschen zuerst eins abwählen.
 					</p>
 				{/if}

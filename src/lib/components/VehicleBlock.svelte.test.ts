@@ -130,6 +130,30 @@ describe('VehicleBlock', () => {
 		expect(vehicle.photoIds).toEqual(['p1', 'p2', 'p3']);
 	});
 
+	it('verknüpft gesperrte Foto-Buttons per aria-describedby mit dem Limit-Hinweis', async () => {
+		const pool = ['p1', 'p2', 'p3', 'p4'].map((id) => makePhoto(id));
+		const vehicle = $state({ ...createEmptyVehicle('v-hint'), photoIds: ['p1', 'p2', 'p3'] });
+
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool, maxPhotos: 3 });
+
+		const blocked = page.getByRole('button', { name: 'Foto p4.jpg auswählen' });
+		const hintId = blocked.element().getAttribute('aria-describedby');
+		expect(hintId).toBeTruthy();
+		expect(document.getElementById(hintId!)?.textContent).toContain('Maximal 3 Fotos pro Fahrzeug');
+		await expect
+			.element(page.getByRole('button', { name: 'Foto p1.jpg auswählen' }))
+			.not.toHaveAttribute('aria-describedby');
+	});
+
+	it('zeigt keinen Limit-Hinweis, solange alle Fotos des Pools ausgewählt sind', async () => {
+		const pool = ['p1', 'p2', 'p3'].map((id) => makePhoto(id));
+		const vehicle = $state({ ...createEmptyVehicle('v-all'), photoIds: ['p1', 'p2', 'p3'] });
+
+		await render(VehicleBlock, { ...baseProps(), vehicle, pool, maxPhotos: 3 });
+
+		await expect.element(page.getByText('Maximal 3 Fotos pro Fahrzeug')).not.toBeInTheDocument();
+	});
+
 	it('gibt die Auswahl wieder frei, sobald ein Foto abgewählt wird', async () => {
 		const pool = ['p1', 'p2', 'p3', 'p4'].map((id) => makePhoto(id));
 		const vehicle = $state({ ...createEmptyVehicle('v-swap'), photoIds: ['p1', 'p2', 'p3'] });

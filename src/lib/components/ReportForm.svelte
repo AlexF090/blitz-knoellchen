@@ -135,9 +135,18 @@
 		);
 		vehicleGeocodeWarnings = draft.ui.geocodeWarnings;
 		pendingDraft = undefined;
+		/**
+		 * Setzt den Fokus nach der Entscheidung über den Entwurf auf die Überschrift der Fotos: Der
+		 * Hinweis samt fokussiertem Button ist dann entfernt, der Fokus fiele sonst auf `body`.
+		 */
+		const focusPhotoHeading = async () => {
+			await tick();
+			document.getElementById('photo-pool-heading')?.focus({ preventScroll: true });
+		};
+
 		draftStatus = 'active';
 		// Erst nach dem Rendern der Karten ist die Seite wieder so hoch wie beim Speichern.
-		await tick();
+		await focusPhotoHeading();
 		if (draft.ui.scrollY > 0) window.scrollTo({ top: draft.ui.scrollY, behavior: 'instant' });
 	};
 

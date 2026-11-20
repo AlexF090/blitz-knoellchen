@@ -110,7 +110,7 @@ describe('PhotoPool', () => {
 			.toBeInTheDocument();
 	});
 
-	it('zeigt den Fortschritt als Status und sperrt die Dateiauswahl, solange verarbeitet wird', async () => {
+	it('zeigt den Fortschritt je Foto sichtbar, aber vor Bildschirmlesern verborgen', async () => {
 		const { container } = await render(PhotoPool, {
 			photos: [],
 			maxPhotosPerVehicle: 3,
@@ -119,13 +119,30 @@ describe('PhotoPool', () => {
 			onRemove: vi.fn()
 		});
 
-		await expect
-			.element(page.getByRole('status'))
-			.toMatchTextContent('Foto 2 von 5 wird verarbeitet …');
+		const progressText = page.getByText('Foto 2 von 5 wird verarbeitet …');
+		await expect.element(progressText).toBeVisible();
+		expect(progressText.element().getAttribute('aria-hidden')).toBe('true');
 		expect(container.querySelector<HTMLInputElement>('#photo-pool-input')?.disabled).toBe(true);
 	});
 
-	it('zeigt ohne laufende Verarbeitung keinen Status und lässt die Auswahl zu', async () => {
+	it('hält die Foto-Schaltfläche während der Verarbeitung eingehängt, aber gesperrt', async () => {
+		const { container } = await render(PhotoPool, {
+			photos: [],
+			maxPhotosPerVehicle: 3,
+			progress: { current: 1, total: 2 },
+			onAddFiles: vi.fn(),
+			onRemove: vi.fn()
+		});
+
+		const label = container.querySelector<HTMLLabelElement>('label[for="photo-pool-input"]');
+		expect(label).not.toBeNull();
+		expect(label?.contains(container.querySelector('#photo-pool-input'))).toBe(true);
+		expect(container.querySelector<HTMLInputElement>('#photo-pool-input')?.disabled).toBe(true);
+		// Die Test-Umgebung lädt kein Tailwind; geprüft wird daher, dass die Sperr-Optik am Label hängt.
+		expect(label?.className).toContain('has-[:disabled]:opacity-50');
+	});
+
+	it('zeigt einen sichtbaren Fokusring am Label, wenn das Eingabefeld Tastaturfokus hat', async () => {
 		const { container } = await render(PhotoPool, {
 			photos: [],
 			maxPhotosPerVehicle: 3,
@@ -133,7 +150,87 @@ describe('PhotoPool', () => {
 			onRemove: vi.fn()
 		});
 
-		await expect.element(page.getByRole('status')).not.toBeInTheDocument();
+		const input = container.querySelector<HTMLInputElement>('#photo-pool-input');
+		const label = container.querySelector<HTMLLabelElement>('label[for="photo-pool-input"]');
+		// Das Eingabefeld liegt im Label, damit `has-[:focus-visible]` dessen Fokusring zeichnen kann.
+		expect(label?.contains(input)).toBe(true);
+		expect(label?.className).toContain('has-[:focus-visible]:outline-2');
+	});
+
+	it('hat eine dauerhafte, anfangs leere Live-Region', async () => {
+		await render(PhotoPool, {
+			photos: [],
+			maxPhotosPerVehicle: 3,
+			onAddFiles: vi.fn(),
+			onRemove: vi.fn()
+		});
+
+		await expect.element(page.getByRole('status')).toBeInTheDocument();
+		await expect.poll(() => page.getByRole('status').element().textContent).toBe('');
+	});
+
+	it('kündigt Start und Ende der Verarbeitung an, nicht jedes einzelne Foto', async () => {
+		const { rerender } = await render(PhotoPool, {
+			photos: [],
+			maxPhotosPerVehicle: 3,
+			progress: { current: 1, total: 12 },
+			onAddFiles: vi.fn(),
+			onRemove: vi.fn()
+		});
+
+		await expect
+			.element(page.getByRole('status'))
+			.toHaveTextContent('12 Fotos werden verarbeitet …');
+
+		await rerender({ progress: { current: 7, total: 12 } });
+		await expect
+			.element(page.getByRole('status'))
+			.toHaveTextContent('12 Fotos werden verarbeitet …');
+
+		await rerender({ progress: null });
+		await expect.element(page.getByRole('status')).toHaveTextContent('12 Fotos verarbeitet');
+	});
+
+	it('verwendet für ein einzelnes Foto den Singular in der Ansage', async () => {
+		const { rerender } = await render(PhotoPool, {
+			photos: [],
+			maxPhotosPerVehicle: 3,
+			progress: { current: 1, total: 1 },
+			onAddFiles: vi.fn(),
+			onRemove: vi.fn()
+		});
+
+		await expect.element(page.getByRole('status')).toHaveTextContent('1 Foto wird verarbeitet …');
+		await rerender({ progress: null });
+		await expect.element(page.getByRole('status')).toHaveTextContent('1 Foto verarbeitet');
+	});
+
+	it('meldet bei Fehlern keinen Erfolg, sondern überlässt die Ansage der Fehlermeldung', async () => {
+		const { rerender } = await render(PhotoPool, {
+			photos: [],
+			maxPhotosPerVehicle: 3,
+			progress: { current: 1, total: 3 },
+			onAddFiles: vi.fn(),
+			onRemove: vi.fn()
+		});
+
+		await rerender({
+			progress: null,
+			processingError: '1 von 3 Fotos konnten nicht verarbeitet werden: a.jpg'
+		});
+
+		await expect.poll(() => page.getByRole('status').element().textContent).toBe('');
+		await expect.element(page.getByRole('alert')).toBeInTheDocument();
+	});
+
+	it('lässt die Auswahl ohne laufende Verarbeitung zu', async () => {
+		const { container } = await render(PhotoPool, {
+			photos: [],
+			maxPhotosPerVehicle: 3,
+			onAddFiles: vi.fn(),
+			onRemove: vi.fn()
+		});
+
 		expect(container.querySelector<HTMLInputElement>('#photo-pool-input')?.disabled).toBe(false);
 	});
 
@@ -148,7 +245,16 @@ describe('PhotoPool', () => {
 			onRemove: vi.fn()
 		});
 
-		await expect.element(page.getByText('nicht zugeordnet', { exact: true })).toBeInTheDocument();
+		const badge = page.getByText('nicht zugeordnet', { exact: true });
+		await expect.element(badge).toBeInTheDocument();
+		expect(badge.element().getAttribute('aria-hidden')).toBe('true');
+		// Der Zustand steckt im Namen des Foto-Buttons statt im verborgenen Badge.
+		await expect
+			.element(page.getByRole('button', { name: 'Foto offen.jpg vergrößern, nicht zugeordnet' }))
+			.toBeInTheDocument();
+		await expect
+			.element(page.getByRole('button', { name: 'Foto zugeordnet.jpg vergrößern', exact: true }))
+			.toBeInTheDocument();
 		await expect
 			.element(page.getByText('Nicht zugeordnete Fotos werden nicht mitgesendet.'))
 			.toBeInTheDocument();

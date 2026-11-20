@@ -46,10 +46,13 @@ test('Viele Fotos auf einmal: höchstens drei pro Fahrzeug, nur diese werden ges
 		}))
 	);
 
-	await expect(page.getByRole('button', { name: /vergrößern$/ })).toHaveCount(PHOTO_COUNT, {
+	await expect(page.getByRole('button', { name: /vergrößern/ })).toHaveCount(PHOTO_COUNT, {
 		timeout: 90_000
 	});
 	await expect(page.getByText(/wird verarbeitet/)).toHaveCount(0);
+	await expect(page.getByRole('status').filter({ hasText: 'Fotos verarbeitet' })).toHaveText(
+		`${PHOTO_COUNT} Fotos verarbeitet`
+	);
 
 	const vehicleBlock = page.locator('[id^="vehicle-block-"]').first();
 	const selectionButtons = vehicleBlock.getByRole('button', { name: /auswählen$/ });
