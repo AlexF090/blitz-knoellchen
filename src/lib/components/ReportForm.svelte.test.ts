@@ -761,6 +761,74 @@ describe('ReportForm', () => {
 			.toContain('GPS-Koordinaten des Fotos: 50.9413, 6.9583');
 	});
 
+	it('verarbeitet weitere Fotos, während die Adresssuche noch läuft, und sucht nur einmal', async () => {
+		setDefaultMocks();
+		for (const index of [1, 2, 3]) {
+			mockedCreatePhotoEntry.mockResolvedValueOnce({
+				...makePhoto(`gps-${index}`),
+				gps: { lat: 50.9413, lon: 6.9583 + index / 1000 }
+			});
+		}
+		let finishLookup: (address: null) => void = () => {};
+		mockedFetchAddress.mockReturnValue(
+			new Promise((resolve) => {
+				finishLookup = resolve;
+			})
+		);
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhotos(
+			new File(['x'], 'gps-1.jpg', { type: 'image/jpeg' }),
+			new File(['x'], 'gps-2.jpg', { type: 'image/jpeg' }),
+			new File(['x'], 'gps-3.jpg', { type: 'image/jpeg' })
+		);
+
+		await expect
+			.element(page.getByRole('button', { name: 'Zurücksetzen', exact: true }))
+			.toBeEnabled();
+		expect(page.getByRole('button', { name: /vergrößern/ }).elements()).toHaveLength(3);
+		expect(mockedFetchAddress).toHaveBeenCalledTimes(1);
+
+		finishLookup(null);
+		const notesField = document.querySelector<HTMLTextAreaElement>('[id^="notes-"]');
+		await expect.poll(() => notesField?.value).toContain('GPS-Koordinaten des Fotos:');
+		expect(notesField?.value.match(/GPS-Koordinaten des Fotos:/g)).toHaveLength(1);
+	});
+
+	it('übernimmt nach dem Zurücksetzen keine Ergebnisse einer noch laufenden Adresssuche', async () => {
+		setDefaultMocks();
+		mockedCreatePhotoEntry
+			.mockResolvedValueOnce({ ...makePhoto('old'), gps: { lat: 50.9413, lon: 6.9583 } })
+			.mockResolvedValueOnce(makePhoto('new'));
+		let finishLookup: (address: null) => void = () => {};
+		mockedFetchAddress.mockReturnValue(
+			new Promise((resolve) => {
+				finishLookup = resolve;
+			})
+		);
+
+		await renderForm();
+		await expect.element(page.getByRole('button', { name: 'Absenden' })).toBeInTheDocument();
+		uploadPhoto(new File(['x'], 'old.jpg', { type: 'image/jpeg' }));
+		const resetButton = page.getByRole('button', { name: 'Zurücksetzen', exact: true });
+		await expect.element(resetButton.first()).toBeEnabled();
+		await userEvent.click(resetButton.first());
+		await userEvent.click(resetButton.last());
+		await expect.element(page.getByLabelText('Kennzeichen')).not.toBeInTheDocument();
+
+		finishLookup(null);
+		uploadPhoto(new File(['x'], 'new.jpg', { type: 'image/jpeg' }));
+
+		await expect
+			.poll(() => mockedSaveDraft.mock.calls.length, { timeout: 2000 })
+			.toBeGreaterThan(0);
+		const snapshot = mockedSaveDraft.mock.lastCall?.[0];
+		expect(snapshot?.vehicles).toHaveLength(1);
+		expect(snapshot?.vehicles[0].notes).toBe('');
+		expect(Object.keys(snapshot?.ui.geocodeWarnings ?? {})).toEqual([snapshot?.vehicles[0].id]);
+	});
+
 	it('setzt die Fehleranzeige eines zurückgesetzten Fahrzeugs zurück', async () => {
 		setDefaultMocks();
 		mockedGetProfile.mockResolvedValue(validProfile);

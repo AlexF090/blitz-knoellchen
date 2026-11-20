@@ -6,6 +6,7 @@
 	import { resolve } from '$app/paths';
 	import { appMode } from '$lib/appMode.svelte';
 	import { CITIES } from '$lib/config/cities';
+	import { appendCoordinatesNote } from '$lib/geocode/appendCoordinatesNote';
 	import { applyAddressSuggestion } from '$lib/geocode/applyAddressSuggestion';
 	import { fetchAddress } from '$lib/geocode/client';
 	import { triggerHaptic } from '$lib/haptics/vibrate';
@@ -76,6 +77,15 @@
 	let photoProcessingError = $state<string | null>(null);
 	/** Bricht die laufende Foto-Verarbeitung ab, sobald das Formular zurückgesetzt wird. */
 	let photoQueueAbort: AbortController | undefined;
+	/**
+	 * Gilt für den aktuellen Formularstand: Zurücksetzen und Verlassen der Seite brechen ihn ab,
+	 * damit eine noch laufende Adresssuche nichts mehr in das Formular schreibt.
+	 */
+	let formSessionAbort = new AbortController();
+	/** Fahrzeug-ids mit laufender Adresssuche; verhindert parallele Suchen für dieselbe Karte. */
+	// Bewusst nicht reaktiv: Nur die Suche selbst liest den Wert, keine Anzeige hängt daran.
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity
+	const vehiclesResolvingAddress = new Set<string>();
 	let vehicleGeocodeWarnings = $state<Record<string, string>>({});
 	/** Fahrzeug-id -> `true`, wenn die Karte zugeklappt ist; fehlende Einträge gelten als offen. */
 	let collapsedVehicles = $state<Record<string, boolean>>({});
@@ -269,7 +279,10 @@
 
 	// Beim Verlassen der Seite endet auch die Foto-Verarbeitung, damit keine Einträge in ein
 	// nicht mehr vorhandenes Formular fallen.
-	$effect(() => () => photoQueueAbort?.abort());
+	$effect(() => () => {
+		photoQueueAbort?.abort();
+		formSessionAbort.abort();
+	});
 
 	/** Übernimmt die aktuellen „Deine Angaben“-Felder in das dauerhaft gespeicherte Profil. */
 	const saveProfileFields = async () => {
@@ -315,6 +328,7 @@
 		if (photo.time) vehicle.time ||= photo.time;
 
 		if (vehicle.locationStreet.trim() && vehicle.locationCity.trim()) return;
+		if (vehiclesResolvingAddress.has(vehicle.id)) return;
 		if (!photo.gps) {
 			vehicleGeocodeWarnings = {
 				...vehicleGeocodeWarnings,
@@ -323,7 +337,16 @@
 			return;
 		}
 
-		const address = await resolvePhotoAddress(photo);
+		// Beim Start gelesen: Ein Zurücksetzen während der Suche ersetzt den Controller.
+		const signal = formSessionAbort.signal;
+		vehiclesResolvingAddress.add(vehicle.id);
+		let address: Awaited<ReturnType<typeof resolvePhotoAddress>>;
+		try {
+			address = await resolvePhotoAddress(photo);
+		} finally {
+			vehiclesResolvingAddress.delete(vehicle.id);
+		}
+		if (signal.aborted) return;
 		applyAddressSuggestion(vehicle, address ?? {}, false);
 
 		if (!address?.street || !address?.city) {
@@ -331,13 +354,21 @@
 				...vehicleGeocodeWarnings,
 				[vehicle.id]: PHOTO_WARNINGS.incompleteAddress
 			};
-			const coordsNote = `GPS-Koordinaten des Fotos: ${photo.gps.lat}, ${photo.gps.lon}`;
-			vehicle.notes = vehicle.notes ? `${vehicle.notes}\n${coordsNote}` : coordsNote;
+			vehicle.notes = appendCoordinatesNote(vehicle.notes, photo.gps);
 		}
 	};
 
+	/** Startet die EXIF-Übernahme, ohne auf die Adresssuche zu warten. */
+	// Die Adresssuche geht übers Netzwerk; abgewartet hielte sie die Foto-Warteschlange und deren
+	// Fortschrittsanzeige an, bis die Antwort da ist.
+	const startPhotoExifApplication = (vehicle: VehicleEntry, photoId: string) => {
+		applyPhotoExifToVehicle(vehicle, photoId).catch((error: unknown) =>
+			console.error('Fehler beim Übernehmen der Fotodaten:', error)
+		);
+	};
+
 	/** Nimmt einen verarbeiteten Eintrag in den Pool auf und ordnet ihn — soweit eindeutig — zu. */
-	const addPhotoEntry = async (entry: PhotoEntry) => {
+	const addPhotoEntry = (entry: PhotoEntry) => {
 		form.photos = [...form.photos, entry];
 		errors = { ...errors, photos: undefined };
 
@@ -354,10 +385,10 @@
 			form.vehicles = [vehicle];
 			// Nach der Zuweisung ist form.vehicles[0] die reaktive Proxy-Version — die lokale
 			// `vehicle`-Referenz bleibt roh, Mutationen darauf würden vom UI nicht bemerkt.
-			await applyPhotoExifToVehicle(form.vehicles[0], entry.id);
+			startPhotoExifApplication(form.vehicles[0], entry.id);
 		} else if (assignment === 'append-first') {
 			form.vehicles[0].photoIds = [...form.vehicles[0].photoIds, entry.id];
-			await applyPhotoExifToVehicle(form.vehicles[0], entry.id);
+			startPhotoExifApplication(form.vehicles[0], entry.id);
 		}
 	};
 
@@ -376,6 +407,8 @@
 				onProgress: (progress) => (photoProgress = progress),
 				signal: abort.signal
 			});
+			// Nach einem Abbruch gehören die Fehlschläge zu einem verworfenen Formularstand.
+			if (abort.signal.aborted) return;
 			if (failed.length > 0) {
 				// Bei genau einer Datei ist deren konkrete Meldung (z.B. HEIC-Hinweis) hilfreicher.
 				photoProcessingError =
@@ -457,6 +490,9 @@
 	 */
 	const resetAll = async () => {
 		photoQueueAbort?.abort();
+		formSessionAbort.abort();
+		formSessionAbort = new AbortController();
+		vehiclesResolvingAddress.clear();
 		form = createEmptyForm();
 		errors = {};
 		vehicleGeocodeWarnings = {};
@@ -685,7 +721,7 @@
 							onRemove={() => removeVehicle(vehicle.id)}
 							onReset={() => resetVehicle(vehicle.id)}
 							onPhotoToggled={(photoId, selected) => {
-								if (selected) applyPhotoExifToVehicle(vehicle, photoId);
+								if (selected) startPhotoExifApplication(vehicle, photoId);
 							}}
 						/>
 					</div>
