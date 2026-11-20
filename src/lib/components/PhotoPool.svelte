@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { blobSrc } from '$lib/photo/blobSrc';
 	/**
 	 * Der gemeinsame Foto-Pool der Anzeige: Auswahl neuer Dateien, Vorschau-Grid und Lightbox.
 	 * Die Zuordnung einzelner Fotos zu Fahrzeugen passiert nicht hier, sondern in VehicleBlock.
 	 */
+	import { blobSrc } from '$lib/photo/blobSrc';
 	import type { PhotoQueueProgress } from '$lib/photo/processPhotoQueue';
 	import type { PhotoEntry } from '$lib/validation/formSchema';
 	import PhotoLightbox from './PhotoLightbox.svelte';
@@ -45,8 +45,8 @@
 	const hasUnassignedPhotos = $derived(photos.some((photo) => !usageCounts[photo.id]));
 
 	/** Gibt alle ausgewählten Dateien gesammelt weiter. */
-	const onFileSelected = async (event: Event) => {
-		const input = event.currentTarget as HTMLInputElement;
+	const onFileSelected = async (event: Event & { currentTarget: HTMLInputElement }) => {
+		const input = event.currentTarget;
 		const files = Array.from(input.files ?? []);
 		// Leeren, damit dieselbe Datei direkt danach erneut ausgewählt werden kann.
 		input.value = '';
