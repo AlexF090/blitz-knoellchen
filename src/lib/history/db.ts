@@ -16,6 +16,11 @@ export interface HistoryEntry {
 	make?: string;
 	color?: string;
 	notes?: string;
+	/** Ausmaß der Behinderung; fehlt bei Einträgen aus älteren App-Versionen. */
+	impairmentLabels?: string[];
+	/** Gefährdete Personen; fehlt bei Einträgen aus älteren App-Versionen. */
+	endangeredPersonLabels?: string[];
+	endangeredPersonsNote?: string;
 	thumbnails: Blob[];
 }
 

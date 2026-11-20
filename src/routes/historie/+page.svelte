@@ -141,6 +141,16 @@
 						{entry.licensePlate} · {entry.make} · {entry.color}
 					</p>
 				{/if}
+				{#if entry.impairmentLabels?.length}
+					<p class="text-base text-ink-muted">
+						Behinderung: {entry.impairmentLabels.join(', ')}
+					</p>
+				{/if}
+				{#if entry.endangeredPersonLabels?.length}
+					<p class="text-base text-ink-muted">
+						Gefährdete Personen: {entry.endangeredPersonLabels.join(', ')}
+					</p>
+				{/if}
 				<p class="text-base text-ink-muted">{new Date(entry.timestamp).toLocaleString('de-DE')}</p>
 
 				{#if entry.thumbnails.length > 0}
