@@ -254,6 +254,18 @@ describe('draft', () => {
 		expect(draft?.photos.map((p) => p.id)).toEqual([photo.id]);
 	});
 
+	it('räumt verwaiste Foto-Blobs auf, wenn kein Entwurfsdatensatz existiert', async () => {
+		const db = await openDB('blitz-knoellchen');
+		await db.put('draftPhotos', { id: 'orphan', blob: new Blob(['x']) });
+		db.close();
+
+		expect(await getDraft()).toBeUndefined();
+
+		const checkDb = await openDB('blitz-knoellchen');
+		expect(await checkDb.count('draftPhotos')).toBe(0);
+		checkDb.close();
+	});
+
 	it('speichert Oberflächen-Zustand und Speicherzeitpunkt und liest sie wieder', async () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(1_000_000);

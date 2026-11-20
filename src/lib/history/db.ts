@@ -125,10 +125,8 @@ const getDb = () => {
 			if (oldVersion < 3) {
 				db.createObjectStore(DRAFT_STORE_NAME, { keyPath: 'id' });
 			}
-			// `upgrade` läuft nur für ältere Stände als die aktuelle Version 4, der Store der
-			// jüngsten Version ist hier also immer neu anzulegen. Mit der nächsten Version wandert
-			// dieser Aufruf in ein `if (oldVersion < 4)`, sonst scheitert das Upgrade an einem
-			// bereits vorhandenen Store.
+			// `upgrade` läuft nur für Stände unterhalb der aktuellen Version 4: Der Store der
+			// jüngsten Version existiert hier nie, eine Versionsprüfung wäre ein toter Zweig.
 			db.createObjectStore(DRAFT_PHOTO_STORE_NAME, { keyPath: 'id' });
 		},
 		// Eine andere Verbindung will die Datenbank upgraden oder löschen, z.B. eine neuere
@@ -207,7 +205,12 @@ export const getDraft = async (): Promise<LoadedDraft | undefined> => {
 	const db = await getDb();
 	const transaction = db.transaction([DRAFT_STORE_NAME, DRAFT_PHOTO_STORE_NAME], 'readwrite');
 	const stored = await transaction.objectStore(DRAFT_STORE_NAME).get(DRAFT_KEY);
-	if (!stored) return undefined;
+	if (!stored) {
+		// Blobs ohne Datensatz stammen aus einem abgebrochenen Schreibvorgang und wären sonst
+		// dauerhaft unerreichbar.
+		await Promise.all([transaction.objectStore(DRAFT_PHOTO_STORE_NAME).clear(), transaction.done]);
+		return undefined;
+	}
 
 	const photoBlobs = await transaction.objectStore(DRAFT_PHOTO_STORE_NAME).getAll();
 	const blobsById = new Map(photoBlobs.map((photoBlob) => [photoBlob.id, photoBlob.blob]));
@@ -232,14 +235,13 @@ export const saveDraft = async ({ vehicles, photos, ui }: DraftFormData): Promis
 	const transaction = db.transaction([DRAFT_STORE_NAME, DRAFT_PHOTO_STORE_NAME], 'readwrite');
 	const photoStore = transaction.objectStore(DRAFT_PHOTO_STORE_NAME);
 
-	const photoMetadata: StoredDraftPhoto[] = photos.map((photo) => ({
-		id: photo.id,
-		fileName: photo.fileName,
-		gps: photo.gps,
-		date: photo.date,
-		time: photo.time,
-		resolvedAddress: photo.resolvedAddress
-	}));
+	// Alles außer dem Blob ist Metadaten, neue Felder von `PhotoEntry` werden so mitgespeichert.
+	const photoMetadata: StoredDraftPhoto[] = photos.map((photo) => {
+		// Der Blob wird nur zum Abtrennen aus dem Rest-Objekt benannt.
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const { blob, ...metadata } = photo;
+		return metadata;
+	});
 	const storedIds = new Set(await photoStore.getAllKeys());
 	const currentIds = new Set(photos.map((photo) => photo.id));
 
