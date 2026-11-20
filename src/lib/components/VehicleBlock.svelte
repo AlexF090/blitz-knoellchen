@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { blobSrc } from '$lib/photo/blobSrc';
 	/**
 	 * Eine auf- und zuklappbare Karte pro gemeldetem Fahrzeug: Fotoauswahl, Tatort, Fahrzeugdaten
 	 * und Verstöße. Zugeklappt zeigt sie nur noch die Zusammenfassung.
@@ -83,9 +84,6 @@
 		else onReset();
 	};
 
-	/** Macht einen Foto-Blob als `src` verwendbar. */
-	const objectUrl = (blob: Blob) => URL.createObjectURL(blob);
-
 	const missingFieldMessages = $derived(Object.values(validateVehicle(vehicle, pool)));
 
 	const isComplete = $derived(missingFieldMessages.length === 0);
@@ -161,7 +159,7 @@
 									{@const photo = pool.find((p) => p.id === photoId)}
 									{#if photo}
 										<img
-											src={objectUrl(photo.blob)}
+											{@attach blobSrc(photo.blob)}
 											alt="Beweisfoto {photoIndex + 1} von {vehicle.photoIds.length}"
 											width="56"
 											height="56"
@@ -207,7 +205,7 @@
 								aria-pressed={selected}
 							>
 								<img
-									src={objectUrl(photo.blob)}
+									{@attach blobSrc(photo.blob)}
 									alt="Foto {photo.fileName} auswählen"
 									width="96"
 									height="96"

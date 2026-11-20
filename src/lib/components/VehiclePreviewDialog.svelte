@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { blobSrc } from '$lib/photo/blobSrc';
 	/**
 	 * Zeigt vor dem Absenden, wie die E-Mail für ein Fahrzeug aussieht: Empfänger, Betreff,
 	 * Nachrichtentext und Anhänge.
@@ -102,7 +103,7 @@
 					<div class="mt-1 flex flex-wrap gap-2">
 						{#each photos as photo, photoIndex (photo.id)}
 							<img
-								src={URL.createObjectURL(photo.blob)}
+								{@attach blobSrc(photo.blob)}
 								alt="Beweisfoto {photoIndex + 1} von {photos.length}"
 								loading="lazy"
 								class="max-h-48 w-auto max-w-full rounded-control border border-border object-contain"

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { blobSrc } from '$lib/photo/blobSrc';
 	/**
 	 * Der gemeinsame Foto-Pool der Anzeige: Auswahl neuer Dateien, Vorschau-Grid und Lightbox.
 	 * Die Zuordnung einzelner Fotos zu Fahrzeugen passiert nicht hier, sondern in VehicleBlock.
@@ -38,9 +39,6 @@
 	let fileInput: HTMLInputElement | undefined;
 	let lightboxPhoto: PhotoEntry | null = $state(null);
 	let batchError = $state<string | null>(null);
-
-	/** Macht einen Foto-Blob als `src` verwendbar. */
-	const objectUrl = (blob: Blob) => URL.createObjectURL(blob);
 
 	/** Übernimmt die ausgewählten Dateien der Reihe nach, begrenzt auf die freien Plätze. */
 	const onFileSelected = async (event: Event) => {
@@ -89,7 +87,7 @@
 					aria-label="Foto {photo.fileName} vergrößern"
 					class="group block size-full overflow-hidden rounded-control border border-border"
 				>
-					<img src={objectUrl(photo.blob)} alt="" class="size-full object-cover" />
+					<img {@attach blobSrc(photo.blob)} alt="" class="size-full object-cover" />
 					<span
 						class="absolute inset-0 flex items-center justify-center bg-ink/0 opacity-0 transition-opacity group-hover:bg-ink/20 group-hover:opacity-100 pointer-coarse:bg-ink/20 pointer-coarse:opacity-100"
 					>
