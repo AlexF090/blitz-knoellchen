@@ -1,26 +1,31 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
 	createVercelAnalytics,
 	injectVercelAnalytics,
 	trackPageview,
-	VERCEL_ANALYTICS_SCRIPT_SRC
+	VERCEL_ANALYTICS_SCRIPT_SRC,
+	type AnalyticsHost
 } from './vercelAnalytics';
 
-const analyticsScripts = () =>
-	document.head.querySelectorAll<HTMLScriptElement>(`script[src="${VERCEL_ANALYTICS_SCRIPT_SRC}"]`);
-
-afterEach(() => {
-	for (const script of analyticsScripts()) script.remove();
-	delete window.va;
-	delete window.vaq;
+// Ein losgelöstes Dokument lädt eingefügte Skripte nicht: Die Tests lösen so keine echte Anfrage
+// an /_vercel/insights aus.
+const createHost = (): AnalyticsHost => ({
+	document: document.implementation.createHTMLDocument('Analytics-Test')
 });
+
+const analyticsScripts = (host: AnalyticsHost) =>
+	host.document.head.querySelectorAll<HTMLScriptElement>(
+		`script[src="${VERCEL_ANALYTICS_SCRIPT_SRC}"]`
+	);
 
 describe('injectVercelAnalytics', () => {
 	it('lädt das Skript einmalig, verzögert und ohne automatische Seitenzählung', () => {
-		injectVercelAnalytics();
-		injectVercelAnalytics();
+		const host = createHost();
 
-		const scripts = analyticsScripts();
+		injectVercelAnalytics(host);
+		injectVercelAnalytics(host);
+
+		const scripts = analyticsScripts(host);
 		expect(scripts).toHaveLength(1);
 		const [script] = scripts;
 		expect(script.defer).toBe(true);
@@ -28,48 +33,53 @@ describe('injectVercelAnalytics', () => {
 	});
 
 	it('sammelt Befehle in der Queue, bis das Skript geladen ist', () => {
-		injectVercelAnalytics();
+		const host = createHost();
 
-		trackPageview('/historie', '/historie');
+		injectVercelAnalytics(host);
+		trackPageview('/historie', '/historie', host);
 
-		expect(window.vaq).toEqual([['pageview', { route: '/historie', path: '/historie' }]]);
+		expect(host.vaq).toEqual([['pageview', { route: '/historie', path: '/historie' }]]);
 	});
 
 	it('übernimmt eine schon vorhandene Befehlsschnittstelle', () => {
 		const calls: unknown[][] = [];
-		window.va = (...parameters: unknown[]) => calls.push(parameters);
+		const host: AnalyticsHost = {
+			...createHost(),
+			va: (...parameters: unknown[]) => calls.push(parameters)
+		};
 
-		injectVercelAnalytics();
-		trackPageview('/', '/');
+		injectVercelAnalytics(host);
+		trackPageview('/', '/', host);
 
 		expect(calls).toEqual([['pageview', { route: '/', path: '/' }]]);
-		expect(window.vaq).toBeUndefined();
+		expect(host.vaq).toBeUndefined();
 	});
 });
 
 describe('createVercelAnalytics', () => {
 	it('lädt ausgeschaltet nichts und meldet nichts', () => {
-		const track = createVercelAnalytics(false);
+		const host = createHost();
 
-		track('/', '/');
+		createVercelAnalytics(false, host)('/', '/');
 
-		expect(analyticsScripts()).toHaveLength(0);
-		expect(window.va).toBeUndefined();
+		expect(analyticsScripts(host)).toHaveLength(0);
+		expect(host.va).toBeUndefined();
 	});
 
 	it('lädt eingeschaltet das Skript und meldet Seitenaufrufe mit Route-Muster', () => {
-		const track = createVercelAnalytics(true);
+		const host = createHost();
+		const track = createVercelAnalytics(true, host);
 
 		track('/historie', '/historie');
 		track(null, '/gibt-es-nicht');
 
-		expect(analyticsScripts()).toHaveLength(1);
-		expect(window.vaq).toEqual([['pageview', { route: '/historie', path: '/historie' }]]);
+		expect(analyticsScripts(host)).toHaveLength(1);
+		expect(host.vaq).toEqual([['pageview', { route: '/historie', path: '/historie' }]]);
 	});
 });
 
 describe('trackPageview', () => {
 	it('tut ohne eingebundenes Analytics nichts', () => {
-		expect(() => trackPageview('/', '/')).not.toThrow();
+		expect(() => trackPageview('/', '/', createHost())).not.toThrow();
 	});
 });
