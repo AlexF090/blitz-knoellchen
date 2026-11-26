@@ -1,0 +1,18 @@
+// Konfiguration des Cloudflare Workers.
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "blitz-knoellchen",
+	// Ausgabe von @sveltejs/adapter-cloudflare. Ohne `main` und `assets` baut der Adapter für
+	// Cloudflare Pages statt für Workers.
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	// Nicht neuer als das Release-Datum der installierten workerd-Version (s. package-lock.json),
+	// sonst warnt wrangler. Ab 2026-08-04 ist nodejs_compat standardmäßig aktiv.
+	"compatibility_date": "2026-11-17",
+	"observability": {
+		"enabled": true
+	}
+}

@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
-import adapter from '@sveltejs/adapter-vercel';
+import adapter from '@sveltejs/adapter-cloudflare';
 import { withPwa } from '@vite-pwa/sveltekit';
 import pkg from './package.json' with { type: 'json' };
 
@@ -22,12 +22,10 @@ export default defineConfig({
 						filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 				},
 
-				// Fest @sveltejs/adapter-vercel statt adapter-auto (einziges Deployment-Ziel). runtime
-				// explizit gesetzt, sonst rät adapter-vercel anhand der lokalen (z.B. per nvm neueren,
-				// von Vercel noch nicht unterstützten) Node-Version und bricht den Build sonst ab.
-				// Version synchron zu .nvmrc und engines.node halten. Ein Node-Major-Wechsel betrifft alle
-				// drei Stellen und ist bewusst manuell.
-				adapter: adapter({ runtime: 'nodejs26.x' }),
+				// Fest @sveltejs/adapter-cloudflare statt adapter-auto (einziges Deployment-Ziel). Worker-
+				// Name, compatibility_date und Bindings stehen in wrangler.jsonc. Die Laufzeit ist workerd,
+				// die Node-Version aus .nvmrc gilt nur für den Build.
+				adapter: adapter(),
 
 				// CSP über SvelteKits eingebaute Unterstützung statt manuell in hooks.server.ts, damit
 				// SvelteKit das von ihm selbst injizierte Bootstrap-<script> automatisch per Nonce/Hash

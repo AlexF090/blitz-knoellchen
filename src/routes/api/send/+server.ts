@@ -120,7 +120,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
 	const attachment = photos.map((photo, index) => ({
 		name: photo.fileName,
-		content: Buffer.from(photoBytes[index]).toString('base64')
+		content: photoBytes[index].toBase64()
 	}));
 
 	try {
