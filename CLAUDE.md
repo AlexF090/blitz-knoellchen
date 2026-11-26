@@ -64,6 +64,9 @@ npm run og-image                       # Link-Vorschaubild static/og-image.png n
   importiert. Keine Variable trägt `static: true`, sonst stünde der Wert im Worker-Bundle.
   `wrangler dev` (`npm run preview`) liest echte Werte aus der lokalen `.env` bzw. `.dev.vars`.
   Darum übergibt `npm run screenshots` alle sichtbaren Werte per `--var`, das hat Vorrang.
+- Der Build verlangt alle Pflicht-Umgebungsvariablen, auch wenn sie erst zur Laufzeit gelesen
+  werden (SvelteKit prüft sie beim „Analysing routes“). Workers Builds hat dafür Platzhalter als
+  Build-Variablen; eine neue Pflicht-Variable muss dort ebenfalls eingetragen werden.
 - `vite preview` funktioniert nicht: Es führt den Server in Node aus, und Node kann
   `cloudflare:workers` nicht laden (`ERR_UNSUPPORTED_ESM_URL_SCHEME`). `npm run preview` ist
   deshalb `wrangler dev`.
