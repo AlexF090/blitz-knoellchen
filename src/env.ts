@@ -17,6 +17,10 @@ export const parseOptionalPositiveInteger = (value: string | undefined): number 
 	return number;
 };
 
+/** Leerer oder fehlender Wert gilt als „nicht gesetzt“; sonst der Wert unverändert. */
+export const parseOptionalString = (value: string | undefined): string | undefined =>
+	value || undefined;
+
 /**
  * Alle Umgebungsvariablen der App; serverseitig über `$app/env/private` lesbar. Werte mit
  * `static: true` werden zur Build-Zeit eingebacken, die übrigen beim Start gelesen.
@@ -34,6 +38,11 @@ export const variables = defineEnvVars({
 	BREVO_API_URL: {
 		schema: parseOptionalUrl,
 		description: 'Nur für E2E-Tests: Brevo-Endpunkt eines lokalen Mocks.'
+	},
+	VERCEL_ENV: {
+		schema: parseOptionalString,
+		description:
+			'Von Vercel gesetzt (production, preview, development); steuert, ob die Seiten indexierbar sind.'
 	},
 	SEND_LIMIT_PER_HOUR: {
 		schema: parseOptionalPositiveInteger,
