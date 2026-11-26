@@ -18,9 +18,9 @@ export default defineConfig({
 		// liefen sonst ins echte Netz. Nur e2e/service-worker.e2e.ts lässt ihn zu.
 		serviceWorkers: 'block'
 	},
-	// Zwei Prozesse: der Brevo-Mock muss stehen, bevor die App-Umgebungsvariable BREVO_API_URL
-	// beim Start von `npm run preview` gelesen wird (s. src/routes/api/send/+server.ts) — echte
-	// Anfragen an Brevo landen dadurch nie extern, sondern immer bei e2e/mocks/brevo-mock-server.mjs.
+	// Zwei Prozesse: der Brevo-Mock muss stehen, bevor die App startet. BREVO_API_URL zeigt per
+	// `--var` auf ihn (s. src/routes/api/send/+server.ts) — echte Anfragen an Brevo landen dadurch
+	// nie extern, sondern immer bei e2e/mocks/brevo-mock-server.mjs.
 	webServer: [
 		{
 			command: `node e2e/mocks/brevo-mock-server.mjs`,
@@ -29,12 +29,20 @@ export default defineConfig({
 		},
 		{
 			// Auf CI baut ein eigener Schritt in ci.yml vorher, lokal baut der webServer selbst.
-			command: isCi ? 'npm run preview' : 'npm run build && npm run preview',
+			// `npm run preview` ist `wrangler dev`: der gebaute Worker in workerd wie in Produktion.
+			// `--var` hat Vorrang vor .env und .dev.vars. SEND_LIMIT_PER_MINUTE ersetzt das
+			// Rate-Limit-Binding, weil alle Tests von localhost aus senden.
+			command: [
+				...(isCi ? [] : ['npm run build &&']),
+				`npm run preview -- --port ${APP_PORT}`,
+				`--var BREVO_API_URL:http://localhost:${BREVO_MOCK_PORT}/v3/smtp/email`,
+				'--var SEND_LIMIT_PER_MINUTE:1000'
+			].join(' '),
 			port: APP_PORT,
 			env: {
-				BREVO_API_URL: `http://localhost:${BREVO_MOCK_PORT}/v3/smtp/email`,
-				// Alle Tests senden von localhost aus und würden sonst das Rate-Limit ausschöpfen.
-				SEND_LIMIT_PER_HOUR: '1000'
+				// Ohne .dev.vars liest wrangler dev nur .env; in der CI stehen die Werte in der
+				// Prozessumgebung (s. ci.yml).
+				CLOUDFLARE_INCLUDE_PROCESS_ENV: 'true'
 			}
 		}
 	],
