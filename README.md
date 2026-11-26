@@ -5,7 +5,7 @@
 Progressive Web App, mit der sich Falschparker in rund 30 Sekunden vom Smartphone aus bei der
 Bußgeldstelle Köln anzeigen lassen — Foto machen, Rest füllt sich selbst aus, absenden.
 
-**→ [Live-Demo](https://blitz-knoellchen.vercel.app)**
+**→ [Live-Demo](https://blitz-knoellchen.appool.de)**
 
 <table>
   <tr>
@@ -164,6 +164,12 @@ Das Projekt nutzt `@sveltejs/adapter-vercel` explizit statt `adapter-auto`.
    `BREVO_API_URL` und `SEND_LIMIT_PER_HOUR` aus `.env.example` sind nur für E2E-Tests gedacht
    und gehören nicht nach Vercel.
 3. Deploy auslösen — ein Push auf den verbundenen Branch reicht.
+4. Produktionsdomain ist `https://blitz-knoellchen.appool.de` (CNAME auf Vercel). Canonical,
+   `og:url`, JSON-LD und Sitemap nutzen diese feste Origin aus `src/lib/site.ts`, nicht den
+   Hostnamen der Anfrage. `EMAIL_FROM` ist in Produktion `blitz-knoellchen@appool.de`; die Domain
+   `appool.de` muss dafür in Brevo authentifiziert sein.
+5. Das Impressum liegt zentral auf [appool.de/impressum](https://appool.de/impressum);
+   `/impressum` leitet per 301 dorthin.
 
 ## Umgebungsvariablen
 
