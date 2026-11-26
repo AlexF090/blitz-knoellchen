@@ -52,4 +52,13 @@ describe('Datenschutz-Seite', () => {
 		expect(text).toContain('Standardvertragsklauseln');
 		expect(text).toContain('Auftragsverarbeitungsvertrag');
 	});
+
+	it('nennt das Betreiber-Postfach bei Hetzner mit 6 Monaten Speicherdauer und Verjährung', async () => {
+		await render(DatenschutzPage);
+
+		const text = (document.body.textContent ?? '').replace(/\s+/g, ' ');
+		expect(text).toContain('Hetzner Online GmbH');
+		expect(text).toContain('werden nach 6 Monaten gelöscht');
+		expect(text).toContain('§ 26 Abs. 3 StVG');
+	});
 });

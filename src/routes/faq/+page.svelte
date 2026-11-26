@@ -23,6 +23,11 @@
 			id: 'nach-dem-absenden',
 			question: 'Was passiert, nachdem ich die Anzeige abgeschickt habe?',
 			answer: nachDemAbsendenSnippet
+		},
+		{
+			id: 'eingangsbestaetigung',
+			question: 'Bekomme ich eine Eingangsbestätigung der Bußgeldstelle?',
+			answer: eingangsbestaetigungSnippet
 		}
 	];
 
@@ -100,6 +105,24 @@
 	</p>
 {/snippet}
 
+{#snippet eingangsbestaetigungSnippet()}
+	<p>
+		Nein, nicht direkt. Die Bußgeldstelle Köln verschickt eine automatische Eingangsbestätigung an
+		die Absenderadresse der E-Mail – das ist die Adresse dieser App, nicht deine. Dein Beleg ist die
+		Kopie (Bcc), die du beim Versand automatisch bekommst. Antwortet dir ein Sachbearbeiter, landet
+		die Antwort direkt bei dir, weil deine Adresse als Antwortadresse hinterlegt ist.
+	</p>
+	<p class="mt-2">
+		Die Eingangsbestätigung weist darauf hin, dass Einsprüche gegen einen Bescheid per einfacher
+		E-Mail unzulässig sind. Das betrifft nur Betroffene eines Bußgeldbescheids, nicht deine Anzeige.
+	</p>
+	<p class="mt-2">
+		Der Betreiber bewahrt die Antworten der Bußgeldstelle 6 Monate auf und löscht sie danach. So
+		lange dauert es bei Parkverstößen höchstens, bis ein Fall verjährt ist: 3 Monate, solange kein
+		Bußgeldbescheid ergangen ist, nach einem Bescheid 6 Monate (§ 26 Abs. 3 StVG).
+	</p>
+{/snippet}
+
 {#snippet verantwortlichUndDatenSnippet()}
 	<p>
 		Der Betreiber dieser App (Kontakt siehe
@@ -170,6 +193,16 @@
 					<td class="py-2">Bußgeldstelle Köln</td>
 				</tr>
 				<tr class="border-b border-border align-top">
+					<td class="py-2 pr-3">Postfach des Betreibers</td>
+					<td class="py-2 pr-3">
+						Antworten der Bußgeldstelle an die Absenderadresse der App, v. a. automatische
+						Eingangsbestätigungen (Betreff ggf. mit Kennzeichen und Datum)
+					</td>
+					<td class="py-2 pr-3">E-Mail-Postfach bei Hetzner (Deutschland)</td>
+					<td class="py-2 pr-3">6 Monate, so lange wie die Verjährung bei Parkverstößen</td>
+					<td class="py-2">Betreiber</td>
+				</tr>
+				<tr class="border-b border-border align-top">
 					<td class="py-2 pr-3">Vercel (Hosting)</td>
 					<td class="py-2 pr-3">Technische Zugriffsdaten (z. B. IP-Adresse, Zeitpunkt)</td>
 					<td class="py-2 pr-3">Bei Vercel, Serverstandort Frankfurt</td>
@@ -189,8 +222,9 @@
 		</table>
 	</div>
 	<p class="mt-2">
-		Du bekommst beim Versand automatisch eine Kopie, der Betreiber nicht – er sieht einzelne
-		Anzeigen also nicht automatisch (mehr zum Empfänger Bußgeldstelle Köln in der
+		Du bekommst beim Versand automatisch eine Kopie, der Betreiber nicht – er sieht den Inhalt
+		einzelner Anzeigen also nicht, nur die Antworten der Bußgeldstelle an die Absenderadresse (mehr
+		zum Empfänger Bußgeldstelle Köln in der
 		<a href={resolve('/datenschutz')} class="underline">Datenschutzerklärung, Abschnitt 8</a>).
 		Neben deinen eigenen Angaben werden zwangsläufig auch Daten der gemeldeten Person verarbeitet –
 		Kennzeichen, Tatort, Tatzeit und das Beweisfoto, das ggf. auch die Person zeigt – ausschließlich
