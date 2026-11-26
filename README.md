@@ -162,6 +162,9 @@ Bindings (Rate-Limits) und Custom Domain stehen in `wrangler.jsonc`.
 
 1. Das Repository ist im Cloudflare-Dashboard über Workers Builds verbunden: Jeder Push auf
    `main` baut mit `npm run build` und deployt mit `npx wrangler deploy`. Preview-Builds sind aus.
+   Unter Settings → Builds → Variables stehen die fünf Pflicht-Variablen mit dem Platzhalter
+   `nur-fuer-den-build`: SvelteKit prüft beim Build, ob sie gesetzt sind. Weil keine Variable
+   `static: true` trägt, landen die Platzhalter nicht im Code; zur Laufzeit gelten die Secrets.
 2. Die fünf Pflicht-Variablen aus der Tabelle unten als Secrets am Worker setzen
    (`npx wrangler secret put <NAME>` oder Dashboard → Settings → Variables and Secrets). Sie
    werden zur Laufzeit gelesen, Build-Variablen braucht es nicht. `BREVO_API_URL` und
