@@ -42,4 +42,14 @@ describe('Datenschutz-Seite', () => {
 		expect(text).toContain('Sendinblue GmbH, Berlin');
 		expect(text).toContain('Vercel');
 	});
+
+	it('nennt Vercel Inc. (USA) mit Drittlandübermittlung und Auftragsverarbeitungsvertrag', async () => {
+		await render(DatenschutzPage);
+
+		const text = (document.body.textContent ?? '').replace(/\s+/g, ' ');
+		expect(text).toContain('Vercel Inc.');
+		expect(text).toContain('Data Privacy Framework');
+		expect(text).toContain('Standardvertragsklauseln');
+		expect(text).toContain('Auftragsverarbeitungsvertrag');
+	});
 });

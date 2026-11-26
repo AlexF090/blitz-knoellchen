@@ -150,6 +150,14 @@
 				Interesse am sicheren und stabilen Betrieb der App).
 			</p>
 			<p class="mt-2">
+				Anbieter ist die <strong>Vercel Inc.</strong> mit Sitz in den USA. Auch wenn die Auslieferung
+				aus Frankfurt erfolgt, kann Vercel als US-Unternehmen die Daten verarbeiten; das stellt eine mögliche
+				Datenübermittlung in ein Drittland dar (Art. 44 ff. DSGVO). Diese stützt sich nach Angaben von
+				Vercel auf das EU-US Data Privacy Framework (Angemessenheitsbeschluss der EU-Kommission) bzw.
+				ergänzend auf Standardvertragsklauseln. Mit Vercel besteht ein Auftragsverarbeitungsvertrag (Data
+				Processing Addendum) nach Art. 28 DSGVO.
+			</p>
+			<p class="mt-2">
 				Zusätzlich nutzt diese App <strong>Vercel Web Analytics</strong>, um anonyme, aggregierte
 				Nutzungsstatistiken (z. B. Seitenaufrufe) zu erheben. Dieser Dienst arbeitet ohne Cookies
 				und ohne dauerhafte Speicherung der IP-Adresse; eine Zuordnung zu dir als Person findet
