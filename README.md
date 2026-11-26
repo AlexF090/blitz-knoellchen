@@ -167,7 +167,7 @@ Bindings (Rate-Limits) und Custom Domain stehen in `wrangler.jsonc`.
    `static: true` trägt, landen die Platzhalter nicht im Code; zur Laufzeit gelten die Secrets.
 2. Die fünf Pflicht-Variablen aus der Tabelle unten als Secrets am Worker setzen
    (`npx wrangler secret put <NAME>` oder Dashboard → Settings → Variables and Secrets). Sie
-   werden zur Laufzeit gelesen, Build-Variablen braucht es nicht. `BREVO_API_URL` und
+   werden zur Laufzeit gelesen; die Build-Variablen aus Schritt 1 sind nur Platzhalter. `BREVO_API_URL` und
    `SEND_LIMIT_PER_MINUTE` aus `.env.example` sind nur für E2E-Tests gedacht und gehören nicht
    nach Cloudflare.
 3. Von Hand deployen geht weiterhin mit `npx wrangler login` und
