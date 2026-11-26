@@ -1,15 +1,20 @@
 import { LOCATIONIQ_API_KEY } from '$app/env/private';
 import { createLocationIqAutocompleteProvider } from '#lib/geocode/autocomplete.ts';
 import { LOCATIONIQ_MIN_INTERVAL_MS, shouldThrottle } from '#lib/geocode/rateLimiter.ts';
+import { getGeocodeRateLimiter } from '#lib/server/rateLimiters.ts';
 import type { RequestHandler } from './$types';
 
 /**
  * Autocomplete-Proxy: liefert Adressvorschläge zu `q`.
  * Läuft serverseitig, damit der LocationIQ-API-Schlüssel nicht an den Client gelangt.
  */
-export const GET: RequestHandler = async ({ url, fetch }) => {
+export const GET: RequestHandler = async ({ url, fetch, getClientAddress }) => {
 	const q = url.searchParams.get('q')?.trim() ?? '';
 	if (q.length < 3) return Response.json({ suggestions: [] });
+	// Leere Liste statt 429: Der Client zeigt dann einfach keine Vorschläge an.
+	if (!(await getGeocodeRateLimiter().tryConsume(getClientAddress()))) {
+		return Response.json({ suggestions: [] });
+	}
 	// Non-blocking Soft-Limit statt Warten wie beim Reverse-Geocode-Proxy: beim Tippen dürfen
 	// sich keine Anfragen stauen (s. rateLimiter.ts und die ADR in docs/architektur.md).
 	if (shouldThrottle(LOCATIONIQ_MIN_INTERVAL_MS)) return Response.json({ suggestions: [] });

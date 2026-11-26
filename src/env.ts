@@ -33,8 +33,9 @@ export const variables = defineEnvVars({
 		schema: parseOptionalUrl,
 		description: 'Nur für E2E-Tests: Brevo-Endpunkt eines lokalen Mocks.'
 	},
-	SEND_LIMIT_PER_HOUR: {
+	SEND_LIMIT_PER_MINUTE: {
 		schema: parseOptionalPositiveInteger,
-		description: 'Nur für E2E-Tests: Sendelimit pro Stunde und IP (Standard 20).'
+		description:
+			'Nur für E2E-Tests: Sendelimit pro Minute und IP im Speicher statt über das Cloudflare-Binding.'
 	}
 });

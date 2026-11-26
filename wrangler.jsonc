@@ -14,5 +14,20 @@
 	"compatibility_date": "2026-11-17",
 	"observability": {
 		"enabled": true
-	}
+	},
+	// Limits pro Client-IP und Cloudflare-Standort, ungefähr gezählt. Gleiche Werte wie in
+	// src/lib/server/rateLimiters.ts. `namespace_id` ist pro Cloudflare-Konto eindeutig; weitere
+	// Worker im selben Konto brauchen eigene IDs.
+	"ratelimits": [
+		{
+			"name": "SEND_RATE_LIMITER",
+			"namespace_id": "1001",
+			"simple": { "limit": 10, "period": 60 }
+		},
+		{
+			"name": "GEOCODE_RATE_LIMITER",
+			"namespace_id": "1002",
+			"simple": { "limit": 30, "period": 60 }
+		}
+	]
 }

@@ -1,9 +1,10 @@
 /** Mindestabstand zwischen zwei LocationIQ-Anfragen. */
-// Das Rate-Limit gilt prozessweit für Reverse-Geocode und Autocomplete zusammen — beide
+// Der Abstand gilt pro Isolate für Reverse-Geocode und Autocomplete zusammen — beide
 // Endpunkte teilen sich deshalb sowohl diese Konstante als auch den Modul-Timestamp unten.
 export const LOCATIONIQ_MIN_INTERVAL_MS = 1000;
 
-// Modul-State: gilt pro Server-Prozess, gemeinsam für alle Aufrufer dieses Moduls.
+// Modul-State: gilt pro Worker-Isolate, gemeinsam für alle Aufrufer dieses Moduls. Das Limit pro
+// Client-IP setzt src/lib/server/rateLimiters.ts.
 let lastRequestAt = 0;
 
 /**

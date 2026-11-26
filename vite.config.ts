@@ -157,6 +157,8 @@ export default defineConfig({
 				// Reine Verdrahtung von applySecurityHeaders (eigene Unit-Tests). Ob die Header wirklich
 				// ankommen, prüft e2e/security-headers.e2e.ts gegen den Production-Build.
 				'src/hooks.server.ts',
+				// Reine Weitergabe von `cloudflare:workers`; Tests ersetzen das Modul (s. Kommentar dort).
+				'src/lib/server/workerBindings.ts',
 				'src/routes/**/$types.d.ts'
 			],
 			// Provider ist bewusst istanbul, nicht v8. v8 leitet die Coverage aus den Zählern der

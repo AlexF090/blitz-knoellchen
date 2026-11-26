@@ -37,13 +37,16 @@ Relevant sind insbesondere:
 
 ## Bekannte Einschränkungen
 
-- Das Rate-Limiting der Geocoding-Proxys (`src/lib/geocode/rateLimiter.ts`) hält den Modul-State
-  pro Server-Prozess. In einer Serverless-Umgebung mit mehreren parallelen Instanzen schützt es
-  daher das eigene LocationIQ-Kontingent nur näherungsweise und ist kein Missbrauchsschutz.
-- `/api/send` drosselt auf 20 Anfragen pro Stunde und IP, hat aber kein CAPTCHA. Das Limit liegt
-  wie beim Geocoding im Speicher und gilt nur pro Serverless-Instanz. Weil die BCC-Kopie an die
-  vom Client angegebene Adresse geht, lassen sich darüber weiterhin E-Mails von der
-  Absender-Domain an beliebige Adressen auslösen, nur langsamer.
+- Die Rate-Limits laufen über das Cloudflare Rate Limiting Binding (`wrangler.jsonc`,
+  `src/lib/server/rateLimiters.ts`): `/api/send` 10 und die Geocoding-Proxys zusammen 30
+  Anfragen pro Minute und IP. Cloudflare zählt pro Standort und nur ungefähr, das Limit ist also
+  kein exakter globaler Zähler.
+- `/api/send` hat kein CAPTCHA. Weil die BCC-Kopie an die vom Client angegebene Adresse geht,
+  lassen sich darüber weiterhin E-Mails von der Absender-Domain an beliebige Adressen auslösen,
+  nur langsamer.
+- Der Mindestabstand von einer Sekunde zwischen LocationIQ-Anfragen
+  (`src/lib/geocode/rateLimiter.ts`) gilt pro Worker-Isolate. Er schont das eigene
+  LocationIQ-Kontingent nur näherungsweise und ist kein Missbrauchsschutz.
 - `require-trusted-types-for: 'script'` ist bewusst nicht aktiv — der Chunk-Loader von
   SvelteKit weist `script.src` dynamisch zu, was die Hydration blockieren würde. Begründung im
   CSP-Block in `vite.config.ts`.

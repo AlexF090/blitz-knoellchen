@@ -7,8 +7,15 @@ import { POST } from './+server';
 vi.mock('$app/env/private', () => ({
 	BREVO_API_KEY: 'test-brevo-key',
 	BREVO_API_URL: undefined,
-	EMAIL_FROM: 'absender@example.com',
-	SEND_LIMIT_PER_HOUR: undefined
+	EMAIL_FROM: 'absender@example.com'
+}));
+
+const tryConsumeMock = vi.fn(async (key: string) => {
+	void key;
+	return true;
+});
+vi.mock('#lib/server/rateLimiters.ts', () => ({
+	getSendRateLimiter: () => ({ tryConsume: (key: string) => tryConsumeMock(key) })
 }));
 
 const getRecipientEmailMock = vi.fn((cityId: string, mode: string) => {
@@ -61,13 +68,7 @@ const buildFormData = (
 	return formData;
 };
 
-let requestCounter = 0;
-
-// Jede Anfrage bekommt eine eigene IP, damit das modulweite Rate-Limit die Tests nicht koppelt.
-const buildEvent = (
-	formData: FormData,
-	clientAddress = `10.0.0.${(requestCounter += 1)}`
-): RequestEvent =>
+const buildEvent = (formData: FormData, clientAddress = '10.0.0.1'): RequestEvent =>
 	({
 		request: { formData: async () => formData } as unknown as Request,
 		getClientAddress: () => clientAddress
@@ -188,18 +189,16 @@ describe('POST /api/send', () => {
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
-	it('liefert 429, sobald eine IP das Limit überschreitet', async () => {
-		const clientAddress = '192.0.2.1';
+	it('liefert 429, wenn der Rate-Limiter die IP blockiert', async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal('fetch', fetchMock);
+		tryConsumeMock.mockResolvedValueOnce(false);
 
-		for (let attempt = 0; attempt < 20; attempt += 1) {
-			const response = await POST(
-				buildEvent(buildFormData({ firstName: '' }), clientAddress) as never
-			);
-			expect(response.status).toBe(400);
-		}
-		const blocked = await POST(buildEvent(buildFormData(), clientAddress) as never);
+		const blocked = await POST(buildEvent(buildFormData(), '192.0.2.1') as never);
 
 		expect(blocked.status).toBe(429);
+		expect(tryConsumeMock).toHaveBeenCalledWith('192.0.2.1');
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it('sendet bei gültigen Daten an Brevo und liefert ok:true', async () => {

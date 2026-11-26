@@ -1,9 +1,4 @@
-import {
-	BREVO_API_KEY,
-	BREVO_API_URL,
-	EMAIL_FROM,
-	SEND_LIMIT_PER_HOUR as SEND_LIMIT_PER_HOUR_OVERRIDE
-} from '$app/env/private';
+import { BREVO_API_KEY, BREVO_API_URL, EMAIL_FROM } from '$app/env/private';
 import { CITIES } from '#lib/config/cities.ts';
 import { getRecipientEmail } from '#lib/config/cities.server.ts';
 import {
@@ -13,7 +8,7 @@ import {
 import { readBrevoErrorCode } from '#lib/email/readBrevoErrorCode.ts';
 import { hasJpegSignature } from '#lib/image/hasJpegSignature.ts';
 import { parseSendFormData } from '#lib/report/sendFormData.ts';
-import { createFixedWindowRateLimiter } from '#lib/server/fixedWindowRateLimiter.ts';
+import { getSendRateLimiter } from '#lib/server/rateLimiters.ts';
 import {
 	validateReportForm,
 	isFormValid,
@@ -29,23 +24,12 @@ import type { RequestHandler } from './$types';
 // E-Mail-Aufbau) durchlaufen wird, ohne echte E-Mails zu versenden.
 const BREVO_SEND_URL = BREVO_API_URL ?? 'https://api.brevo.com/v3/smtp/email';
 
-// Die BCC-Kopie geht an die vom Client angegebene Adresse. Ohne Drosselung ließe sich der
-// Endpunkt so als Relay an beliebige Adressen nutzen. Das Limit lebt im Speicher und gilt damit
-// nur pro Serverless-Instanz: Es bremst ein einzelnes Skript, ist aber kein vollständiger Schutz.
-// 20 pro Stunde lässt Raum für mehrere Fahrzeuge pro Anzeige und für Wiederholungen nach Fehlern.
-// Überschreibbar nur für E2E-Tests, die alle von derselben IP aus senden.
-const SEND_LIMIT_PER_HOUR = SEND_LIMIT_PER_HOUR_OVERRIDE ?? 20;
-const sendRateLimiter = createFixedWindowRateLimiter({
-	limit: SEND_LIMIT_PER_HOUR,
-	windowMs: 60 * 60 * 1000
-});
-
 /**
  * Nimmt die Anzeige eines Fahrzeugs entgegen, validiert sie erneut serverseitig und verschickt
  * sie per Brevo an die Bußgeldstelle — mit dem Melder in Reply-To und bcc.
  */
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-	if (!sendRateLimiter.tryConsume(getClientAddress())) {
+	if (!(await getSendRateLimiter().tryConsume(getClientAddress()))) {
 		return Response.json(
 			{ error: 'Zu viele Anfragen. Bitte später erneut versuchen.' },
 			{ status: 429 }

@@ -5,13 +5,18 @@ import {
 	createLocationIqProvider,
 	reverseGeocode
 } from '#lib/geocode/reverseGeocode.ts';
+import { getGeocodeRateLimiter } from '#lib/server/rateLimiters.ts';
 import type { RequestHandler } from './$types';
 
 /**
  * Reverse-Geocoding-Proxy: liefert die Adresse zu `lat`/`lon`.
  * Läuft serverseitig, damit der LocationIQ-API-Schlüssel nicht an den Client gelangt.
  */
-export const GET: RequestHandler = async ({ url, fetch }) => {
+export const GET: RequestHandler = async ({ url, fetch, getClientAddress }) => {
+	if (!(await getGeocodeRateLimiter().tryConsume(getClientAddress()))) {
+		return Response.json({ error: 'Zu viele Anfragen.' }, { status: 429 });
+	}
+
 	const lat = Number(url.searchParams.get('lat'));
 	const lon = Number(url.searchParams.get('lon'));
 	if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
