@@ -216,8 +216,6 @@ Beschreibung: Das Fahrzeug parkte auf dem Gehweg.
 
 Ein Beweisfoto ist dieser E-Mail beigefügt.
 
-Ich stehe für Rückfragen und gegebenenfalls als Zeuge zur Verfügung.
-
 Mit freundlichen Grüßen
 Max Mustermann`;
 

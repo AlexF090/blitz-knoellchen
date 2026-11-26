@@ -95,8 +95,6 @@ ${descriptionLabel}${incidentDescriptions}
 ${impairmentsSection}${endangeredPersonsSection}${notesSection}
 ${photoLine}
 
-Ich stehe für Rückfragen und gegebenenfalls als Zeuge zur Verfügung.
-
 Mit freundlichen Grüßen
 ${input.firstName} ${input.lastName}`;
 
