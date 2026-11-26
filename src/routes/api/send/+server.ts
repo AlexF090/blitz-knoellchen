@@ -10,6 +10,7 @@ import {
 	buildEmailTemplateInput,
 	resolveVehicleIncidentTypes
 } from '#lib/email/buildEmailTemplateInput.ts';
+import { readBrevoErrorCode } from '#lib/email/readBrevoErrorCode.ts';
 import { hasJpegSignature } from '#lib/image/hasJpegSignature.ts';
 import { parseSendFormData } from '#lib/report/sendFormData.ts';
 import { createFixedWindowRateLimiter } from '#lib/server/fixedWindowRateLimiter.ts';
@@ -143,8 +144,13 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		});
 
 		if (!response.ok) {
-			const errorBody = await response.text();
-			console.error('Brevo-Versand fehlgeschlagen:', response.status, errorBody);
+			// Nur Status und Brevo-Fehlercode: Die Fehlermeldung kann E-Mail-Adressen enthalten, und
+			// Logs landen in Cloudflares Workers Logs.
+			console.error(
+				'Brevo-Versand fehlgeschlagen:',
+				response.status,
+				await readBrevoErrorCode(response)
+			);
 			return Response.json({ error: 'Versand fehlgeschlagen.' }, { status: 502 });
 		}
 
