@@ -60,8 +60,9 @@
 			<p>
 				Die App verarbeitet personenbezogene Daten an drei Stellen: beim Auslesen der Foto-Metadaten
 				direkt auf deinem Gerät, beim Ermitteln einer Adresse aus GPS-Koordinaten und beim Versand
-				der fertigen Anzeige per E-Mail. Zusätzlich wird eine anonyme, cookie-lose
-				Reichweitenmessung (Abschnitt 7) eingesetzt.
+				der fertigen Anzeige per E-Mail. Antworten der Bußgeldstelle an die Absenderadresse der App
+				bewahrt der Betreiber befristet auf (Abschnitte 5 und 11). Zusätzlich wird eine anonyme,
+				cookie-lose Reichweitenmessung (Abschnitt 7) eingesetzt.
 			</p>
 		</section>
 
@@ -124,6 +125,16 @@
 			<p class="mt-2">
 				Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erfüllung deines Wunsches, die Anzeige in
 				deinem Auftrag zu versenden) bzw. lit. f (berechtigtes Interesse am reibungslosen Versand).
+			</p>
+			<p class="mt-2">
+				Absender der E-Mail ist die Adresse dieser App. Antworten an diese Adresse – vor allem die
+				automatische Eingangsbestätigung der Bußgeldstelle – gehen deshalb nicht an dich, sondern in
+				das E-Mail-Postfach des Betreibers bei der <strong>Hetzner Online GmbH</strong> (Gunzenhausen,
+				Deutschland). Sie enthalten in der Regel nur einen Standardtext und den Betreff der Anzeige mit
+				Kennzeichen und Datum. Der Betreiber bewahrt sie als Nachweis des Versands auf und, falls die
+				Bußgeldstelle Rückfragen an diese Adresse schickt, um sie an dich weiterzuleiten. Rechtsgrundlage
+				ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am Nachweis des Versands und an der Bearbeitung
+				von Rückfragen).
 			</p>
 		</section>
 
@@ -225,8 +236,11 @@
 				nach spätestens 1 Monat automatisch gelöscht – das ist die vom Betreiber dieser App
 				eingestellte, kürzestmögliche Aufbewahrungsfrist. Wie lange die zugestellte E-Mail
 				anschließend bei der <strong>Bußgeldstelle Köln</strong> verbleibt, richtet sich nach deren gesetzlichen
-				Aufbewahrungspflichten; hierauf hat der Betreiber dieser App keinen Einfluss. Lokal auf deinem
-				Gerät gespeicherte Daten (Abschnitt 6) bleiben bestehen, bis du sie selbst löschst.
+				Aufbewahrungspflichten; hierauf hat der Betreiber dieser App keinen Einfluss. Antworten der Bußgeldstelle
+				im Postfach des Betreibers (Abschnitt 5) werden nach 6 Monaten gelöscht. So lange dauert es bei
+				Parkverstößen höchstens, bis ein Fall verjährt ist: 3 Monate, solange kein Bußgeldbescheid ergangen
+				ist, nach einem Bescheid 6 Monate (§ 26 Abs. 3 StVG). Lokal auf deinem Gerät gespeicherte Daten
+				(Abschnitt 6) bleiben bestehen, bis du sie selbst löschst.
 			</p>
 		</section>
 

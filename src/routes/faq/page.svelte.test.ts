@@ -25,6 +25,7 @@ describe('FAQ-Seite', () => {
 			'Was macht diese App, und muss ich dafür bezahlen?',
 			'Kann ich mehrere Falschparker oder Fahrzeuge in einem Durchgang melden?',
 			'Was passiert, nachdem ich die Anzeige abgeschickt habe?',
+			'Bekomme ich eine Eingangsbestätigung der Bußgeldstelle?',
 			'Wer ist verantwortlich, und welche Daten verarbeitet die App überhaupt?',
 			'Wer bekommt welche Daten, wo werden sie gespeichert und wie lange?',
 			'Verlässt mein Foto mein Gerät, und woher weiß die App, wo der Verstoß war?',
@@ -36,5 +37,20 @@ describe('FAQ-Seite', () => {
 			await userEvent.click(question);
 			await expect.element(question).toHaveAttribute('aria-expanded', 'true');
 		}
+	});
+
+	it('erklärt, wohin die Eingangsbestätigung geht und wie lange sie aufbewahrt wird', async () => {
+		await render(FaqPage);
+
+		const question = page.getByRole('button', {
+			name: 'Bekomme ich eine Eingangsbestätigung der Bußgeldstelle?'
+		});
+		await userEvent.click(question);
+
+		const answer = page.getByText('Dein Beleg ist die Kopie (Bcc)');
+		await expect.element(answer).toBeVisible();
+		await expect
+			.element(page.getByText('Der Betreiber bewahrt die Antworten der Bußgeldstelle 6 Monate auf'))
+			.toMatchTextContent('§ 26 Abs. 3 StVG');
 	});
 });

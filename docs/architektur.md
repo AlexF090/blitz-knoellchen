@@ -28,6 +28,14 @@ Dependencies). `from`/`sender` ist eine feste, per ENV konfigurierte Adresse; `r
 `bcc` sind die vom Nutzer eingegebene E-Mail-Adresse (löst "Kopie im eigenen Postfach", ohne
 dass eine Nutzer-Adresse oder ein Passwort je den Server verlässt bzw. gebraucht wird).
 
+Autoresponder antworten an `From`, nicht an `Reply-To`. Die automatische Eingangsbestätigung der
+Bußgeldstelle landet deshalb im Postfach von `EMAIL_FROM`, nicht beim Melder; Antworten von
+Sachbearbeitern über „Antworten“ gehen an den Melder. Eine Weiterleitung an den Melder würde
+Inbound-Parsing und eine Absenderadresse pro Melder brauchen; der Nutzen ist gering, weil die
+Auto-Antwort nur einen Standardtext enthält. Das Postfach bewahrt Mails der Bußgeldstelle
+6 Monate auf (Verjährung nach § 26 Abs. 3 StVG); FAQ und Datenschutzerklärung (Abschnitte 5 und 11)
+nennen diese Frist.
+
 Weil die BCC-Kopie an eine Adresse vom Client geht, ließe sich der Endpunkt sonst als Relay
 nutzen. `/api/send` drosselt deshalb auf 20 Anfragen pro Stunde und IP
 (`src/lib/server/fixedWindowRateLimiter.ts`) und nimmt nur Anhänge an, die als `image/jpeg`
