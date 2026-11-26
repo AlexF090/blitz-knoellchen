@@ -241,7 +241,6 @@ export default defineConfig({
 				// nur ein Test mit Datenbank genau dieses Altstands erreicht.
 				'src/lib/history/db.ts': { branches: 97 },
 				'src/lib/pwa/installPrompt.svelte.ts': { branches: 80 }, // (b) `if (browser)`-SSR-Guard
-				'src/routes/+layout.svelte': { branches: 45 }, // (a) `dev`-Build-Time-Konstante
 				'src/routes/+page.svelte': { statements: 80, branches: 45, lines: 75 }, // (a) Prop-Weitergabe an ReportForm
 				'src/routes/historie/+page.svelte': { statements: 95, branches: 60 } // (b) zwei Defensiv-Guards (gelöschtes Lightbox-Target)
 			}
