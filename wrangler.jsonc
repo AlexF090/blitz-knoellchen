@@ -16,9 +16,11 @@
 		"enabled": true
 	},
 	// Produktionsdomain. Setzt voraus, dass die Zone appool.de bei Cloudflare aktiv ist; Cloudflare
-	// legt DNS-Eintrag und Zertifikat selbst an. *.workers.dev bleibt zusätzlich erreichbar und
-	// bekommt dort `X-Robots-Tag: noindex` (applyIndexingPolicy).
+	// legt DNS-Eintrag und Zertifikat selbst an.
 	"routes": [{ "pattern": "blitz-knoellchen.appool.de", "custom_domain": true }],
+	// Keine zweite öffentliche Adresse neben der Produktionsdomain. Für einen Rückweg ohne
+	// Cloudflare-DNS auf true setzen; dort greift dann `X-Robots-Tag: noindex` (applyIndexingPolicy).
+	"workers_dev": false,
 	// Limits pro Client-IP und Cloudflare-Standort, ungefähr gezählt. Gleiche Werte wie in
 	// src/lib/server/rateLimiters.ts. `namespace_id` ist pro Cloudflare-Konto eindeutig; weitere
 	// Worker im selben Konto brauchen eigene IDs.

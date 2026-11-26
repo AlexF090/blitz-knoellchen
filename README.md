@@ -160,15 +160,14 @@ gegen denselben Brevo-Mock wie die E2E-Tests, mit frei erfundenen Testdaten.
 Das Projekt nutzt `@sveltejs/adapter-cloudflare` explizit statt `adapter-auto`. Worker-Name,
 Bindings (Rate-Limits) und Custom Domain stehen in `wrangler.jsonc`.
 
-1. Repository im Cloudflare-Dashboard unter Workers Builds verbinden. Build-Befehl
-   `npm run build`, Deploy-Befehl `npx wrangler deploy`.
+1. Einmalig `npx wrangler login`.
 2. Die fünf Pflicht-Variablen aus der Tabelle unten als Secrets am Worker setzen
    (`npx wrangler secret put <NAME>` oder Dashboard → Settings → Variables and Secrets). Sie
    werden zur Laufzeit gelesen, Build-Variablen braucht es nicht. `BREVO_API_URL` und
    `SEND_LIMIT_PER_MINUTE` aus `.env.example` sind nur für E2E-Tests gedacht und gehören nicht
    nach Cloudflare.
-3. Deploy auslösen — ein Push auf den verbundenen Branch reicht. Andere Branches bekommen eine
-   Preview-URL auf `*.workers.dev` mit `X-Robots-Tag: noindex`.
+3. Deployen mit `npm run build && npx wrangler deploy`. `*.workers.dev` ist abgeschaltet
+   (`workers_dev: false`), die App ist nur unter der Produktionsdomain erreichbar.
 4. Produktionsdomain ist `https://blitz-knoellchen.appool.de` (Custom Domain am Worker; die Zone
    `appool.de` liegt bei Cloudflare). Canonical,
    `og:url`, JSON-LD und Sitemap nutzen diese feste Origin aus `src/lib/site.ts`, nicht den
