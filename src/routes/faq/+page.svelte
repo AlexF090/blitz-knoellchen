@@ -160,18 +160,11 @@
 					<td class="py-2">Nur du</td>
 				</tr>
 				<tr class="border-b border-border align-top">
-					<td class="py-2 pr-3">LocationIQ</td>
+					<td class="py-2 pr-3">Geoapify</td>
 					<td class="py-2 pr-3">GPS-Koordinaten bzw. eingetippter Adresstext</td>
-					<td class="py-2 pr-3">Wird laut Anbieter nicht gespeichert</td>
-					<td class="py-2 pr-3">Nur für die einzelne Anfrage, kein Logging des Inhalts</td>
-					<td class="py-2">Niemand (nicht gespeichert)</td>
-				</tr>
-				<tr class="border-b border-border align-top">
-					<td class="py-2 pr-3">BigDataCloud (Fallback)</td>
-					<td class="py-2 pr-3">GPS-Koordinaten (nur bei Ausfall von LocationIQ)</td>
-					<td class="py-2 pr-3">Beim Anbieter, außerhalb der EU</td>
-					<td class="py-2 pr-3">Von der App nicht festgelegt, siehe Hinweise des Anbieters</td>
-					<td class="py-2">Der Anbieter</td>
+					<td class="py-2 pr-3">Beim Anbieter, in der EU</td>
+					<td class="py-2 pr-3">Nur zur Beantwortung der Anfrage</td>
+					<td class="py-2">Geoapify als Dienstleister</td>
 				</tr>
 				<tr class="border-b border-border align-top">
 					<td class="py-2 pr-3">Brevo</td>
@@ -202,21 +195,15 @@
 					<td class="py-2 pr-3">6 Monate, so lange wie die Verjährung bei Parkverstößen</td>
 					<td class="py-2">Betreiber</td>
 				</tr>
-				<tr class="border-b border-border align-top">
-					<td class="py-2 pr-3">Vercel (Hosting)</td>
-					<td class="py-2 pr-3">Technische Zugriffsdaten (z. B. IP-Adresse, Zeitpunkt)</td>
-					<td class="py-2 pr-3">Bei Vercel, Serverstandort Frankfurt</td>
-					<td class="py-2 pr-3">In der Regel 1 Stunde</td>
-					<td class="py-2">Vercel</td>
-				</tr>
 				<tr class="align-top">
-					<td class="py-2 pr-3">Vercel Web Analytics</td>
+					<td class="py-2 pr-3">Cloudflare (Hosting)</td>
 					<td class="py-2 pr-3">
-						Anonyme, aggregierte Seitenaufrufe (ohne Cookies/IP-Speicherung)
+						Technische Zugriffsdaten (z. B. IP-Adresse, Zeitpunkt); Formulardaten nur auf dem Weg zu
+						Brevo
 					</td>
-					<td class="py-2 pr-3">Bei Vercel</td>
-					<td class="py-2 pr-3">Aggregiert, keine Zuordnung zu dir möglich</td>
-					<td class="py-2">Vercel</td>
+					<td class="py-2 pr-3">Weltweites Netz von Cloudflare</td>
+					<td class="py-2 pr-3">Protokolle 3 Tage, Zähler für den Missbrauchsschutz 1 Minute</td>
+					<td class="py-2">Cloudflare</td>
 				</tr>
 			</tbody>
 		</table>
@@ -242,9 +229,8 @@
 		auf deinem Gerät (Details in der
 		<a href={resolve('/datenschutz')} class="underline">Datenschutzerklärung, Abschnitt 3</a>). Für
 		eine lesbare Adresse schickt die App nur die GPS-Koordinaten – bzw. beim manuellen Tippen den
-		eingetippten Text – über einen eigenen Endpunkt an LocationIQ, ersatzweise BigDataCloud; laut
-		LocationIQ wird der Anfrageinhalt dort gar nicht gespeichert (siehe Tabelle oben), beide sitzen
-		außerhalb der EU, Details zur Drittlandübermittlung in der
+		eingetippten Text – über einen eigenen Endpunkt an Geoapify, einen Anbieter mit Sitz und
+		Verarbeitung in der EU (siehe Tabelle oben). Details in der
 		<a href={resolve('/datenschutz')} class="underline">Datenschutzerklärung (Abschnitt 4)</a>.
 	</p>
 {/snippet}
