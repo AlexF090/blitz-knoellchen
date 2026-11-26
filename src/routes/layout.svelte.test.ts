@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import { createRawSnippet } from 'svelte';
+import { SITE_ORIGIN } from '#lib/site.ts';
 import Layout from './+layout.svelte';
 
 const children = createRawSnippet(() => ({
@@ -23,8 +24,16 @@ describe('+layout.svelte', () => {
 
 		expect(metaContent('property="og:title"')).toBe('Blitz-Knöllchen');
 		expect(metaContent('property="og:description"')).toBe(metaContent('name="description"'));
-		// Ohne SvelteKit-Router gibt es keine echte Origin; die absolute URL prüft der Build.
-		expect(metaContent('property="og:image"')).toMatch(/\/og-image\.png$/);
+		expect(metaContent('property="og:image"')).toBe(`${SITE_ORIGIN}/og-image.png`);
 		expect(metaContent('name="twitter:card"')).toBe('summary_large_image');
+	});
+
+	it('baut og:url und canonical aus der festen Origin statt aus der Seiten-URL', async () => {
+		await render(Layout, { children });
+
+		const canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+		expect(canonical?.href.startsWith(SITE_ORIGIN)).toBe(true);
+		expect(metaContent('property="og:url"')?.startsWith(SITE_ORIGIN)).toBe(true);
+		expect(location.origin).not.toBe(SITE_ORIGIN);
 	});
 });
