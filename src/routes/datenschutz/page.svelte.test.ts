@@ -40,10 +40,12 @@ describe('Datenschutz-Seite', () => {
 		return (document.body.textContent ?? '').replace(/\s+/g, ' ');
 	};
 
-	it('nennt Brevo (Sendinblue GmbH, Berlin), Cloudflare und Geoapify als Dienstleister', async () => {
+	it('nennt Brevo (Brevo GmbH, Berlin), Cloudflare und Geoapify als Dienstleister', async () => {
 		const text = await renderText();
 
-		expect(text).toContain('Sendinblue GmbH, Berlin');
+		expect(text).toContain('Brevo GmbH, Berlin');
+		expect(text).toContain('Mit Brevo besteht ein Auftragsverarbeitungsvertrag');
+		expect(text).toContain('Mit Hetzner besteht ein Auftragsverarbeitungsvertrag');
 		expect(text).toContain('Cloudflare, Inc.');
 		expect(text).toContain('Geoapify');
 	});

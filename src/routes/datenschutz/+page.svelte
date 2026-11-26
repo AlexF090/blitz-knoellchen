@@ -112,10 +112,11 @@
 				Telefonnummer, Kennzeichen, Tatort, Tatzeit, Verstoßart, ggf. Anmerkungen sowie das
 				Beweisfoto – über einen eigenen Server-Endpunkt an den E-Mail-Versanddienst <strong>
 					Brevo
-				</strong> (Sendinblue GmbH, Berlin, EU-Anbieter) übergeben, der die E-Mail im Namen dieser App
-				an die Bußgeldstelle Köln verschickt. Deine E-Mail-Adresse wird dabei als Antwortadresse (Reply-To)
-				sowie als Kopie-Empfänger (Bcc) hinterlegt, damit du automatisch eine Kopie der Anzeige erhältst
-				– dein E-Mail-Postfach oder -Passwort wird dafür nicht benötigt und nicht abgefragt.
+				</strong> (Brevo GmbH, Berlin, EU-Anbieter) übergeben, der die E-Mail im Namen dieser App an die
+				Bußgeldstelle Köln verschickt. Deine E-Mail-Adresse wird dabei als Antwortadresse (Reply-To) sowie
+				als Kopie-Empfänger (Bcc) hinterlegt, damit du automatisch eine Kopie der Anzeige erhältst – dein
+				E-Mail-Postfach oder -Passwort wird dafür nicht benötigt und nicht abgefragt. Mit Brevo besteht
+				ein Auftragsverarbeitungsvertrag nach Art. 28 DSGVO (Teil der Nutzungsbedingungen von Brevo).
 			</p>
 			<p class="mt-2">
 				Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erfüllung deines Wunsches, die Anzeige in
@@ -129,7 +130,7 @@
 				Kennzeichen und Datum. Der Betreiber bewahrt sie als Nachweis des Versands auf und, falls die
 				Bußgeldstelle Rückfragen an diese Adresse schickt, um sie an dich weiterzuleiten. Rechtsgrundlage
 				ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am Nachweis des Versands und an der Bearbeitung
-				von Rückfragen).
+				von Rückfragen). Mit Hetzner besteht ein Auftragsverarbeitungsvertrag nach Art. 28 DSGVO.
 			</p>
 		</section>
 
