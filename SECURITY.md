@@ -9,14 +9,14 @@ Vulnerability Reporting aktiviert ist (Settings → Security); bis dahin liefert
 
 Relevant sind insbesondere:
 
-- Wege, über die serverseitige API-Schlüssel (Brevo, LocationIQ) nach außen gelangen können
+- Wege, über die serverseitige API-Schlüssel (Brevo, Geoapify) nach außen gelangen können
 - Missbrauch der Proxy-Endpunkte `/api/geocode` und `/api/geocode/autocomplete`
 - Möglichkeiten, über `/api/send` E-Mails mit fremdem Absender oder an fremde Empfänger zu verschicken
 - XSS über Formulareingaben oder Foto-Metadaten
 
 ## Was diese App schützt
 
-- **API-Schlüssel bleiben serverseitig.** Brevo und LocationIQ werden ausschließlich aus
+- **API-Schlüssel bleiben serverseitig.** Brevo und Geoapify werden ausschließlich aus
   SvelteKit-Server-Endpunkten heraus aufgerufen; der Browser spricht nur eigene `/api/*`-Routen an.
 - **Der Hauptempfänger wird nie vom Client bestimmt.** Der Client schickt lediglich `demo` oder `live`;
   die zugehörige Adresse löst der Server aus seiner eigenen Konfiguration auf. Ein fehlender oder
@@ -44,9 +44,9 @@ Relevant sind insbesondere:
 - `/api/send` hat kein CAPTCHA. Weil die BCC-Kopie an die vom Client angegebene Adresse geht,
   lassen sich darüber weiterhin E-Mails von der Absender-Domain an beliebige Adressen auslösen,
   nur langsamer.
-- Der Mindestabstand von einer Sekunde zwischen LocationIQ-Anfragen
-  (`src/lib/geocode/rateLimiter.ts`) gilt pro Worker-Isolate. Er schont das eigene
-  LocationIQ-Kontingent nur näherungsweise und ist kein Missbrauchsschutz.
+- Der Mindestabstand von 250 ms zwischen Geoapify-Anfragen (`src/lib/geocode/rateLimiter.ts`)
+  gilt pro Worker-Isolate. Er schont das eigene Geoapify-Kontingent nur näherungsweise und ist
+  kein Missbrauchsschutz.
 - `require-trusted-types-for: 'script'` ist bewusst nicht aktiv — der Chunk-Loader von
   SvelteKit weist `script.src` dynamisch zu, was die Hydration blockieren würde. Begründung im
   CSP-Block in `vite.config.ts`.

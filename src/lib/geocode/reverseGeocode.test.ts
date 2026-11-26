@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { GeocodeAddress } from './geocodeAddress';
-import {
-	createBigDataCloudProvider,
-	createLocationIqProvider,
-	reverseGeocode,
-	type GeocodeProvider
-} from './reverseGeocode';
+import { createGeoapifyProvider, reverseGeocode, type GeocodeProvider } from './reverseGeocode';
 
 const provider = (name: string, impl: () => Promise<GeocodeAddress | null>): GeocodeProvider => {
 	return { name, lookup: vi.fn(impl) };
@@ -27,160 +22,112 @@ const FALLBACK_ADDRESS: GeocodeAddress = {
 
 describe('reverseGeocode', () => {
 	it('nutzt das Ergebnis des ersten erfolgreichen Providers', async () => {
-		const locationIq = provider('locationIq', async () => DOMKLOSTER);
-		const bigdatacloud = provider('bigdatacloud', async () => FALLBACK_ADDRESS);
+		const firstProvider = provider('erster', async () => DOMKLOSTER);
+		const secondProvider = provider('zweiter', async () => FALLBACK_ADDRESS);
 
-		const result = await reverseGeocode(50.9, 6.9, [locationIq, bigdatacloud]);
+		const result = await reverseGeocode(50.9, 6.9, [firstProvider, secondProvider]);
 
 		expect(result.address).toEqual(DOMKLOSTER);
 		expect(result.error).toBeNull();
-		expect(bigdatacloud.lookup).not.toHaveBeenCalled();
+		expect(secondProvider.lookup).not.toHaveBeenCalled();
 	});
 
 	it('fällt auf den zweiten Provider zurück, wenn der erste fehlschlägt', async () => {
 		vi.spyOn(console, 'error').mockImplementation(() => {});
-		const locationIq = provider('locationIq', async () => {
+		const firstProvider = provider('erster', async () => {
 			throw new Error('rate limited');
 		});
-		const bigdatacloud = provider('bigdatacloud', async () => FALLBACK_ADDRESS);
+		const secondProvider = provider('zweiter', async () => FALLBACK_ADDRESS);
 
-		const result = await reverseGeocode(50.9, 6.9, [locationIq, bigdatacloud]);
+		const result = await reverseGeocode(50.9, 6.9, [firstProvider, secondProvider]);
 
 		expect(result.address).toEqual(FALLBACK_ADDRESS);
 		expect(result.error).toBeNull();
 	});
 
 	it('fällt auf den zweiten Provider zurück, wenn der erste null liefert (ohne zu werfen)', async () => {
-		const locationIq = provider('locationIq', async () => null);
-		const bigdatacloud = provider('bigdatacloud', async () => FALLBACK_ADDRESS);
+		const firstProvider = provider('erster', async () => null);
+		const secondProvider = provider('zweiter', async () => FALLBACK_ADDRESS);
 
-		const result = await reverseGeocode(50.9, 6.9, [locationIq, bigdatacloud]);
+		const result = await reverseGeocode(50.9, 6.9, [firstProvider, secondProvider]);
 
 		expect(result.address).toEqual(FALLBACK_ADDRESS);
 	});
 
 	it('liefert einen Fehler, wenn alle Provider fehlschlagen', async () => {
 		vi.spyOn(console, 'error').mockImplementation(() => {});
-		const locationIq = provider('locationIq', async () => {
+		const firstProvider = provider('erster', async () => {
 			throw new Error('down');
 		});
-		const bigdatacloud = provider('bigdatacloud', async () => {
+		const secondProvider = provider('zweiter', async () => {
 			throw new Error('down');
 		});
 
-		const result = await reverseGeocode(50.9, 6.9, [locationIq, bigdatacloud]);
+		const result = await reverseGeocode(50.9, 6.9, [firstProvider, secondProvider]);
 
 		expect(result.address).toBeNull();
 		expect(result.error).toContain('manuell eintragen');
 	});
 });
 
-describe('createLocationIqProvider', () => {
+describe('createGeoapifyProvider', () => {
+	const respondWith = (body: unknown) =>
+		vi.fn(async () => new Response(JSON.stringify(body))) as unknown as typeof fetch;
+
 	it('meldet Rate-Limiting mit einer aussagekräftigen Fehlermeldung', async () => {
 		const fetchFn = vi.fn(
 			async () => new Response(null, { status: 429 })
 		) as unknown as typeof fetch;
-		const locationIq = createLocationIqProvider('test-key', fetchFn);
 
-		await expect(locationIq.lookup(50.9, 6.9)).rejects.toThrow(/Rate-Limiting.*429/);
+		await expect(createGeoapifyProvider('test-key', fetchFn).lookup(50.9, 6.9)).rejects.toThrow(
+			/Rate-Limiting.*429/
+		);
 	});
 
-	it('fragt den EU-Endpunkt von LocationIQ an', async () => {
-		const fetchFn = vi.fn(
-			async () => new Response(JSON.stringify({ address: { city: 'Köln' } }))
-		) as unknown as typeof fetch;
-		const locationIq = createLocationIqProvider('test-key', fetchFn);
+	it('fragt den EU-Endpunkt mit deutscher Sprache und Schlüssel an', async () => {
+		const fetchFn = respondWith({ results: [{ city: 'Köln' }] });
 
-		await locationIq.lookup(50.9, 6.9);
+		await createGeoapifyProvider('test-key', fetchFn).lookup(50.9, 6.9);
 
-		expect(new URL(String(vi.mocked(fetchFn).mock.calls[0][0])).host).toBe('eu1.locationiq.com');
+		const url = new URL(String(vi.mocked(fetchFn).mock.calls[0][0]));
+		expect(url.host).toBe('api-eu.geoapify.com');
+		expect(url.searchParams.get('lang')).toBe('de');
+		expect(url.searchParams.get('apiKey')).toBe('test-key');
 	});
 
-	it('sendet ein Timeout-Signal und liefert Straße/Hausnummer/PLZ/Ort aus address', async () => {
+	it('sendet ein Timeout-Signal und liefert Straße/Hausnummer/PLZ/Ort des ersten Treffers', async () => {
 		const fetchFn = vi.fn(async (_url, init) => {
 			expect(init?.signal).toBeInstanceOf(AbortSignal);
 			return new Response(
 				JSON.stringify({
-					address: {
-						road: 'Domkloster',
-						house_number: '4',
-						postcode: '50667',
-						city: 'Köln'
-					}
+					results: [
+						{ street: 'Domkloster', housenumber: '4', postcode: '50667', city: 'Köln' },
+						{ street: 'Andere Straße', city: 'Köln' }
+					]
 				})
 			);
 		}) as unknown as typeof fetch;
-		const locationIq = createLocationIqProvider('test-key', fetchFn);
 
-		await expect(locationIq.lookup(50.9, 6.9)).resolves.toEqual(DOMKLOSTER);
+		await expect(createGeoapifyProvider('test-key', fetchFn).lookup(50.9, 6.9)).resolves.toEqual(
+			DOMKLOSTER
+		);
 	});
 
 	it('liefert null, wenn weder Straße noch Ort vorhanden sind', async () => {
-		const fetchFn = vi.fn(
-			async () => new Response(JSON.stringify({ address: {} }))
-		) as unknown as typeof fetch;
-		const locationIq = createLocationIqProvider('test-key', fetchFn);
-
-		await expect(locationIq.lookup(50.9, 6.9)).resolves.toBeNull();
-	});
-});
-
-describe('createBigDataCloudProvider', () => {
-	it('meldet eine Blockierung mit einer aussagekräftigen Fehlermeldung', async () => {
-		const fetchFn = vi.fn(
-			async () => new Response(null, { status: 403 })
-		) as unknown as typeof fetch;
-		const bigdatacloud = createBigDataCloudProvider(fetchFn);
-
-		await expect(bigdatacloud.lookup(50.9, 6.9)).rejects.toThrow(/blockiert.*403/);
+		await expect(
+			createGeoapifyProvider('test-key', respondWith({ results: [{ postcode: '50667' }] })).lookup(
+				50.9,
+				6.9
+			)
+		).resolves.toBeNull();
 	});
 
-	it('liefert null für postcode und city, wenn keine der Angaben vorhanden ist', async () => {
-		const fetchFn = vi.fn(async () => new Response(JSON.stringify({}))) as unknown as typeof fetch;
-		const bigdatacloud = createBigDataCloudProvider(fetchFn);
-
-		await expect(bigdatacloud.lookup(50.9, 6.9)).resolves.toBeNull();
-	});
-
-	it('fällt auf locality zurück, wenn city fehlt', async () => {
-		const fetchFn = vi.fn(
-			async () =>
-				new Response(
-					JSON.stringify({
-						locality: 'Altstadt',
-						postcode: '50667'
-					})
-				)
-		) as unknown as typeof fetch;
-		const bigdatacloud = createBigDataCloudProvider(fetchFn);
-
-		await expect(bigdatacloud.lookup(50.9, 6.9)).resolves.toEqual({
-			street: null,
-			houseNumber: null,
-			postcode: '50667',
-			city: 'Altstadt'
-		});
-	});
-
-	it('sendet ein Timeout-Signal und liefert nur Ort/PLZ (keine Straße)', async () => {
-		const fetchFn = vi.fn(async (_url, init) => {
-			expect(init?.signal).toBeInstanceOf(AbortSignal);
-			return new Response(
-				JSON.stringify({
-					locality: 'Altstadt',
-					city: 'Köln',
-					postcode: '50667',
-					countryName: 'Deutschland'
-				})
-			);
-		}) as unknown as typeof fetch;
-		const bigdatacloud = createBigDataCloudProvider(fetchFn);
-
-		await expect(bigdatacloud.lookup(50.9, 6.9)).resolves.toEqual({
-			street: null,
-			houseNumber: null,
-			postcode: '50667',
-			city: 'Köln'
-		});
+	it.each([
+		['ohne Treffer', { results: [] }],
+		['ohne results-Feld', {}]
+	])('liefert null %s', async (_description, body) => {
+		await expect(
+			createGeoapifyProvider('test-key', respondWith(body)).lookup(50.9, 6.9)
+		).resolves.toBeNull();
 	});
 });

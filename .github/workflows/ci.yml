@@ -22,7 +22,7 @@ env:
   EMAIL_FROM: ci@example.com
   RECIPIENT_EMAIL_DEMO: ci-demo@example.com
   RECIPIENT_EMAIL_LIVE: ci-live@example.com
-  LOCATIONIQ_API_KEY: ci-dummy-key
+  GEOAPIFY_API_KEY: ci-dummy-key
 
 # Actions per Commit-SHA gepinnt, der Kommentar nennt die Version. Dependabot hält beides aktuell.
 jobs:

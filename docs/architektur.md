@@ -56,21 +56,22 @@ oder die Mail wird kommentarlos verworfen. `EMAIL_FROM` muss daher auf eine selb
 Domain zeigen, die in Brevo unter Senders & IPs → Domains per SPF-/DKIM-DNS-Records
 authentifiziert wurde — keine Adresse bei Apple/Google/Microsoft/GMX/freenet o.ä.
 
-### Reverse Geocoding über einen eigenen Server-Proxy mit Fallback-Kette
+### Geocoding über Geoapify, proxied über eigene Server-Endpunkte
 
-Primär **LocationIQ** (API-kompatibel zu Nominatim, gleiche Datenbasis/Genauigkeit,
-hausnummer-genau; kostenloser Tarif: 5.000 Requests/Tag, 2 Req/Sekunde), proxied über
-`src/routes/api/geocode/+server.ts` statt direkt vom Client — der API-Key darf nie ins
-Client-Bundle gelangen, außerdem serverseitig auf 1 Req/Sekunde gedrosselt (deutlich unter
-LocationIQs Limit). Ursprünglich wurde hier die öffentliche **Nominatim**-Demo-Instanz
-(`nominatim.openstreetmap.org`, kostenlos, kein Key) genutzt; die blockt laut eigener Usage
-Policy aber alles, was nach mehr als Gelegenheitsnutzung aussieht, aktiv mit `403 Access
-denied` — im Praxistest reproduzierbar. LocationIQ ersetzt sie deshalb als primären Provider.
-Schlägt LocationIQ fehl, springt der Server automatisch auf **BigDataCloud** (kein Key nötig,
-liefert aber nur orts-/stadtteilgenaue statt hausnummer-genaue Adressen;
-`src/lib/geocode/reverseGeocode.ts`, providerbasiert und dadurch unabhängig testbar). Scheitern
-beide, wird das Adressfeld im Formular editierbar/Pflicht; ein fehlender GPS-EXIF-Tag ist ein
-erwarteter Zustand (sofortige manuelle Eingabe), kein Fehler.
+**Geoapify** (EU-Endpunkt `api-eu.geoapify.com`, Verarbeitung laut AVV in der EU/im EWR,
+hausnummer-genau; kostenloser Tarif: 3.000 Anfragen pro Tag, 5 pro Sekunde) liefert
+Reverse-Geocoding und Autocomplete. Die Aufrufe laufen über `src/routes/api/geocode/+server.ts`
+und `src/routes/api/geocode/autocomplete/+server.ts`, damit der API-Key nie ins Client-Bundle
+gelangt. Geoapify ist der einzige geprüfte Anbieter mit dauerhaft kostenlosem Kontingent, AVV
+auch im Free-Tarif und Verarbeitung in der EU. Andere scheiden aus: Nominatim verbietet
+Autocomplete und blockt Dauernutzung, OpenCage schließt Free-Nutzer aus der AVV aus, LocationIQ
+und BigDataCloud verarbeiten außerhalb der EU ohne Standardvertragsklauseln, und der kostenlose
+Endpunkt von BigDataCloud darf laut Fair-Use-Policy nicht vom Server aufgerufen werden.
+
+Es gibt keinen Fallback-Anbieter. Scheitert Geoapify, wird das Adressfeld im Formular
+editierbar/Pflicht; ein fehlender GPS-EXIF-Tag ist ein erwarteter Zustand (sofortige manuelle
+Eingabe), kein Fehler. `reverseGeocode` (`src/lib/geocode/reverseGeocode.ts`) bleibt
+providerbasiert, damit ein weiterer Anbieter ohne Umbau ergänzt werden kann.
 
 `/api/geocode` liefert eine strukturierte `GeocodeAddress` (`street`/`houseNumber`/`postcode`/
 `city`, `src/lib/geocode/geocodeAddress.ts`) statt eines fertigen String-Feldes — das Formular
@@ -81,24 +82,22 @@ nur Anzeige-/Fließtext gebraucht wird (E-Mail-Text, lokale Historie). `houseNum
 optional (Formular wie Provider) — nicht jeder Verstoßort lässt sich einer exakten Hausnummer
 zuordnen.
 
-LocationIQs kostenloser Tarif sieht laut Nutzungsbedingungen einen sichtbaren Attributions-Link
-in der UI vor — umgesetzt als dezenter Link im global eingebundenen `Footer.svelte` (neben
-Datenschutz-Link und Versionsnummer, erscheint dadurch auf jeder Route).
+Der kostenlose Tarif von Geoapify verlangt einen sichtbaren Link „Powered by Geoapify“ plus
+OSM-Hinweis — umgesetzt im global eingebundenen `Footer.svelte`, dadurch auf jeder Route.
 
 Zusätzlich zum Reverse-Geocoding gibt es einen **Autocomplete**-Proxy
 (`src/routes/api/geocode/autocomplete/+server.ts`, `src/lib/geocode/autocomplete.ts`) für die
 Adressvorschlagsliste während des Tippens ("Deine Angaben" und Tatort) — nutzt denselben
-`LOCATIONIQ_API_KEY`, aber ohne Fallback-Kette (BigDataCloud hat kein Autocomplete-Äquivalent;
-bei Fehler einfach leere Liste, kein Nutzer-blockierendes Ereignis). Anders als der bestehende
+`GEOAPIFY_API_KEY`; bei Fehler kommt einfach eine leere Liste, kein Nutzer-blockierendes Ereignis. Anders als der bestehende
 Reverse-Geocode-Proxy (der pro Formular nur einmal blockierend wartet) drosselt der
 Autocomplete-Proxy **non-blocking**: Bei potenziell einem Call pro Tastendruck würde
 blockierendes Warten Anfragen stauen und alte Antworten zeitversetzt gegen neuere Queries laufen
 lassen. Beide Endpunkte teilen sich stattdessen ein gemeinsames Soft-Limit-Modul
-(`src/lib/geocode/rateLimiter.ts`), da LocationIQs 2-Req/Sekunde-Limit prozessweit für beide
-gilt; Client-seitiges Debounce (~300ms) ist der wichtigste Hebel gegen Request-Flut.
+(`src/lib/geocode/rateLimiter.ts`, 250 ms Mindestabstand pro Isolate), da Geoapifys Limit von
+5 Anfragen pro Sekunde für beide gilt; Client-seitiges Debounce (~300ms) ist der wichtigste Hebel gegen Request-Flut.
 
-Die Autocomplete-Suche ist zusätzlich per LocationIQ-`viewbox` + `bounded=1` hart auf eine
-Köln-Bounding-Box begrenzt (`KOELN_VIEWBOX` in `src/lib/geocode/autocomplete.ts`) — die App
+Die Autocomplete-Suche ist zusätzlich per Geoapify-Filter `rect:` hart auf eine
+Köln-Bounding-Box begrenzt (`KOELN_RECTANGLE` in `src/lib/geocode/autocomplete.ts`) — die App
 deckt aktuell nur Köln ab (s. u., "Weitere Stadt hinzufügen"), striktes statt weiches Bounding
 vermeidet irrelevante Vorschläge aus anderen Städten. Wird eine zweite Stadt ergänzt, muss die
 Bounding-Box parametrisiert werden (z. B. pro `city.id`), statt weiter hart codiert zu sein.
@@ -462,8 +461,8 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `src/routes/+page.svelte`                            | Formular-Seite (bindet `ReportForm.svelte` ein)                                                                                                                 |
 | `src/routes/historie/+page.svelte`                   | Liste bereits versendeter Anzeigen aus IndexedDB                                                                                                                |
 | `src/routes/api/send/+server.ts`                     | Serverseitiger E-Mail-Versand über Brevo                                                                                                                        |
-| `src/routes/api/geocode/+server.ts`                  | Reverse-Geocoding-Proxy (LocationIQ + BigDataCloud-Fallback, Throttling)                                                                                        |
-| `src/routes/api/geocode/autocomplete/+server.ts`     | Adress-Autocomplete-Proxy (LocationIQ, non-blocking Throttling)                                                                                                 |
+| `src/routes/api/geocode/+server.ts`                  | Reverse-Geocoding-Proxy (Geoapify, Throttling)                                                                                                                  |
+| `src/routes/api/geocode/autocomplete/+server.ts`     | Adress-Autocomplete-Proxy (Geoapify, non-blocking Throttling)                                                                                                   |
 | `src/lib/components/`                                | Svelte-Komponenten (`ReportForm.svelte`, `VehicleBlock.svelte`, `AddressAutocomplete.svelte`, `Footer.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
 | `src/lib/components/ProfileCard.svelte`              | Melderprofil („Deine Angaben“) mit Lese- und Bearbeitungsmodus                                                                                                  |
 | `src/lib/components/IncidentLocationFieldset.svelte` | Tatort-Block einer Fahrzeug-Karte: Art der Zeitangabe, Zeitpunkt/Zeitraum, Adresse                                                                              |
@@ -483,11 +482,11 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `src/lib/email/buildEmailBody.ts`                    | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                                                                                            |
 | `src/lib/exif/parseExif.ts`                          | Wrapper um `exifreader`, robust gegen fehlende/korrupte EXIF-Tags                                                                                               |
 | `src/lib/image/embedExif.ts`                         | Bettet Datum/GPS (`piexifjs`) nach Konvertierung/Kompression zurück ins JPEG                                                                                    |
-| `src/lib/geocode/reverseGeocode.ts`                  | Providerbasierte Fallback-Logik, unabhängig von SvelteKit testbar                                                                                               |
+| `src/lib/geocode/reverseGeocode.ts`                  | Geoapify-Provider und providerbasierte Abfrage, unabhängig von SvelteKit testbar                                                                                |
 | `src/lib/geocode/geocodeAddress.ts`                  | `GeocodeAddress`-Interface (Straße/Hausnr./PLZ/Ort), von Server und Client geteilt                                                                              |
 | `src/lib/geocode/formatAddress.ts`                   | Reine Funktion: `GeocodeAddress`-Felder → ein Adress-String (E-Mail-Text, Historie)                                                                             |
 | `src/lib/geocode/client.ts`                          | Ruft `/api/geocode` vom Client aus auf                                                                                                                          |
-| `src/lib/geocode/autocomplete.ts`                    | LocationIQ-Autocomplete-Provider (ohne Fallback-Kette)                                                                                                          |
+| `src/lib/geocode/autocomplete.ts`                    | Geoapify-Autocomplete-Provider                                                                                                                                  |
 | `src/lib/geocode/autocompleteClient.ts`              | Ruft `/api/geocode/autocomplete` vom Client aus auf, fail-quiet                                                                                                 |
 | `src/lib/geocode/httpErrors.ts`                      | Gemeinsame HTTP-Fehlertext-Logik für Reverse-Geocode und Autocomplete                                                                                           |
 | `src/lib/geocode/rateLimiter.ts`                     | Gemeinsames Throttle-Modul (blocking + non-blocking) für beide Geocode-Proxys                                                                                   |
@@ -590,7 +589,7 @@ nicht:
 | `EMAIL_FROM`            | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain). Produktion: `blitz-knoellchen@appool.de`. |
 | `RECIPIENT_EMAIL_DEMO`  | Empfänger im Demo-Modus (interne Test-Adresse), s. ADR "Live-Modus als Standard" oben.                               |
 | `RECIPIENT_EMAIL_LIVE`  | Empfänger im Live-Modus (Bußgeldstelle Köln, `bussgeldstelle@stadt-koeln.de`).                                       |
-| `LOCATIONIQ_API_KEY`    | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider), auch für Adress-Autocomplete.   |
+| `GEOAPIFY_API_KEY`      | API-Key für Geoapify (Reverse-Geocoding und Adress-Autocomplete).                                                    |
 | `BREVO_API_URL`         | Optional, nur für E2E-Tests: leitet den Versand auf den lokalen Brevo-Mock um. Gehört nicht nach Cloudflare.         |
 | `SEND_LIMIT_PER_MINUTE` | Optional, nur für E2E-Tests: ersetzt das Rate-Limit-Binding von `/api/send` durch einen Zähler im Speicher.          |
 

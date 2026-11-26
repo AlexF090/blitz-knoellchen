@@ -34,7 +34,7 @@ const PLACEHOLDER_ENV = {
 	RECIPIENT_EMAIL_DEMO: 'demo-empfaenger@example.org',
 	RECIPIENT_EMAIL_LIVE: 'bussgeldstelle@example.org',
 	BREVO_API_KEY: 'screenshot-dummy-key',
-	LOCATIONIQ_API_KEY: 'screenshot-dummy-key'
+	GEOAPIFY_API_KEY: 'screenshot-dummy-key'
 };
 
 // Frei erfundene Anzeige — keine realen Personen-, Adress- oder Kennzeichendaten im README.

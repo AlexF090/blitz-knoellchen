@@ -8,7 +8,7 @@ import { getWorkerBindings } from './workerBindings.ts';
 // der Endpunkt als Relay an beliebige Adressen nutzen. 10 pro Minute reicht für eine Anzeige mit
 // mehreren Fahrzeugen (eine Anfrage pro Fahrzeug) und Wiederholungen nach Fehlern.
 const SEND_LIMIT = { limit: 10 };
-// /api/geocode und /api/geocode/autocomplete zusammen: schützt das LocationIQ-Kontingent vor
+// /api/geocode und /api/geocode/autocomplete zusammen: schützt das Geoapify-Kontingent (3.000 Anfragen pro Tag) vor
 // einzelnen Clients. Autocomplete fragt beim Tippen mehrfach pro Adresse.
 const GEOCODE_LIMIT = { limit: 30 };
 

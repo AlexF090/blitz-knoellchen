@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { RequestEvent } from './$types';
 
-vi.mock('$app/env/private', () => ({ LOCATIONIQ_API_KEY: 'test-key' }));
+vi.mock('$app/env/private', () => ({ GEOAPIFY_API_KEY: 'test-key' }));
 
 const tryConsumeMock = vi.fn(async (key: string) => {
 	void key;
@@ -13,13 +13,13 @@ vi.mock('#lib/server/rateLimiters.ts', () => ({
 
 const shouldThrottleMock = vi.fn<(minIntervalMs: number) => boolean>(() => false);
 vi.mock('#lib/geocode/rateLimiter.ts', () => ({
-	LOCATIONIQ_MIN_INTERVAL_MS: 1000,
+	GEOAPIFY_MIN_INTERVAL_MS: 1000,
 	shouldThrottle: (minIntervalMs: number) => shouldThrottleMock(minIntervalMs)
 }));
 
 const searchMock = vi.fn();
 vi.mock('#lib/geocode/autocomplete.ts', () => ({
-	createLocationIqAutocompleteProvider: vi.fn(() => ({ search: searchMock }))
+	createGeoapifyAutocompleteProvider: vi.fn(() => ({ search: searchMock }))
 }));
 
 // Minimaler RequestEvent-Mock: `+server.ts` nutzt nur `url`, `fetch` und `getClientAddress`.
@@ -89,7 +89,7 @@ describe('GET /api/geocode/autocomplete', () => {
 
 	it('fängt Fehler des Providers ab, loggt und liefert eine leere Liste', async () => {
 		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-		searchMock.mockRejectedValueOnce(new Error('LocationIQ down'));
+		searchMock.mockRejectedValueOnce(new Error('Geoapify down'));
 		const { GET } = await import('./+server');
 
 		const response = await GET(buildEvent('?q=Domklo') as never);

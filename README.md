@@ -70,7 +70,7 @@ Die App ist als installierbare PWA gebaut und verhält sich vom Homescreen aus w
 | Styling      | Tailwind CSS 4, Design-Tokens ausschließlich in `oklch()`                                   |
 | Tests        | Vitest (Node- + echtes Browser-Projekt), Playwright (Desktop und Mobile)                    |
 | Daten        | IndexedDB über `idb` — keine serverseitige Datenhaltung                                     |
-| Externe APIs | Brevo (E-Mail-Versand), LocationIQ mit BigDataCloud als Fallback                            |
+| Externe APIs | Brevo (E-Mail-Versand), Geoapify (Geocoding, EU-Endpunkt)                                   |
 | Build/Deploy | Vite 8, `@sveltejs/adapter-cloudflare` (Cloudflare Workers), PWA über `@vite-pwa/sveltekit` |
 
 Sieben Runtime-Dependencies insgesamt — jede einzelne ist in den Architekturentscheidungen
@@ -101,7 +101,7 @@ Client schickt nur `demo` oder `live`, und ein fehlender oder manipulierter Wert
 
 - Node.js 26 und npm ≥ 11.17 (Version in [`.nvmrc`](./.nvmrc), mit nvm: `nvm use`)
 - Ein [Brevo](https://brevo.com)-Account (das kostenlose Kontingent reicht zum Ausprobieren)
-- Ein [LocationIQ](https://locationiq.com)-Account (kostenlos, 5.000 Anfragen/Tag)
+- Ein [Geoapify](https://www.geoapify.com)-Account (kostenlos, 3.000 Anfragen/Tag)
 
 ## Setup
 
@@ -126,16 +126,15 @@ in `.gitignore` und darf nie committet werden.
 3. `RECIPIENT_EMAIL_DEMO` auf eine eigene Test-Adresse setzen, `RECIPIENT_EMAIL_LIVE` auf die
    tatsächliche Adresse der Bußgeldstelle (`bussgeldstelle@stadt-koeln.de`).
 
-### LocationIQ einrichten
+### Geoapify einrichten
 
-Account auf [locationiq.com](https://locationiq.com) anlegen, Access Token erzeugen →
-`LOCATIONIQ_API_KEY`. Der kostenlose Tarif erlaubt 5.000 Anfragen pro Tag bei 2 Anfragen pro
-Sekunde; der Server drosselt zusätzlich auf eine Anfrage pro Sekunde.
+Account auf [myprojects.geoapify.com](https://myprojects.geoapify.com) anlegen, ein Projekt
+erstellen und dessen API-Key als `GEOAPIFY_API_KEY` eintragen. Der kostenlose Tarif erlaubt 3.000
+Anfragen pro Tag bei 5 Anfragen pro Sekunde und verlangt einen sichtbaren Link „Powered by
+Geoapify“ (steht im Footer). Die App nutzt den EU-Endpunkt `api-eu.geoapify.com`.
 
-Schlägt LocationIQ fehl (Rate-Limit, Dienst nicht erreichbar), fällt das Reverse-Geocoding
-automatisch auf [BigDataCloud](https://www.bigdatacloud.com/) zurück — kostenlos und ohne Key,
-allerdings nur orts- statt hausnummerngenau. Für das Autocomplete gibt es keinen Fallback; dort
-bleibt die Vorschlagsliste im Fehlerfall einfach leer.
+Schlägt Geoapify fehl, gibt der Nutzer die Adresse von Hand ein; beim Autocomplete bleibt die
+Vorschlagsliste leer.
 
 ## Entwicklung
 
@@ -186,7 +185,7 @@ Bindings (Rate-Limits) und Custom Domain stehen in `wrangler.jsonc`.
 | `EMAIL_FROM`           | Feste Absenderadresse (in Brevo authentifizierte eigene Domain) |
 | `RECIPIENT_EMAIL_DEMO` | Empfänger im Demo-Modus (eigene Test-Adresse)                   |
 | `RECIPIENT_EMAIL_LIVE` | Empfänger im Live-Modus (Bußgeldstelle Köln)                    |
-| `LOCATIONIQ_API_KEY`   | Access-Token für Reverse-Geocoding und Adress-Autocomplete      |
+| `GEOAPIFY_API_KEY`     | API-Key für Reverse-Geocoding und Adress-Autocomplete           |
 
 ## Installation auf dem Smartphone
 

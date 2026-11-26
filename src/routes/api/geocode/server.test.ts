@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { RequestEvent } from './$types';
 
-vi.mock('$app/env/private', () => ({ LOCATIONIQ_API_KEY: 'test-key' }));
+vi.mock('$app/env/private', () => ({ GEOAPIFY_API_KEY: 'test-key' }));
 
 const tryConsumeMock = vi.fn(async (key: string) => {
 	void key;
@@ -13,14 +13,13 @@ vi.mock('#lib/server/rateLimiters.ts', () => ({
 
 const waitForSlotMock = vi.fn<(minIntervalMs: number) => Promise<void>>(async () => {});
 vi.mock('#lib/geocode/rateLimiter.ts', () => ({
-	LOCATIONIQ_MIN_INTERVAL_MS: 1000,
+	GEOAPIFY_MIN_INTERVAL_MS: 1000,
 	waitForSlot: (minIntervalMs: number) => waitForSlotMock(minIntervalMs)
 }));
 
 const reverseGeocodeMock = vi.fn();
 vi.mock('#lib/geocode/reverseGeocode.ts', () => ({
-	createLocationIqProvider: vi.fn((apiKey: string) => ({ name: 'locationiq', apiKey })),
-	createBigDataCloudProvider: vi.fn(() => ({ name: 'bigdatacloud' })),
+	createGeoapifyProvider: vi.fn((apiKey: string) => ({ name: 'geoapify', apiKey })),
 	reverseGeocode: (lat: number, lon: number, providers: unknown[]) =>
 		reverseGeocodeMock(lat, lon, providers)
 }));

@@ -31,7 +31,7 @@ export default defineConfig({
 				// SvelteKit das von ihm selbst injizierte Bootstrap-<script> automatisch per Nonce/Hash
 				// freischaltet (mode: 'auto' → Nonce bei dynamischem Rendering, Hash bei Prerendering).
 				// Direktiven basieren auf einer vollständigen Durchsicht aller externen Aufrufe:
-				// LocationIQ (api/geocode) und Brevo (api/send) laufen ausschließlich serverseitig, der
+				// Geoapify (api/geocode) und Brevo (api/send) laufen ausschließlich serverseitig, der
 				// Browser ruft nur eigene /api/*-Endpunkte auf. style-src braucht 'unsafe-inline':
 				// dynamische style="..."-Attribute in PullToRefresh.svelte, PhotoLightbox.svelte
 				// (Per-Frame-Transform, nicht hashbar), Wordmark.svelte und app.html. Gilt nur für

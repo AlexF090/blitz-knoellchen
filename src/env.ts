@@ -28,7 +28,7 @@ export const variables = defineEnvVars({
 	EMAIL_FROM: { description: 'Absenderadresse; muss in Brevo domain-authentifiziert sein.' },
 	RECIPIENT_EMAIL_DEMO: { description: 'Empfänger im Demo-Modus.' },
 	RECIPIENT_EMAIL_LIVE: { description: 'Empfänger im Live-Modus (Bußgeldstelle).' },
-	LOCATIONIQ_API_KEY: { description: 'API-Schlüssel für das Geocoding.' },
+	GEOAPIFY_API_KEY: { description: 'API-Schlüssel für das Geocoding.' },
 	BREVO_API_URL: {
 		schema: parseOptionalUrl,
 		description: 'Nur für E2E-Tests: Brevo-Endpunkt eines lokalen Mocks.'
