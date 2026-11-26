@@ -25,7 +25,7 @@ test('setzt die Sicherheits-Header auch auf API-Antworten', async ({ request }) 
 });
 
 test('sperrt die Indexierung außerhalb der Produktion', async ({ request }) => {
-	// Der E2E-Server läuft ohne VERCEL_ENV=production.
+	// Der E2E-Server läuft auf localhost, nicht auf der Produktionsdomain.
 	const response = await request.get('/');
 
 	expect(response.headers()['x-robots-tag']).toBe('noindex');

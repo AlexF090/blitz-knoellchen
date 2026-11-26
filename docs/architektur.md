@@ -37,10 +37,10 @@ Auto-Antwort nur einen Standardtext enthält. Das Postfach bewahrt Mails der Bu�
 nennen diese Frist.
 
 Weil die BCC-Kopie an eine Adresse vom Client geht, ließe sich der Endpunkt sonst als Relay
-nutzen. `/api/send` drosselt deshalb auf 20 Anfragen pro Stunde und IP
-(`src/lib/server/fixedWindowRateLimiter.ts`) und nimmt nur Anhänge an, die als `image/jpeg`
-deklariert sind und mit der JPEG-Signatur beginnen. Das Limit liegt im Speicher und gilt pro
-Serverless-Instanz; ein persistentes Limit oder ein CAPTCHA bräuchte einen externen Dienst.
+nutzen. `/api/send` drosselt deshalb auf 10 Anfragen pro Minute und IP und nimmt nur Anhänge an,
+die als `image/jpeg` deklariert sind und mit der JPEG-Signatur beginnen. Das Limit zählt das
+Cloudflare Rate Limiting Binding (s. ADR „Hosting auf Cloudflare Workers“); ein CAPTCHA bräuchte
+einen externen Dienst.
 
 **`EMAIL_FROM` muss eine in Brevo domain-authentifizierte Adresse sein, keine private
 Adresse eines fremden Großanbieters.** Ursprünglich stand hier testweise eine private
@@ -56,21 +56,22 @@ oder die Mail wird kommentarlos verworfen. `EMAIL_FROM` muss daher auf eine selb
 Domain zeigen, die in Brevo unter Senders & IPs → Domains per SPF-/DKIM-DNS-Records
 authentifiziert wurde — keine Adresse bei Apple/Google/Microsoft/GMX/freenet o.ä.
 
-### Reverse Geocoding über einen eigenen Server-Proxy mit Fallback-Kette
+### Geocoding über Geoapify, proxied über eigene Server-Endpunkte
 
-Primär **LocationIQ** (API-kompatibel zu Nominatim, gleiche Datenbasis/Genauigkeit,
-hausnummer-genau; kostenloser Tarif: 5.000 Requests/Tag, 2 Req/Sekunde), proxied über
-`src/routes/api/geocode/+server.ts` statt direkt vom Client — der API-Key darf nie ins
-Client-Bundle gelangen, außerdem serverseitig auf 1 Req/Sekunde gedrosselt (deutlich unter
-LocationIQs Limit). Ursprünglich wurde hier die öffentliche **Nominatim**-Demo-Instanz
-(`nominatim.openstreetmap.org`, kostenlos, kein Key) genutzt; die blockt laut eigener Usage
-Policy aber alles, was nach mehr als Gelegenheitsnutzung aussieht, aktiv mit `403 Access
-denied` — im Praxistest reproduzierbar. LocationIQ ersetzt sie deshalb als primären Provider.
-Schlägt LocationIQ fehl, springt der Server automatisch auf **BigDataCloud** (kein Key nötig,
-liefert aber nur orts-/stadtteilgenaue statt hausnummer-genaue Adressen;
-`src/lib/geocode/reverseGeocode.ts`, providerbasiert und dadurch unabhängig testbar). Scheitern
-beide, wird das Adressfeld im Formular editierbar/Pflicht; ein fehlender GPS-EXIF-Tag ist ein
-erwarteter Zustand (sofortige manuelle Eingabe), kein Fehler.
+**Geoapify** (EU-Endpunkt `api-eu.geoapify.com`, Verarbeitung laut AVV in der EU/im EWR,
+hausnummer-genau; kostenloser Tarif: 3.000 Anfragen pro Tag, 5 pro Sekunde) liefert
+Reverse-Geocoding und Autocomplete. Die Aufrufe laufen über `src/routes/api/geocode/+server.ts`
+und `src/routes/api/geocode/autocomplete/+server.ts`, damit der API-Key nie ins Client-Bundle
+gelangt. Geoapify ist der einzige geprüfte Anbieter mit dauerhaft kostenlosem Kontingent, AVV
+auch im Free-Tarif und Verarbeitung in der EU. Andere scheiden aus: Nominatim verbietet
+Autocomplete und blockt Dauernutzung, OpenCage schließt Free-Nutzer aus der AVV aus, LocationIQ
+und BigDataCloud verarbeiten außerhalb der EU ohne Standardvertragsklauseln, und der kostenlose
+Endpunkt von BigDataCloud darf laut Fair-Use-Policy nicht vom Server aufgerufen werden.
+
+Es gibt keinen Fallback-Anbieter. Scheitert Geoapify, wird das Adressfeld im Formular
+editierbar/Pflicht; ein fehlender GPS-EXIF-Tag ist ein erwarteter Zustand (sofortige manuelle
+Eingabe), kein Fehler. `reverseGeocode` (`src/lib/geocode/reverseGeocode.ts`) bleibt
+providerbasiert, damit ein weiterer Anbieter ohne Umbau ergänzt werden kann.
 
 `/api/geocode` liefert eine strukturierte `GeocodeAddress` (`street`/`houseNumber`/`postcode`/
 `city`, `src/lib/geocode/geocodeAddress.ts`) statt eines fertigen String-Feldes — das Formular
@@ -81,24 +82,22 @@ nur Anzeige-/Fließtext gebraucht wird (E-Mail-Text, lokale Historie). `houseNum
 optional (Formular wie Provider) — nicht jeder Verstoßort lässt sich einer exakten Hausnummer
 zuordnen.
 
-LocationIQs kostenloser Tarif sieht laut Nutzungsbedingungen einen sichtbaren Attributions-Link
-in der UI vor — umgesetzt als dezenter Link im global eingebundenen `Footer.svelte` (neben
-Datenschutz-Link und Versionsnummer, erscheint dadurch auf jeder Route).
+Der kostenlose Tarif von Geoapify verlangt einen sichtbaren Link „Powered by Geoapify“ plus
+OSM-Hinweis — umgesetzt im global eingebundenen `Footer.svelte`, dadurch auf jeder Route.
 
 Zusätzlich zum Reverse-Geocoding gibt es einen **Autocomplete**-Proxy
 (`src/routes/api/geocode/autocomplete/+server.ts`, `src/lib/geocode/autocomplete.ts`) für die
 Adressvorschlagsliste während des Tippens ("Deine Angaben" und Tatort) — nutzt denselben
-`LOCATIONIQ_API_KEY`, aber ohne Fallback-Kette (BigDataCloud hat kein Autocomplete-Äquivalent;
-bei Fehler einfach leere Liste, kein Nutzer-blockierendes Ereignis). Anders als der bestehende
+`GEOAPIFY_API_KEY`; bei Fehler kommt einfach eine leere Liste, kein Nutzer-blockierendes Ereignis. Anders als der bestehende
 Reverse-Geocode-Proxy (der pro Formular nur einmal blockierend wartet) drosselt der
 Autocomplete-Proxy **non-blocking**: Bei potenziell einem Call pro Tastendruck würde
 blockierendes Warten Anfragen stauen und alte Antworten zeitversetzt gegen neuere Queries laufen
 lassen. Beide Endpunkte teilen sich stattdessen ein gemeinsames Soft-Limit-Modul
-(`src/lib/geocode/rateLimiter.ts`), da LocationIQs 2-Req/Sekunde-Limit prozessweit für beide
-gilt; Client-seitiges Debounce (~300ms) ist der wichtigste Hebel gegen Request-Flut.
+(`src/lib/geocode/rateLimiter.ts`, 250 ms Mindestabstand pro Isolate), da Geoapifys Limit von
+5 Anfragen pro Sekunde für beide gilt; Client-seitiges Debounce (~300ms) ist der wichtigste Hebel gegen Request-Flut.
 
-Die Autocomplete-Suche ist zusätzlich per LocationIQ-`viewbox` + `bounded=1` hart auf eine
-Köln-Bounding-Box begrenzt (`KOELN_VIEWBOX` in `src/lib/geocode/autocomplete.ts`) — die App
+Die Autocomplete-Suche ist zusätzlich per Geoapify-Filter `rect:` hart auf eine
+Köln-Bounding-Box begrenzt (`KOELN_RECTANGLE` in `src/lib/geocode/autocomplete.ts`) — die App
 deckt aktuell nur Köln ab (s. u., "Weitere Stadt hinzufügen"), striktes statt weiches Bounding
 vermeidet irrelevante Vorschläge aus anderen Städten. Wird eine zweite Stadt ergänzt, muss die
 Bounding-Box parametrisiert werden (z. B. pro `city.id`), statt weiter hart codiert zu sein.
@@ -125,7 +124,8 @@ Adresse, E-Mail) liegt separat im Store `profile` derselben IndexedDB
 
 Vor dem Versand wird das Foto über `HTMLCanvasElement`/`toBlob` verkleinert
 (`src/lib/image/compress.ts`) — bewusst ohne zusätzliche Dependency, da Web-Standard-APIs
-ausreichen und das die Payload unter dem Vercel-Function-Limit hält.
+ausreichen. Kleine Fotos halten den Brevo-Body klein: Base64 und `JSON.stringify` kosten
+CPU-Zeit, und Cloudflare Workers Free erlaubt 10 ms CPU pro Anfrage.
 
 ### PWA über `@vite-pwa/sveltekit`
 
@@ -157,15 +157,41 @@ false`): Größere Dateien, vor allem der `heic-to`-Chunk (mehrere MB durch die 
   Muster und jede Datei steht doppelt im Precache. `globStrict: false`, weil das Plugin immer ein
   Muster für vorgerenderte Seiten ergänzt und die App keine hat.
 
-### Vercel Web Analytics ohne SDK
+### Hosting auf Cloudflare Workers
 
-`@vercel/analytics` erlaubt in der stabilen Version per Peer-Dependency kein SvelteKit 3.
-Stattdessen lädt `src/lib/analytics/vercelAnalytics.ts` Vercels eigenes Skript
-`/_vercel/insights/script.js` direkt, nur im Production-Build (`createVercelAnalytics(browser &&
-!dev)` in `+layout.svelte`). Das Skript zählt Seitenaufrufe nicht selbst
-(`data-disable-auto-track`); das Layout meldet sie mit Route-Muster, damit das Dashboard nach
-SvelteKit-Route statt nach einzelner Adresse gruppiert — wie zuvor das SDK. Same-origin, daher
-keine CSP-Änderung; eine Dependency weniger.
+Die App läuft als Cloudflare Worker (`@sveltejs/adapter-cloudflare`, Konfiguration in
+`wrangler.jsonc`) unter `blitz-knoellchen.appool.de`. Grund ist die Auftragsverarbeitung: Für den
+Free-Tarif bindet Cloudflare seinen DPA in das Self-Serve Subscription Agreement ein. Bei Vercel
+gilt der DPA nur für Pro und Enterprise.
+
+- **Laufzeit workerd, nicht Node.** Die Node-Version aus `.nvmrc` gilt nur für den Build. Ab
+  `compatibility_date` 2026-08-04 ist `nodejs_compat` Standard; der Code nutzt trotzdem
+  Web-APIs (`Uint8Array.prototype.toBase64()` statt `Buffer`).
+- **Umgebungsvariablen zur Laufzeit.** Keine Variable trägt `static: true`: Secrets stünden sonst
+  im Worker-Bundle. Auf Cloudflare kommen sie aus den Variablen und Secrets des Workers, lokal aus
+  `.env` oder `.dev.vars`.
+- **Rate-Limits über das Rate Limiting Binding** (`ratelimits` in `wrangler.jsonc`,
+  `src/lib/server/rateLimiters.ts`): `/api/send` 10, Geocoding 30 Anfragen pro Minute und IP. Das
+  Binding kennt nur Fenster von 10 oder 60 Sekunden und zählt pro Standort ungefähr. Ein Zähler
+  im Speicher gälte nur pro Isolate. Er dient deshalb nur als Ersatz für E2E-Tests
+  (`SEND_LIMIT_PER_MINUTE`) und für Umgebungen ohne Binding.
+- **`npm run preview` ist `wrangler dev`.** `vite preview` führt den Server in Node aus und kann
+  `cloudflare:workers` nicht laden. Die E2E-Tests laufen deshalb gegen den gebauten Worker in
+  workerd.
+- **CPU-Limit 10 ms pro Anfrage (Free), bewusst in Kauf genommen.** `/api/send` braucht mit drei
+  Fotos in normaler Größe rund 27 ms CPU (gemessen per `wrangler tail`), weil Request-Annahme,
+  Base64 und der Upload zu Brevo mit der Bytezahl wachsen. Cloudflare duldet gelegentliche
+  Überschreitungen; bricht eine Anfrage doch mit Fehler 1102 ab, zeigt die App einen Fehler und der
+  Entwurf bleibt lokal erhalten. Tauchen in den Workers Logs regelmäßig `exceededCpu`-Einträge
+  auf, ist Workers Paid (5 USD/Monat, 30 s CPU) der Ausweg, ohne Codeänderung.
+- **Indexierung:** Nur `SITE_ORIGIN` ist indexierbar (`applyIndexingPolicy`). `*.workers.dev`,
+  Preview-URLs und `localhost` bekommen `X-Robots-Tag: noindex`, ohne eigene Umgebungsvariable.
+
+### Keine Reichweitenmessung
+
+Die App misst keine Seitenaufrufe. Eine Reichweitenmessung wäre ein weiterer Dienstleister in
+der Datenschutzerklärung, ohne dass die Zahlen eine Entscheidung tragen. Die automatische
+Web-Analytics-Injektion von Cloudflare bleibt für die Zone ausgeschaltet.
 
 ### Branding-Assets über `@vite-pwa/assets-generator` statt eigenem Skript
 
@@ -196,7 +222,7 @@ Messenger und soziale Netzwerke bauen die Vorschau geteilter Links aus den `og:*
 aus der festen Origin `SITE_ORIGIN` (`src/lib/site.ts`, `https://blitz-knoellchen.appool.de`)
 und dem Pfad (`buildPageMetadata` in `src/lib/seo/pageMetadata.ts`), nicht mehr aus
 `page.url.origin`. Begründung: Mit der Origin der Anfrage zeigten `og:url` und `canonical` auf
-den jeweiligen Aufrufhost, also auch auf `*.vercel.app`-Preview-Deployments und alte Hostnamen;
+den jeweiligen Aufrufhost, also auch auf Preview-Deployments und alte Hostnamen;
 Suchmaschinen und Messenger sähen mehrere gleichwertige Adressen. Mit fester Origin bleibt die
 Produktionsdomain die einzige kanonische Adresse. Dazu kommen ein `<link rel="canonical">`,
 JSON-LD (`WebApplication`, `src/lib/seo/structuredData.ts`) und `/sitemap.xml` (vorgerendert,
@@ -321,8 +347,8 @@ er Tage alt ist oder aus einem früheren Vorgang stammt.
 Der Foto-Pool nimmt beliebig viele Fotos auf (`processPhotoQueue.ts` verarbeitet sie nacheinander
 mit Fortschrittsanzeige, ein gescheitertes Foto bricht die übrigen nicht ab). Pro Fahrzeug gelten
 höchstens drei Fotos (`MAX_PHOTOS_PER_VEHICLE` in `formSchema.ts`): Jedes Fahrzeug geht als
-eigener POST an `/api/send`, und Vercel begrenzt die Request-Größe auf 4,5 MB. Die Fotos werden
-vorher komprimiert, drei Fotos bleiben damit sicher darunter. Das erste Foto legt automatisch ein
+eigener POST an `/api/send`. Die Grenze schont das CPU-Budget des Workers (10 ms pro Anfrage
+im Free-Tarif), Brevos Anhangsgrenze und Mobilnetze. Die Fotos werden vorher komprimiert. Das erste Foto legt automatisch ein
 Fahrzeug an, weitere Fotos kommen so lange in dieses Fahrzeug, wie es nur eines gibt und Platz hat
 (`autoAssign.ts`); alle übrigen Fotos bleiben im Pool und werden dort als „nicht zugeordnet“ bzw.
 „voll“ gekennzeichnet. Nicht zugeordnete Fotos werden nicht mitgesendet.
@@ -439,8 +465,8 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `src/routes/+page.svelte`                            | Formular-Seite (bindet `ReportForm.svelte` ein)                                                                                                                 |
 | `src/routes/historie/+page.svelte`                   | Liste bereits versendeter Anzeigen aus IndexedDB                                                                                                                |
 | `src/routes/api/send/+server.ts`                     | Serverseitiger E-Mail-Versand über Brevo                                                                                                                        |
-| `src/routes/api/geocode/+server.ts`                  | Reverse-Geocoding-Proxy (LocationIQ + BigDataCloud-Fallback, Throttling)                                                                                        |
-| `src/routes/api/geocode/autocomplete/+server.ts`     | Adress-Autocomplete-Proxy (LocationIQ, non-blocking Throttling)                                                                                                 |
+| `src/routes/api/geocode/+server.ts`                  | Reverse-Geocoding-Proxy (Geoapify, Throttling)                                                                                                                  |
+| `src/routes/api/geocode/autocomplete/+server.ts`     | Adress-Autocomplete-Proxy (Geoapify, non-blocking Throttling)                                                                                                   |
 | `src/lib/components/`                                | Svelte-Komponenten (`ReportForm.svelte`, `VehicleBlock.svelte`, `AddressAutocomplete.svelte`, `Footer.svelte`, `IosInstallBanner.svelte`) — dünn, primär Markup |
 | `src/lib/components/ProfileCard.svelte`              | Melderprofil („Deine Angaben“) mit Lese- und Bearbeitungsmodus                                                                                                  |
 | `src/lib/components/IncidentLocationFieldset.svelte` | Tatort-Block einer Fahrzeug-Karte: Art der Zeitangabe, Zeitpunkt/Zeitraum, Adresse                                                                              |
@@ -460,11 +486,11 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `src/lib/email/buildEmailBody.ts`                    | Reine Funktion: Formulardaten → E-Mail-Betreff/-Text                                                                                                            |
 | `src/lib/exif/parseExif.ts`                          | Wrapper um `exifreader`, robust gegen fehlende/korrupte EXIF-Tags                                                                                               |
 | `src/lib/image/embedExif.ts`                         | Bettet Datum/GPS (`piexifjs`) nach Konvertierung/Kompression zurück ins JPEG                                                                                    |
-| `src/lib/geocode/reverseGeocode.ts`                  | Providerbasierte Fallback-Logik, unabhängig von SvelteKit testbar                                                                                               |
+| `src/lib/geocode/reverseGeocode.ts`                  | Geoapify-Provider und providerbasierte Abfrage, unabhängig von SvelteKit testbar                                                                                |
 | `src/lib/geocode/geocodeAddress.ts`                  | `GeocodeAddress`-Interface (Straße/Hausnr./PLZ/Ort), von Server und Client geteilt                                                                              |
 | `src/lib/geocode/formatAddress.ts`                   | Reine Funktion: `GeocodeAddress`-Felder → ein Adress-String (E-Mail-Text, Historie)                                                                             |
 | `src/lib/geocode/client.ts`                          | Ruft `/api/geocode` vom Client aus auf                                                                                                                          |
-| `src/lib/geocode/autocomplete.ts`                    | LocationIQ-Autocomplete-Provider (ohne Fallback-Kette)                                                                                                          |
+| `src/lib/geocode/autocomplete.ts`                    | Geoapify-Autocomplete-Provider                                                                                                                                  |
 | `src/lib/geocode/autocompleteClient.ts`              | Ruft `/api/geocode/autocomplete` vom Client aus auf, fail-quiet                                                                                                 |
 | `src/lib/geocode/httpErrors.ts`                      | Gemeinsame HTTP-Fehlertext-Logik für Reverse-Geocode und Autocomplete                                                                                           |
 | `src/lib/geocode/rateLimiter.ts`                     | Gemeinsames Throttle-Modul (blocking + non-blocking) für beide Geocode-Proxys                                                                                   |
@@ -561,20 +587,20 @@ nicht:
 
 ## Umgebungsvariablen
 
-| Variable               | Zweck                                                                                                                |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `BREVO_API_KEY`        | API-Key für den E-Mail-Versand über Brevo.                                                                           |
-| `EMAIL_FROM`           | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain). Produktion: `blitz-knoellchen@appool.de`. |
-| `RECIPIENT_EMAIL_DEMO` | Empfänger im Demo-Modus (interne Test-Adresse), s. ADR "Live-Modus als Standard" oben.                               |
-| `RECIPIENT_EMAIL_LIVE` | Empfänger im Live-Modus (Bußgeldstelle Köln, `bussgeldstelle@stadt-koeln.de`).                                       |
-| `LOCATIONIQ_API_KEY`   | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider), auch für Adress-Autocomplete.   |
-| `BREVO_API_URL`        | Optional, nur für E2E-Tests: leitet den Versand auf den lokalen Brevo-Mock um. Gehört nicht nach Vercel.             |
-| `SEND_LIMIT_PER_HOUR`  | Optional, nur für E2E-Tests: hebt das Rate-Limit von `/api/send` (Standard 20 pro Stunde und IP) an.                 |
+| Variable                | Zweck                                                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `BREVO_API_KEY`         | API-Key für den E-Mail-Versand über Brevo.                                                                           |
+| `EMAIL_FROM`            | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain). Produktion: `blitz-knoellchen@appool.de`. |
+| `RECIPIENT_EMAIL_DEMO`  | Empfänger im Demo-Modus (interne Test-Adresse), s. ADR "Live-Modus als Standard" oben.                               |
+| `RECIPIENT_EMAIL_LIVE`  | Empfänger im Live-Modus (Bußgeldstelle Köln, `bussgeldstelle@stadt-koeln.de`).                                       |
+| `GEOAPIFY_API_KEY`      | API-Key für Geoapify (Reverse-Geocoding und Adress-Autocomplete).                                                    |
+| `BREVO_API_URL`         | Optional, nur für E2E-Tests: leitet den Versand auf den lokalen Brevo-Mock um. Gehört nicht nach Cloudflare.         |
+| `SEND_LIMIT_PER_MINUTE` | Optional, nur für E2E-Tests: ersetzt das Rate-Limit-Binding von `/api/send` durch einen Zähler im Speicher.          |
 
-Alle Variablen sind in `src/env.ts` per `defineEnvVars` deklariert. Die ersten fünf tragen
-`static: true` und werden zur Build-Zeit eingebacken; `BREVO_API_URL` und
-`SEND_LIMIT_PER_HOUR` werden beim Start gelesen und geprüft (ungültige Werte brechen den Start
-ab, statt still auf den Standard zurückzufallen). Ohne `schema` muss eine Variable gesetzt sein,
+Alle Variablen sind in `src/env.ts` per `defineEnvVars` deklariert und werden zur Laufzeit
+gelesen. In Produktion stehen sie als Secrets am Worker (`wrangler secret put`), lokal in `.env`
+oder `.dev.vars`. `BREVO_API_URL` und `SEND_LIMIT_PER_MINUTE` werden geprüft (ungültige Werte
+brechen den Start ab, statt still auf den Standard zurückzufallen). Ohne `schema` muss eine Variable gesetzt sein,
 darf aber leer sein.
 
 Immer über `.env.example` dokumentieren, echte Werte nie committen. Serverseitige Secrets

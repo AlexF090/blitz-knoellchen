@@ -2,7 +2,7 @@ node_modules
 
 # Output
 .output
-.vercel
+.dev.vars
 .netlify
 .wrangler
 /.svelte-kit

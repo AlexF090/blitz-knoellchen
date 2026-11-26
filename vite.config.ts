@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
-import adapter from '@sveltejs/adapter-vercel';
+import adapter from '@sveltejs/adapter-cloudflare';
 import { withPwa } from '@vite-pwa/sveltekit';
 import pkg from './package.json' with { type: 'json' };
 
@@ -22,18 +22,16 @@ export default defineConfig({
 						filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 				},
 
-				// Fest @sveltejs/adapter-vercel statt adapter-auto (einziges Deployment-Ziel). runtime
-				// explizit gesetzt, sonst rät adapter-vercel anhand der lokalen (z.B. per nvm neueren,
-				// von Vercel noch nicht unterstützten) Node-Version und bricht den Build sonst ab.
-				// Version synchron zu .nvmrc und engines.node halten. Ein Node-Major-Wechsel betrifft alle
-				// drei Stellen und ist bewusst manuell.
-				adapter: adapter({ runtime: 'nodejs26.x' }),
+				// Fest @sveltejs/adapter-cloudflare statt adapter-auto (einziges Deployment-Ziel). Worker-
+				// Name, compatibility_date und Bindings stehen in wrangler.jsonc. Die Laufzeit ist workerd,
+				// die Node-Version aus .nvmrc gilt nur für den Build.
+				adapter: adapter(),
 
 				// CSP über SvelteKits eingebaute Unterstützung statt manuell in hooks.server.ts, damit
 				// SvelteKit das von ihm selbst injizierte Bootstrap-<script> automatisch per Nonce/Hash
 				// freischaltet (mode: 'auto' → Nonce bei dynamischem Rendering, Hash bei Prerendering).
 				// Direktiven basieren auf einer vollständigen Durchsicht aller externen Aufrufe:
-				// LocationIQ (api/geocode) und Brevo (api/send) laufen ausschließlich serverseitig, der
+				// Geoapify (api/geocode) und Brevo (api/send) laufen ausschließlich serverseitig, der
 				// Browser ruft nur eigene /api/*-Endpunkte auf. style-src braucht 'unsafe-inline':
 				// dynamische style="..."-Attribute in PullToRefresh.svelte, PhotoLightbox.svelte
 				// (Per-Frame-Transform, nicht hashbar), Wordmark.svelte und app.html. Gilt nur für
@@ -159,6 +157,8 @@ export default defineConfig({
 				// Reine Verdrahtung von applySecurityHeaders (eigene Unit-Tests). Ob die Header wirklich
 				// ankommen, prüft e2e/security-headers.e2e.ts gegen den Production-Build.
 				'src/hooks.server.ts',
+				// Reine Weitergabe von `cloudflare:workers`; Tests ersetzen das Modul (s. Kommentar dort).
+				'src/lib/server/workerBindings.ts',
 				'src/routes/**/$types.d.ts'
 			],
 			// Provider ist bewusst istanbul, nicht v8. v8 leitet die Coverage aus den Zählern der
@@ -243,7 +243,6 @@ export default defineConfig({
 				// nur ein Test mit Datenbank genau dieses Altstands erreicht.
 				'src/lib/history/db.ts': { branches: 97 },
 				'src/lib/pwa/installPrompt.svelte.ts': { branches: 80 }, // (b) `if (browser)`-SSR-Guard
-				'src/routes/+layout.svelte': { branches: 45 }, // (a) `dev`-Build-Time-Konstante
 				'src/routes/+page.svelte': { statements: 80, branches: 45, lines: 75 }, // (a) Prop-Weitergabe an ReportForm
 				'src/routes/historie/+page.svelte': { statements: 95, branches: 60 } // (b) zwei Defensiv-Guards (gelöschtes Lightbox-Target)
 			}

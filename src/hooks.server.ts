@@ -1,4 +1,3 @@
-import { VERCEL_ENV } from '$app/env/private';
 import type { Handle } from '@sveltejs/kit/hooks';
 import { applyIndexingPolicy } from '#lib/server/applyIndexingPolicy.ts';
 import { applySecurityHeaders } from '#lib/server/applySecurityHeaders.ts';
@@ -12,7 +11,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Bootstrap-<script>. Die übrigen Header betreffen keine Inline-Skripte.
 	applySecurityHeaders(response.headers);
 	// Alle Seiten werden pro Anfrage gerendert, der Header greift also auch auf Preview-Deployments.
-	applyIndexingPolicy(response.headers, VERCEL_ENV);
+	applyIndexingPolicy(response.headers, event.url.origin);
 
 	return response;
 };

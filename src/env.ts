@@ -17,35 +17,25 @@ export const parseOptionalPositiveInteger = (value: string | undefined): number 
 	return number;
 };
 
-/** Leerer oder fehlender Wert gilt als „nicht gesetzt“; sonst der Wert unverändert. */
-export const parseOptionalString = (value: string | undefined): string | undefined =>
-	value || undefined;
-
 /**
- * Alle Umgebungsvariablen der App; serverseitig über `$app/env/private` lesbar. Werte mit
- * `static: true` werden zur Build-Zeit eingebacken, die übrigen beim Start gelesen.
+ * Alle Umgebungsvariablen der App; serverseitig über `$app/env/private` lesbar. Alle Werte werden
+ * zur Laufzeit gelesen, auf Cloudflare aus den Variablen und Secrets des Workers.
  */
 // Ohne `schema` muss eine Variable gesetzt sein, darf aber leer sein (s. .env.example).
 export const variables = defineEnvVars({
-	BREVO_API_KEY: { static: true, description: 'API-Schlüssel für den E-Mail-Versand über Brevo.' },
-	EMAIL_FROM: {
-		static: true,
-		description: 'Absenderadresse; muss in Brevo domain-authentifiziert sein.'
-	},
-	RECIPIENT_EMAIL_DEMO: { static: true, description: 'Empfänger im Demo-Modus.' },
-	RECIPIENT_EMAIL_LIVE: { static: true, description: 'Empfänger im Live-Modus (Bußgeldstelle).' },
-	LOCATIONIQ_API_KEY: { static: true, description: 'API-Schlüssel für das Geocoding.' },
+	// Kein `static: true`: Eingebackene Werte stünden im Worker-Bundle und in jedem lokalen Build.
+	BREVO_API_KEY: { description: 'API-Schlüssel für den E-Mail-Versand über Brevo.' },
+	EMAIL_FROM: { description: 'Absenderadresse; muss in Brevo domain-authentifiziert sein.' },
+	RECIPIENT_EMAIL_DEMO: { description: 'Empfänger im Demo-Modus.' },
+	RECIPIENT_EMAIL_LIVE: { description: 'Empfänger im Live-Modus (Bußgeldstelle).' },
+	GEOAPIFY_API_KEY: { description: 'API-Schlüssel für das Geocoding.' },
 	BREVO_API_URL: {
 		schema: parseOptionalUrl,
 		description: 'Nur für E2E-Tests: Brevo-Endpunkt eines lokalen Mocks.'
 	},
-	VERCEL_ENV: {
-		schema: parseOptionalString,
-		description:
-			'Von Vercel gesetzt (production, preview, development); steuert, ob die Seiten indexierbar sind.'
-	},
-	SEND_LIMIT_PER_HOUR: {
+	SEND_LIMIT_PER_MINUTE: {
 		schema: parseOptionalPositiveInteger,
-		description: 'Nur für E2E-Tests: Sendelimit pro Stunde und IP (Standard 20).'
+		description:
+			'Nur für E2E-Tests: Sendelimit pro Minute und IP im Speicher statt über das Cloudflare-Binding.'
 	}
 });

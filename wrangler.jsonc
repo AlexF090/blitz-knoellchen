@@ -1,0 +1,39 @@
+// Konfiguration des Cloudflare Workers.
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "blitz-knoellchen",
+	// Ausgabe von @sveltejs/adapter-cloudflare. Ohne `main` und `assets` baut der Adapter für
+	// Cloudflare Pages statt für Workers.
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	// Nicht neuer als das Release-Datum der installierten workerd-Version (s. package-lock.json),
+	// sonst warnt wrangler. Ab 2026-08-04 ist nodejs_compat standardmäßig aktiv.
+	"compatibility_date": "2026-11-17",
+	"observability": {
+		"enabled": true
+	},
+	// Produktionsdomain. Setzt voraus, dass die Zone appool.de bei Cloudflare aktiv ist; Cloudflare
+	// legt DNS-Eintrag und Zertifikat selbst an.
+	"routes": [{ "pattern": "blitz-knoellchen.appool.de", "custom_domain": true }],
+	// Keine zweite öffentliche Adresse neben der Produktionsdomain. Für einen Rückweg ohne
+	// Cloudflare-DNS auf true setzen; dort greift dann `X-Robots-Tag: noindex` (applyIndexingPolicy).
+	"workers_dev": false,
+	// Limits pro Client-IP und Cloudflare-Standort, ungefähr gezählt. Gleiche Werte wie in
+	// src/lib/server/rateLimiters.ts. `namespace_id` ist pro Cloudflare-Konto eindeutig; weitere
+	// Worker im selben Konto brauchen eigene IDs.
+	"ratelimits": [
+		{
+			"name": "SEND_RATE_LIMITER",
+			"namespace_id": "1001",
+			"simple": { "limit": 10, "period": 60 }
+		},
+		{
+			"name": "GEOCODE_RATE_LIMITER",
+			"namespace_id": "1002",
+			"simple": { "limit": 30, "period": 60 }
+		}
+	]
+}

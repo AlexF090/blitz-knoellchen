@@ -13,7 +13,10 @@ describe('Footer', () => {
 
 		await expect.element(page.getByRole('link', { name: 'FAQ' })).toBeInTheDocument();
 		await expect.element(page.getByRole('link', { name: 'Datenschutz' })).toBeInTheDocument();
-		await expect.element(page.getByRole('link', { name: 'LocationIQ' })).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('link', { name: 'Powered by Geoapify' }))
+			.toHaveAttribute('href', 'https://www.geoapify.com/');
+		await expect.element(page.getByRole('link', { name: 'OpenStreetMap' })).toBeInTheDocument();
 		expect(page.getByRole('button', { name: 'App installieren' }).elements()).toHaveLength(0);
 	});
 

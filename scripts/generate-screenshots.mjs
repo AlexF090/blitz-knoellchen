@@ -34,7 +34,7 @@ const PLACEHOLDER_ENV = {
 	RECIPIENT_EMAIL_DEMO: 'demo-empfaenger@example.org',
 	RECIPIENT_EMAIL_LIVE: 'bussgeldstelle@example.org',
 	BREVO_API_KEY: 'screenshot-dummy-key',
-	LOCATIONIQ_API_KEY: 'screenshot-dummy-key'
+	GEOAPIFY_API_KEY: 'screenshot-dummy-key'
 };
 
 // Frei erfundene Anzeige — keine realen Personen-, Adress- oder Kennzeichendaten im README.
@@ -107,19 +107,31 @@ const run = async () => {
 	children.push(brevoMock);
 	await waitForServer(`http://localhost:${BREVO_MOCK_PORT}/__mock__/requests?since=0`);
 
-	// Die Empfänger-Adressen MÜSSEN schon beim Build überschrieben werden: sie sind in
-	// `src/env.ts` als `static: true` deklariert und werden fest eingebacken. Ohne das landet die echte Adresse
-	// aus der lokalen .env in der E-Mail-Vorschau — und damit in einem Screenshot im README.
-	const app = startProcess('npm', ['run', 'build'], PLACEHOLDER_ENV);
+	const app = startProcess('npm', ['run', 'build'], {});
 	children.push(app);
 	await new Promise((resolve, reject) => {
 		app.on('exit', (code) => (code === 0 ? resolve() : reject(new Error('Build fehlgeschlagen'))));
 	});
 
-	const preview = startProcess('npm', ['run', 'preview', '--', '--port', String(APP_PORT)], {
+	// Alle Werte per `--var`: Sie haben in wrangler dev Vorrang vor .env und .dev.vars. Sonst
+	// landen die echten Adressen aus der lokalen .env in der E-Mail-Vorschau und damit in einem
+	// Screenshot im README.
+	const variables = {
 		...PLACEHOLDER_ENV,
 		BREVO_API_URL: `http://localhost:${BREVO_MOCK_PORT}/v3/smtp/email`
-	});
+	};
+	const preview = startProcess(
+		'npm',
+		[
+			'run',
+			'preview',
+			'--',
+			'--port',
+			String(APP_PORT),
+			...Object.entries(variables).flatMap(([key, value]) => ['--var', `${key}:${value}`])
+		],
+		{}
+	);
 	children.push(preview);
 	await waitForServer(BASE_URL);
 

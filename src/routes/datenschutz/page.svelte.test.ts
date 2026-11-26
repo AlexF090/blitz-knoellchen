@@ -35,22 +35,54 @@ describe('Datenschutz-Seite', () => {
 		expect(text).not.toMatch(/Tel(efon)?[.:]/);
 	});
 
-	it('nennt Brevo (Sendinblue GmbH, Berlin) und Vercel als Dienstleister', async () => {
+	const renderText = async () => {
 		await render(DatenschutzPage);
+		return (document.body.textContent ?? '').replace(/\s+/g, ' ');
+	};
 
-		const text = document.body.textContent ?? '';
-		expect(text).toContain('Sendinblue GmbH, Berlin');
-		expect(text).toContain('Vercel');
+	it('nennt Brevo (Brevo GmbH, Berlin), Cloudflare und Geoapify als Dienstleister', async () => {
+		const text = await renderText();
+
+		expect(text).toContain('Brevo GmbH, Berlin');
+		expect(text).toContain('Mit Brevo besteht ein Auftragsverarbeitungsvertrag');
+		expect(text).toContain('Mit Hetzner besteht ein Auftragsverarbeitungsvertrag');
+		expect(text).toContain('Cloudflare, Inc.');
+		expect(text).toContain('Geoapify');
 	});
 
-	it('nennt Vercel Inc. (USA) mit Drittlandübermittlung und Auftragsverarbeitungsvertrag', async () => {
-		await render(DatenschutzPage);
+	it('nennt Cloudflare mit Drittlandübermittlung und Auftragsverarbeitungsvertrag', async () => {
+		const text = await renderText();
 
-		const text = (document.body.textContent ?? '').replace(/\s+/g, ' ');
-		expect(text).toContain('Vercel Inc.');
 		expect(text).toContain('Data Privacy Framework');
 		expect(text).toContain('Standardvertragsklauseln');
 		expect(text).toContain('Auftragsverarbeitungsvertrag');
+	});
+
+	it('nennt keine früheren Dienstleister und keine Reichweitenmessung', async () => {
+		const text = await renderText();
+
+		expect(text).not.toContain('Vercel');
+		expect(text).not.toContain('LocationIQ');
+		expect(text).not.toContain('BigDataCloud');
+		expect(text).toContain(
+			'Eine Reichweitenmessung oder Analyse deines Nutzungsverhaltens findet nicht statt'
+		);
+	});
+
+	it('nennt Widerspruchsrecht, zuständige Aufsichtsbehörde und Pflichtangaben nach Art. 13', async () => {
+		const text = await renderText();
+
+		expect(text).toContain('Widerspruchsrecht (Art. 21 DSGVO)');
+		expect(text).toContain('LDI NRW');
+		expect(text).toContain('Die Nutzung der App ist freiwillig');
+		expect(text).toContain('automatisierte Entscheidungsfindung');
+	});
+
+	it('erklärt Demo-Modus und die fehlende Information der gemeldeten Person', async () => {
+		const text = await renderText();
+
+		expect(text).toContain('Demo-Modus');
+		expect(text).toContain('Art. 14 Abs. 5 lit. b DSGVO');
 	});
 
 	it('nennt das Betreiber-Postfach bei Hetzner mit 6 Monaten Speicherdauer und Verjährung', async () => {

@@ -9,14 +9,14 @@ Vulnerability Reporting aktiviert ist (Settings → Security); bis dahin liefert
 
 Relevant sind insbesondere:
 
-- Wege, über die serverseitige API-Schlüssel (Brevo, LocationIQ) nach außen gelangen können
+- Wege, über die serverseitige API-Schlüssel (Brevo, Geoapify) nach außen gelangen können
 - Missbrauch der Proxy-Endpunkte `/api/geocode` und `/api/geocode/autocomplete`
 - Möglichkeiten, über `/api/send` E-Mails mit fremdem Absender oder an fremde Empfänger zu verschicken
 - XSS über Formulareingaben oder Foto-Metadaten
 
 ## Was diese App schützt
 
-- **API-Schlüssel bleiben serverseitig.** Brevo und LocationIQ werden ausschließlich aus
+- **API-Schlüssel bleiben serverseitig.** Brevo und Geoapify werden ausschließlich aus
   SvelteKit-Server-Endpunkten heraus aufgerufen; der Browser spricht nur eigene `/api/*`-Routen an.
 - **Der Hauptempfänger wird nie vom Client bestimmt.** Der Client schickt lediglich `demo` oder `live`;
   die zugehörige Adresse löst der Server aus seiner eigenen Konfiguration auf. Ein fehlender oder
@@ -37,13 +37,16 @@ Relevant sind insbesondere:
 
 ## Bekannte Einschränkungen
 
-- Das Rate-Limiting der Geocoding-Proxys (`src/lib/geocode/rateLimiter.ts`) hält den Modul-State
-  pro Server-Prozess. In einer Serverless-Umgebung mit mehreren parallelen Instanzen schützt es
-  daher das eigene LocationIQ-Kontingent nur näherungsweise und ist kein Missbrauchsschutz.
-- `/api/send` drosselt auf 20 Anfragen pro Stunde und IP, hat aber kein CAPTCHA. Das Limit liegt
-  wie beim Geocoding im Speicher und gilt nur pro Serverless-Instanz. Weil die BCC-Kopie an die
-  vom Client angegebene Adresse geht, lassen sich darüber weiterhin E-Mails von der
-  Absender-Domain an beliebige Adressen auslösen, nur langsamer.
+- Die Rate-Limits laufen über das Cloudflare Rate Limiting Binding (`wrangler.jsonc`,
+  `src/lib/server/rateLimiters.ts`): `/api/send` 10 und die Geocoding-Proxys zusammen 30
+  Anfragen pro Minute und IP. Cloudflare zählt pro Standort und nur ungefähr, das Limit ist also
+  kein exakter globaler Zähler.
+- `/api/send` hat kein CAPTCHA. Weil die BCC-Kopie an die vom Client angegebene Adresse geht,
+  lassen sich darüber weiterhin E-Mails von der Absender-Domain an beliebige Adressen auslösen,
+  nur langsamer.
+- Der Mindestabstand von 250 ms zwischen Geoapify-Anfragen (`src/lib/geocode/rateLimiter.ts`)
+  gilt pro Worker-Isolate. Er schont das eigene Geoapify-Kontingent nur näherungsweise und ist
+  kein Missbrauchsschutz.
 - `require-trusted-types-for: 'script'` ist bewusst nicht aktiv — der Chunk-Loader von
   SvelteKit weist `script.src` dynamisch zu, was die Hydration blockieren würde. Begründung im
   CSP-Block in `vite.config.ts`.

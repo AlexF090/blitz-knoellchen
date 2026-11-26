@@ -61,8 +61,8 @@
 				Die App verarbeitet personenbezogene Daten an drei Stellen: beim Auslesen der Foto-Metadaten
 				direkt auf deinem Gerät, beim Ermitteln einer Adresse aus GPS-Koordinaten und beim Versand
 				der fertigen Anzeige per E-Mail. Antworten der Bußgeldstelle an die Absenderadresse der App
-				bewahrt der Betreiber befristet auf (Abschnitte 5 und 11). Zusätzlich wird eine anonyme,
-				cookie-lose Reichweitenmessung (Abschnitt 7) eingesetzt.
+				bewahrt der Betreiber befristet auf (Abschnitte 5 und 11). Eine Reichweitenmessung oder
+				Analyse deines Nutzungsverhaltens findet nicht statt, Cookies werden nicht gesetzt.
 			</p>
 		</section>
 
@@ -83,26 +83,21 @@
 			<p>
 				Um aus den GPS-Koordinaten des Fotos eine lesbare Adresse (Straße, Hausnummer, PLZ, Ort) zu
 				ermitteln, sendet die App die Koordinaten über einen eigenen Server-Endpunkt an den
-				Geocoding-Dienst <strong>LocationIQ</strong>. Ist dieser nicht erreichbar, wird ersatzweise
-				der Dienst <strong>BigDataCloud</strong> angefragt. Beide Dienste erhalten dabei ausschließlich
-				die Koordinaten, keine weiteren Formular- oder Profildaten. Gelingt die Ermittlung nicht, kannst
+				Geocoding-Dienst <strong>Geoapify</strong>. Geoapify erhält dabei ausschließlich die
+				Koordinaten, keine weiteren Formular- oder Profildaten. Gelingt die Ermittlung nicht, kannst
 				du die Adresse manuell eingeben.
-			</p>
-			<p class="mt-2">
-				<strong>LocationIQ</strong> (Unwired Labs, Indien) und <strong>BigDataCloud</strong> (Australien)
-				sitzen außerhalb der EU/des EWR, in Ländern ohne Angemessenheitsbeschluss der EU-Kommission. Die
-				Übermittlung der Koordinaten bzw. des eingetippten Adresstexts an diese Anbieter stellt daher
-				eine Datenübermittlung in ein Drittland dar (Art. 44 ff. DSGVO). Laut eigenen Angaben von LocationIQ
-				wird der Inhalt der Anfragen (Koordinaten bzw. Adresstext) dabei grundsätzlich nicht gespeichert
-				oder protokolliert, sondern nur für die einzelne Anfrage verarbeitet.
 			</p>
 			<p class="mt-2">
 				Zusätzlich bietet die App bei der manuellen Adresseingabe (sowohl bei deiner eigenen
 				Anschrift als auch beim Tatort) eine Adressvorschlagsliste während des Tippens an. Dafür
-				wird dein bereits eingetippter Text – anders als beim Reverse Geocoding oben – ebenfalls
-				über einen eigenen Server-Endpunkt live an <strong>LocationIQ</strong> übertragen, um passende
-				Vorschläge zu ermitteln; das kann auch bei deiner eigenen Adresse geschehen. Diese Anfragen laufen
-				ohne Fallback auf BigDataCloud; schlägt die Anfrage fehl, erscheint einfach keine Vorschlagsliste.
+				wird dein bereits eingetippter Text über einen eigenen Server-Endpunkt an Geoapify
+				übertragen, um passende Vorschläge zu ermitteln; das kann auch bei deiner eigenen Adresse
+				geschehen. Schlägt die Anfrage fehl, erscheint einfach keine Vorschlagsliste.
+			</p>
+			<p class="mt-2">
+				Geoapify ist ein Anbieter mit Sitz in der EU; die App nutzt dessen EU-Endpunkt, die
+				Verarbeitung findet laut Auftragsverarbeitungsvertrag in der EU bzw. im EWR statt. Mit
+				Geoapify besteht ein Auftragsverarbeitungsvertrag nach Art. 28 DSGVO.
 			</p>
 			<p class="mt-2">
 				Rechtsgrundlage für beide Funktionen ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse
@@ -117,10 +112,11 @@
 				Telefonnummer, Kennzeichen, Tatort, Tatzeit, Verstoßart, ggf. Anmerkungen sowie das
 				Beweisfoto – über einen eigenen Server-Endpunkt an den E-Mail-Versanddienst <strong>
 					Brevo
-				</strong> (Sendinblue GmbH, Berlin, EU-Anbieter) übergeben, der die E-Mail im Namen dieser App
-				an die Bußgeldstelle Köln verschickt. Deine E-Mail-Adresse wird dabei als Antwortadresse (Reply-To)
-				sowie als Kopie-Empfänger (Bcc) hinterlegt, damit du automatisch eine Kopie der Anzeige erhältst
-				– dein E-Mail-Postfach oder -Passwort wird dafür nicht benötigt und nicht abgefragt.
+				</strong> (Brevo GmbH, Berlin, EU-Anbieter) übergeben, der die E-Mail im Namen dieser App an die
+				Bußgeldstelle Köln verschickt. Deine E-Mail-Adresse wird dabei als Antwortadresse (Reply-To) sowie
+				als Kopie-Empfänger (Bcc) hinterlegt, damit du automatisch eine Kopie der Anzeige erhältst – dein
+				E-Mail-Postfach oder -Passwort wird dafür nicht benötigt und nicht abgefragt. Mit Brevo besteht
+				ein Auftragsverarbeitungsvertrag nach Art. 28 DSGVO (Teil der Nutzungsbedingungen von Brevo).
 			</p>
 			<p class="mt-2">
 				Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erfüllung deines Wunsches, die Anzeige in
@@ -134,7 +130,7 @@
 				Kennzeichen und Datum. Der Betreiber bewahrt sie als Nachweis des Versands auf und, falls die
 				Bußgeldstelle Rückfragen an diese Adresse schickt, um sie an dich weiterzuleiten. Rechtsgrundlage
 				ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am Nachweis des Versands und an der Bearbeitung
-				von Rückfragen).
+				von Rückfragen). Mit Hetzner besteht ein Auftragsverarbeitungsvertrag nach Art. 28 DSGVO.
 			</p>
 		</section>
 
@@ -162,27 +158,27 @@
 		<section>
 			<h2>7. Hosting</h2>
 			<p>
-				Diese App wird über <strong>Vercel</strong> gehostet, Serverstandort Frankfurt am Main (Deutschland).
-				Beim Aufruf der App verarbeitet Vercel technisch notwendige Zugriffsdaten (z. B. IP-Adresse, Zeitpunkt
-				des Zugriffs) zur Bereitstellung und Absicherung des Dienstes. Diese technischen Zugriffs-Logs
-				werden von Vercel standardmäßig nur 1 Stunde vorgehalten (länger nur, falls der Betreiber optional
-				erweitertes Logging hinzubucht). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes
-				Interesse am sicheren und stabilen Betrieb der App).
+				Diese App läuft auf der Plattform <strong>Cloudflare Workers</strong> der Cloudflare, Inc. (USA).
+				Cloudflare betreibt außerdem die DNS-Auflösung der Domain appool.de. Die App wird über das weltweite
+				Netz von Cloudflare ausgeliefert; ein fester Serverstandort lässt sich dabei nicht festlegen.
+				Beim Aufruf verarbeitet Cloudflare technisch notwendige Zugriffsdaten (z. B. IP-Adresse, Zeitpunkt,
+				aufgerufene Adresse) und beim Absenden die Formulardaten auf dem Weg zu Brevo. Protokolle der
+				Server-Endpunkte (ohne Formularinhalte) werden 3 Tage aufbewahrt. Rechtsgrundlage ist Art. 6 Abs.
+				1 lit. f DSGVO (berechtigtes Interesse am sicheren und stabilen Betrieb der App).
 			</p>
 			<p class="mt-2">
-				Anbieter ist die <strong>Vercel Inc.</strong> mit Sitz in den USA. Auch wenn die Auslieferung
-				aus Frankfurt erfolgt, kann Vercel als US-Unternehmen die Daten verarbeiten; das stellt eine mögliche
-				Datenübermittlung in ein Drittland dar (Art. 44 ff. DSGVO). Diese stützt sich nach Angaben von
-				Vercel auf das EU-US Data Privacy Framework (Angemessenheitsbeschluss der EU-Kommission) bzw.
-				ergänzend auf Standardvertragsklauseln. Mit Vercel besteht ein Auftragsverarbeitungsvertrag (Data
-				Processing Addendum) nach Art. 28 DSGVO.
+				Zum Schutz vor Missbrauch begrenzt die App, wie viele Anzeigen und Adressabfragen pro Minute
+				von einer IP-Adresse aus möglich sind. Dafür zählt Cloudflare die Anfragen pro IP-Adresse
+				kurzzeitig, die Zähler verfallen nach einer Minute. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f
+				DSGVO (berechtigtes Interesse, den Versand von E-Mails über die App vor Missbrauch zu
+				schützen).
 			</p>
 			<p class="mt-2">
-				Zusätzlich nutzt diese App <strong>Vercel Web Analytics</strong>, um anonyme, aggregierte
-				Nutzungsstatistiken (z. B. Seitenaufrufe) zu erheben. Dieser Dienst arbeitet ohne Cookies
-				und ohne dauerhafte Speicherung der IP-Adresse; eine Zuordnung zu dir als Person findet
-				nicht statt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der
-				Weiterentwicklung und Verbesserung der App auf Basis anonymer Nutzungszahlen).
+				Da Cloudflare ein US-Unternehmen ist, kann eine Übermittlung in ein Drittland stattfinden
+				(Art. 44 ff. DSGVO). Sie stützt sich auf das EU-US Data Privacy Framework
+				(Angemessenheitsbeschluss der EU-Kommission) und ergänzend auf Standardvertragsklauseln. Mit
+				Cloudflare besteht ein Auftragsverarbeitungsvertrag (Data Processing Addendum) nach Art. 28
+				DSGVO.
 			</p>
 		</section>
 
@@ -194,6 +190,11 @@
 				Köln übermittelt, damit diese den gemeldeten Verstoß bearbeiten kann. Diese Übermittlung ist
 				der eigentliche Zweck der App und beruht auf deiner ausdrücklichen Anweisung beim Absenden
 				des Formulars.
+			</p>
+			<p class="mt-2">
+				Im <strong>Demo-Modus</strong> geht die Anzeige nicht an die Bußgeldstelle, sondern an eine Test-Adresse
+				des Betreibers. Er dient nur zum Ausprobieren; der Betreiber löscht solche Test-Anzeigen ohne
+				weitere Verwendung.
 			</p>
 		</section>
 
@@ -214,6 +215,12 @@
 				etwaiger Auskunfts- oder Löschungsansprüche der betroffenen Person – in der Verantwortung
 				der Bußgeldstelle als datenverarbeitende Behörde, nicht mehr bei dieser App.
 			</p>
+			<p class="mt-2">
+				Die gemeldete Person wird durch diese App nicht gesondert informiert (Art. 14 Abs. 5 lit. b
+				DSGVO): Der Betreiber kennt weder ihren Namen noch ihre Anschrift und könnte sie nur über
+				das Kennzeichen ermitteln, was mit einem unverhältnismäßigen Aufwand und einem zusätzlichen
+				Eingriff verbunden wäre. Sie erfährt von der Anzeige im Verfahren der Bußgeldstelle.
+			</p>
 		</section>
 
 		<section>
@@ -221,11 +228,27 @@
 			<p>
 				Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16 DSGVO), Löschung (Art.
 				17 DSGVO), Einschränkung der Verarbeitung (Art. 18 DSGVO), Datenübertragbarkeit (Art. 20
-				DSGVO) sowie Widerspruch (Art. 21 DSGVO) gegen die Verarbeitung deiner Daten. Soweit Daten
-				ausschließlich lokal auf deinem Gerät gespeichert sind (Abschnitt 6), kannst du diese Rechte
-				direkt über deine Browser-Einstellungen wahrnehmen. Für alle anderen Anliegen wende dich an
-				die oben genannte Kontaktadresse. Außerdem steht dir ein Beschwerderecht bei einer
-				Datenschutz-Aufsichtsbehörde zu.
+				DSGVO) und Datenübertragbarkeit (Art. 20 DSGVO). Soweit Daten ausschließlich lokal auf
+				deinem Gerät gespeichert sind (Abschnitt 6), kannst du diese Rechte direkt über deine
+				Browser-Einstellungen wahrnehmen. Für alle anderen Anliegen wende dich an die oben genannte
+				Kontaktadresse.
+			</p>
+			<p class="mt-2 rounded-card bg-surface p-3 shadow-card">
+				<strong>Widerspruchsrecht (Art. 21 DSGVO):</strong> Soweit eine Verarbeitung auf Art. 6 Abs. 1
+				lit. f DSGVO beruht, kannst du ihr aus Gründen, die sich aus deiner besonderen Situation ergeben,
+				jederzeit widersprechen. Eine formlose Nachricht an die oben genannte Kontaktadresse genügt.
+			</p>
+			<p class="mt-2">
+				Du hast außerdem das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.
+				Zuständig für den Betreiber ist die Landesbeauftragte für Datenschutz und
+				Informationsfreiheit Nordrhein-Westfalen (LDI NRW), Kavalleriestraße 2–4, 40213 Düsseldorf.
+			</p>
+			<p class="mt-2">
+				Die Nutzung der App ist freiwillig; du bist weder gesetzlich noch vertraglich verpflichtet,
+				Daten anzugeben. Ohne Name, Anschrift und E-Mail-Adresse kann die Anzeige allerdings nicht
+				versendet werden, weil die Bußgeldstelle anonyme Anzeigen nicht verfolgt. Eine
+				automatisierte Entscheidungsfindung einschließlich Profiling (Art. 22 DSGVO) findet nicht
+				statt.
 			</p>
 		</section>
 
