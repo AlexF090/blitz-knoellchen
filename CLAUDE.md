@@ -42,7 +42,8 @@ npm run og-image                       # Link-Vorschaubild static/og-image.png n
   Stands — keine Vorgeschichte, die gehört in die Commit-Message. Details
   unter „Coding-Konventionen" in `docs/architektur.md`.
 - Commits auf Deutsch im Conventional-Commits-Format (`feat`, `fix`, `chore`, `refactor`, `docs`,
-  `test`, `ci`). Der Pre-Commit-Hook führt Prettier, ESLint und `npm run check` aus.
+  `test`, `ci`). Der Pre-Commit-Hook führt Prettier, ESLint und `npm run check` aus,
+  der Pre-Push-Hook die Unit-Tests mit Coverage-Schwellen.
 
 ## Tests (Vitest 5)
 
