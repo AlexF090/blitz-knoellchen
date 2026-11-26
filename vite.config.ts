@@ -27,7 +27,7 @@ export default defineConfig({
 				// von Vercel noch nicht unterstützten) Node-Version und bricht den Build sonst ab.
 				// Version synchron zu .nvmrc und engines.node halten. Ein Node-Major-Wechsel betrifft alle
 				// drei Stellen und ist bewusst manuell.
-				adapter: adapter({ runtime: 'nodejs24.x' }),
+				adapter: adapter({ runtime: 'nodejs26.x' }),
 
 				// CSP über SvelteKits eingebaute Unterstützung statt manuell in hooks.server.ts, damit
 				// SvelteKit das von ihm selbst injizierte Bootstrap-<script> automatisch per Nonce/Hash
