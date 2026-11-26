@@ -30,6 +30,15 @@ describe('createLocationIqAutocompleteProvider', () => {
 		expect(fetchFn).toHaveBeenCalled();
 	});
 
+	it('fragt den EU-Endpunkt von LocationIQ an', async () => {
+		const fetchFn = vi.fn(async () => new Response(JSON.stringify([]))) as unknown as typeof fetch;
+		const provider = createLocationIqAutocompleteProvider('test-key', fetchFn);
+
+		await provider.search('Domklo');
+
+		expect(new URL(String(vi.mocked(fetchFn).mock.calls[0][0])).host).toBe('eu1.locationiq.com');
+	});
+
 	it('sendet ein Timeout-Signal und mappt Vorschläge inkl. label', async () => {
 		const fetchFn = vi.fn(async (_url, init) => {
 			expect(init?.signal).toBeInstanceOf(AbortSignal);

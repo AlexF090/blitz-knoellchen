@@ -85,6 +85,17 @@ describe('createLocationIqProvider', () => {
 		await expect(locationIq.lookup(50.9, 6.9)).rejects.toThrow(/Rate-Limiting.*429/);
 	});
 
+	it('fragt den EU-Endpunkt von LocationIQ an', async () => {
+		const fetchFn = vi.fn(
+			async () => new Response(JSON.stringify({ address: { city: 'Köln' } }))
+		) as unknown as typeof fetch;
+		const locationIq = createLocationIqProvider('test-key', fetchFn);
+
+		await locationIq.lookup(50.9, 6.9);
+
+		expect(new URL(String(vi.mocked(fetchFn).mock.calls[0][0])).host).toBe('eu1.locationiq.com');
+	});
+
 	it('sendet ein Timeout-Signal und liefert Straße/Hausnummer/PLZ/Ort aus address', async () => {
 		const fetchFn = vi.fn(async (_url, init) => {
 			expect(init?.signal).toBeInstanceOf(AbortSignal);

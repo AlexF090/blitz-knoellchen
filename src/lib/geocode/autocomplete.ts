@@ -52,7 +52,7 @@ export const createLocationIqAutocompleteProvider = (apiKey: string, fetchFn: ty
 		async search(query: string): Promise<AddressSuggestion[]> {
 			if (query.trim().length < MIN_QUERY_LENGTH) return [];
 
-			const url = `https://api.locationiq.com/v1/autocomplete?key=${apiKey}&q=${encodeURIComponent(query)}&format=json&accept-language=de&countrycodes=de&limit=5&normalizecity=1&viewbox=${KOELN_VIEWBOX}&bounded=1`;
+			const url = `https://eu1.locationiq.com/v1/autocomplete?key=${apiKey}&q=${encodeURIComponent(query)}&format=json&accept-language=de&countrycodes=de&limit=5&normalizecity=1&viewbox=${KOELN_VIEWBOX}&bounded=1`;
 			const response = await fetchFn(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
 			if (!response.ok) throw new Error(describeHttpError('LocationIQ', response.status));
 

@@ -31,7 +31,7 @@ export const createLocationIqProvider = (
 			// accept-language=de für deutsche Ortsnamen; normalizecity=1 stellt sicher, dass
 			// `address.city` auch dann befüllt ist, wenn Nominatim/LocationIQ den Ort nur als
 			// city_district/town/village etc. taggt (z. B. Kölner Stadtteile).
-			const url = `https://us1.locationiq.com/v1/reverse?key=${apiKey}&lat=${lat}&lon=${lon}&format=json&accept-language=de&normalizecity=1`;
+			const url = `https://eu1.locationiq.com/v1/reverse?key=${apiKey}&lat=${lat}&lon=${lon}&format=json&accept-language=de&normalizecity=1`;
 			const response = await fetchFn(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
 			if (!response.ok) throw new Error(describeHttpError('LocationIQ', response.status));
 			const data = await response.json();
