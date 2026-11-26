@@ -1,0 +1,2 @@
+# Unit-Tests mit Coverage-Schwellen vor jedem Push, damit die CI nicht erst nach dem Push scheitert.
+npm run test:unit -- --run --coverage

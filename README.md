@@ -152,6 +152,7 @@ npm run preview     # Production-Build lokal ansehen
 ```
 
 Ein Husky-Pre-Commit-Hook lässt `lint-staged` laufen (Prettier, ESLint mit `--fix`, Typprüfung).
+Der Pre-Push-Hook führt die Unit-Tests mit Coverage-Schwellen aus (`npm run test:unit -- --run --coverage`).
 Die README-Screenshots erzeugt `npm run screenshots` reproduzierbar aus dem Production-Build —
 gegen denselben Brevo-Mock wie die E2E-Tests, mit frei erfundenen Testdaten.
 
