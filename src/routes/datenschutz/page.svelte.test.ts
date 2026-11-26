@@ -12,4 +12,34 @@ describe('Datenschutz-Seite', () => {
 			.toBeInTheDocument();
 		await expect.element(page.getByRole('link', { name: 'Zurück' })).toBeInTheDocument();
 	});
+
+	it('nennt Verantwortlichen mit Name und Postanschrift sowie die Kontaktadressen', async () => {
+		await render(DatenschutzPage);
+
+		await expect.element(page.getByText('Alexander Fischenich')).toBeInTheDocument();
+		await expect.element(page.getByText('Schwester-Firma-Weg 24')).toBeInTheDocument();
+		await expect.element(page.getByText('51143 Köln')).toBeInTheDocument();
+		await expect
+			.element(page.getByRole('link', { name: 'kontakt@appool.de' }))
+			.toHaveAttribute('href', 'mailto:kontakt@appool.de');
+		await expect
+			.element(page.getByRole('link', { name: 'blitz-knoellchen@appool.de' }))
+			.toHaveAttribute('href', 'mailto:blitz-knoellchen@appool.de');
+	});
+
+	it('enthält keine Telefonnummer und keine alte Kontaktadresse', async () => {
+		await render(DatenschutzPage);
+
+		const text = document.body.textContent ?? '';
+		expect(text).not.toContain('pm.me');
+		expect(text).not.toMatch(/Tel(efon)?[.:]/);
+	});
+
+	it('nennt Brevo (Sendinblue GmbH, Berlin) und Vercel als Dienstleister', async () => {
+		await render(DatenschutzPage);
+
+		const text = document.body.textContent ?? '';
+		expect(text).toContain('Sendinblue GmbH, Berlin');
+		expect(text).toContain('Vercel');
+	});
 });

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import PageHeader from '#lib/components/PageHeader.svelte';
+	import { SITE_OPERATOR } from '#lib/site.ts';
 </script>
 
 <svelte:head>
@@ -25,8 +26,23 @@
 				formlose Anzeige per E-Mail an die Bußgeldstelle der Stadt Köln zu verschicken.
 				Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO):
 			</p>
-			<p class="mt-1 rounded-card bg-surface p-3 shadow-card">
-				Kontakt: <a href="mailto:AlexF090@pm.me" class="underline">AlexF090@pm.me</a>
+			<address class="mt-1 rounded-card bg-surface p-3 not-italic shadow-card">
+				{SITE_OPERATOR.name}<br />
+				{SITE_OPERATOR.street}<br />
+				{SITE_OPERATOR.postalCode}
+				{SITE_OPERATOR.city}<br />
+				{SITE_OPERATOR.country}
+			</address>
+			<p class="mt-2">
+				Allgemeiner Kontakt:
+				<a href="mailto:{SITE_OPERATOR.generalEmail}" class="underline">
+					{SITE_OPERATOR.generalEmail}
+				</a>
+				<br />
+				Fragen zu dieser App und zum Datenschutz:
+				<a href="mailto:{SITE_OPERATOR.supportEmail}" class="underline">
+					{SITE_OPERATOR.supportEmail}
+				</a>
 			</p>
 		</section>
 
@@ -91,10 +107,10 @@
 				Telefonnummer, Kennzeichen, Tatort, Tatzeit, Verstoßart, ggf. Anmerkungen sowie das
 				Beweisfoto – über einen eigenen Server-Endpunkt an den E-Mail-Versanddienst <strong>
 					Brevo
-				</strong> (Sinch Engage GmbH, EU-Anbieter) übergeben, der die E-Mail im Namen dieser App an die
-				Bußgeldstelle Köln verschickt. Deine E-Mail-Adresse wird dabei als Antwortadresse (Reply-To) sowie
-				als Kopie-Empfänger (Bcc) hinterlegt, damit du automatisch eine Kopie der Anzeige erhältst – dein
-				E-Mail-Postfach oder -Passwort wird dafür nicht benötigt und nicht abgefragt.
+				</strong> (Sendinblue GmbH, Berlin, EU-Anbieter) übergeben, der die E-Mail im Namen dieser App
+				an die Bußgeldstelle Köln verschickt. Deine E-Mail-Adresse wird dabei als Antwortadresse (Reply-To)
+				sowie als Kopie-Empfänger (Bcc) hinterlegt, damit du automatisch eine Kopie der Anzeige erhältst
+				– dein E-Mail-Postfach oder -Passwort wird dafür nicht benötigt und nicht abgefragt.
 			</p>
 			<p class="mt-2">
 				Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Erfüllung deines Wunsches, die Anzeige in
@@ -201,7 +217,7 @@
 			<h2>12. Änderungen dieser Datenschutzerklärung</h2>
 			<p>
 				Diese Datenschutzerklärung wird bei Bedarf angepasst, wenn sich die Datenverarbeitung in der
-				App ändert. Stand: September 2026.
+				App ändert. Stand: November 2026.
 			</p>
 		</section>
 	</div>
