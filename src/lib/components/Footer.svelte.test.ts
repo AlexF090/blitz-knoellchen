@@ -17,6 +17,15 @@ describe('Footer', () => {
 		expect(page.getByRole('button', { name: 'App installieren' }).elements()).toHaveLength(0);
 	});
 
+	it('verlinkt das Impressum auf appool.de in einem neuen Tab', async () => {
+		await render(Footer);
+
+		const link = page.getByRole('link', { name: 'Impressum' });
+		await expect.element(link).toHaveAttribute('href', 'https://appool.de/impressum');
+		await expect.element(link).toHaveAttribute('target', '_blank');
+		await expect.element(link).toHaveAttribute('rel', 'noopener noreferrer');
+	});
+
 	it('zeigt den Install-Button nach beforeinstallprompt und ruft installPrompt.prompt() beim Klick', async () => {
 		const promptFn = vi.fn().mockResolvedValue(undefined);
 		const event = new Event('beforeinstallprompt', { cancelable: true }) as Event & {
