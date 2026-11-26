@@ -1,9 +1,17 @@
 import { SITE_ORIGIN } from '#lib/site.ts';
 
 /**
- * JSON-LD der App als schema.org-`WebApplication`, serialisiert für ein
- * `<script type="application/ld+json">`. `<` wird maskiert, damit der Inhalt das Skript-Element
- * nicht per `</script>` verlassen kann.
+ * Serialisiert einen Wert für ein `<script type="application/ld+json">`. `<` wird als `\u003c`
+ * maskiert, damit der Inhalt das Skript-Element nicht per `</script>` verlassen kann; JSON.parse
+ * liefert den Originalwert trotzdem zurück.
+ */
+export function serializeJsonLd(value: unknown): string {
+	return JSON.stringify(value).replaceAll('<', '\\u003c');
+}
+
+/**
+ * JSON-LD der App als schema.org-`WebApplication`, serialisiert über
+ * `serializeJsonLd`.
  */
 export function buildStructuredDataJson(): string {
 	const structuredData = {
@@ -17,7 +25,7 @@ export function buildStructuredDataJson(): string {
 		inLanguage: 'de',
 		offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' }
 	};
-	return JSON.stringify(structuredData).replaceAll('<', '\\u003c');
+	return serializeJsonLd(structuredData);
 }
 
 /** Fertiges `<script type="application/ld+json">`-Element zum Einbetten per `{@html}`. */

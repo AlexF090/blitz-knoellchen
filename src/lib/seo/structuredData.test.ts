@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildStructuredDataElement, buildStructuredDataJson } from './structuredData.ts';
+import {
+	buildStructuredDataElement,
+	buildStructuredDataJson,
+	serializeJsonLd
+} from './structuredData.ts';
 
 describe('buildStructuredDataJson', () => {
 	const parsed = JSON.parse(buildStructuredDataJson());
@@ -29,5 +33,16 @@ describe('buildStructuredDataElement', () => {
 
 		expect(element.startsWith('<script type="application/ld+json">{')).toBe(true);
 		expect(element.endsWith('}</script>')).toBe(true);
+	});
+});
+
+describe('serializeJsonLd', () => {
+	it('maskiert "<" und liefert per JSON.parse den Originalwert zurück', () => {
+		const value = { name: '</script><script>alert(1)</script>', nested: ['<b>'] };
+
+		const serialized = serializeJsonLd(value);
+
+		expect(serialized).not.toContain('<');
+		expect(JSON.parse(serialized)).toEqual(value);
 	});
 });
