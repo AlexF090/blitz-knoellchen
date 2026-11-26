@@ -2,6 +2,17 @@
 	import { resolve } from '$app/paths';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import { SITE_OPERATOR } from '#lib/site.ts';
+
+	// Vorab zusammengesetzt: Svelte ergänzt in gemischten Template-Ausdrücken sonst `?? ''`-Zweige.
+	const { generalEmail, supportEmail } = SITE_OPERATOR;
+	const addressLines = [
+		SITE_OPERATOR.name,
+		SITE_OPERATOR.street,
+		`${SITE_OPERATOR.postalCode} ${SITE_OPERATOR.city}`,
+		SITE_OPERATOR.country
+	];
+	const generalMailtoHref = `mailto:${generalEmail}`;
+	const supportMailtoHref = `mailto:${supportEmail}`;
 </script>
 
 <svelte:head>
@@ -27,21 +38,19 @@
 				Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO):
 			</p>
 			<address class="mt-1 rounded-card bg-surface p-3 not-italic shadow-card">
-				{SITE_OPERATOR.name}<br />
-				{SITE_OPERATOR.street}<br />
-				{SITE_OPERATOR.postalCode}
-				{SITE_OPERATOR.city}<br />
-				{SITE_OPERATOR.country}
+				{#each addressLines as line (line)}
+					<span class="block">{line}</span>
+				{/each}
 			</address>
 			<p class="mt-2">
 				Allgemeiner Kontakt:
-				<a href="mailto:{SITE_OPERATOR.generalEmail}" class="underline">
-					{SITE_OPERATOR.generalEmail}
+				<a href={generalMailtoHref} class="underline">
+					{generalEmail}
 				</a>
 				<br />
 				Fragen zu dieser App und zum Datenschutz:
-				<a href="mailto:{SITE_OPERATOR.supportEmail}" class="underline">
-					{SITE_OPERATOR.supportEmail}
+				<a href={supportMailtoHref} class="underline">
+					{supportEmail}
 				</a>
 			</p>
 		</section>
