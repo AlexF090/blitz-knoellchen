@@ -184,8 +184,18 @@ bleiben.
 ### Link-Vorschau über Open Graph mit versioniertem PNG
 
 Messenger und soziale Netzwerke bauen die Vorschau geteilter Links aus den `og:*`- und
-`twitter:*`-Tags in `src/routes/+layout.svelte`. Crawler brauchen absolute URLs; sie entstehen
-aus `page.url.origin` und passen damit auch auf Vercel-Preview-Deployments. `og:image` muss ein
+`twitter:*`-Tags in `src/routes/+layout.svelte`. Crawler brauchen absolute URLs. Sie entstehen
+aus der festen Origin `SITE_ORIGIN` (`src/lib/site.ts`, `https://blitz-knoellchen.appool.de`)
+und dem Pfad (`buildPageMetadata` in `src/lib/seo/pageMetadata.ts`), nicht mehr aus
+`page.url.origin`. Begründung: Mit der Origin der Anfrage zeigten `og:url` und `canonical` auf
+den jeweiligen Aufrufhost, also auch auf `*.vercel.app`-Preview-Deployments und alte Hostnamen;
+Suchmaschinen und Messenger sähen mehrere gleichwertige Adressen. Mit fester Origin bleibt die
+Produktionsdomain die einzige kanonische Adresse. Dazu kommen ein `<link rel="canonical">`,
+JSON-LD (`WebApplication`, `src/lib/seo/structuredData.ts`) und `/sitemap.xml` (vorgerendert,
+`src/lib/seo/sitemap.ts`). Der JSON-LD-Block ist ein Datenblock, `script-src` der CSP gilt für
+ihn nicht; er braucht weder Nonce noch Hash. `<` wird maskiert, damit kein `</script>` ausbricht.
+Das Impressum liegt zentral auf `https://appool.de/impressum` (`/impressum` leitet per 301
+dorthin). `og:image` muss ein
 Rasterbild sein (SVG zeigen die meisten Messenger nicht), deshalb erzeugt
 `npm run og-image` einmalig `static/og-image.png` (1200×630) mit Playwright aus App-Icon,
 Wortmarke und Claim. Das PNG ist versioniert und muss nach Änderungen an Icon, Wortmarke oder
@@ -472,6 +482,9 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `src/lib/pwa/isIosSafari.ts`                         | Reine, testbare UA-Erkennung für den iOS-Install-Hinweis                                                                                                        |
 | `src/lib/validation/formSchema.ts`                   | Handgeschriebene Formular-Validierung                                                                                                                           |
 | `src/routes/datenschutz/+page.svelte`                | Datenschutzerklärung, aus `Footer.svelte` verlinkt                                                                                                              |
+| `src/routes/sitemap.xml/+server.ts`                  | Vorgerenderte Sitemap der öffentlichen Seiten (`src/lib/seo/sitemap.ts`)                                                                                        |
+| `src/routes/impressum/+server.ts`                    | 301-Weiterleitung auf `https://appool.de/impressum`                                                                                                             |
+| `src/lib/site.ts`                                    | Feste Origin `SITE_ORIGIN`, Impressum-URL, Betreiberdaten für die Datenschutzerklärung                                                                          |
 | `static/app-icon.svg`                                | Icon-Quelle für `@vite-pwa/assets-generator`, s. ADR "Branding-Assets" oben                                                                                     |
 | `e2e/`                                               | Playwright-Tests + `fixtures/photo-with-gps.jpg` bzw. `.heic` (EXIF-Testbilder)                                                                                 |
 | `scripts/generate-e2e-fixture.mjs`                   | Einmaliges Setup-Skript für das EXIF-Testbild — nicht Teil der App                                                                                              |
@@ -540,15 +553,15 @@ nicht:
 
 ## Umgebungsvariablen
 
-| Variable               | Zweck                                                                                                              |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `BREVO_API_KEY`        | API-Key für den E-Mail-Versand über Brevo.                                                                         |
-| `EMAIL_FROM`           | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain).                                         |
-| `RECIPIENT_EMAIL_DEMO` | Empfänger im Demo-Modus (interne Test-Adresse), s. ADR "Live-Modus als Standard" oben.                             |
-| `RECIPIENT_EMAIL_LIVE` | Empfänger im Live-Modus (Bußgeldstelle Köln, `bussgeldstelle@stadt-koeln.de`).                                     |
-| `LOCATIONIQ_API_KEY`   | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider), auch für Adress-Autocomplete. |
-| `BREVO_API_URL`        | Optional, nur für E2E-Tests: leitet den Versand auf den lokalen Brevo-Mock um. Gehört nicht nach Vercel.           |
-| `SEND_LIMIT_PER_HOUR`  | Optional, nur für E2E-Tests: hebt das Rate-Limit von `/api/send` (Standard 20 pro Stunde und IP) an.               |
+| Variable               | Zweck                                                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `BREVO_API_KEY`        | API-Key für den E-Mail-Versand über Brevo.                                                                           |
+| `EMAIL_FROM`           | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain). Produktion: `blitz-knoellchen@appool.de`. |
+| `RECIPIENT_EMAIL_DEMO` | Empfänger im Demo-Modus (interne Test-Adresse), s. ADR "Live-Modus als Standard" oben.                               |
+| `RECIPIENT_EMAIL_LIVE` | Empfänger im Live-Modus (Bußgeldstelle Köln, `bussgeldstelle@stadt-koeln.de`).                                       |
+| `LOCATIONIQ_API_KEY`   | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider), auch für Adress-Autocomplete.   |
+| `BREVO_API_URL`        | Optional, nur für E2E-Tests: leitet den Versand auf den lokalen Brevo-Mock um. Gehört nicht nach Vercel.             |
+| `SEND_LIMIT_PER_HOUR`  | Optional, nur für E2E-Tests: hebt das Rate-Limit von `/api/send` (Standard 20 pro Stunde und IP) an.                 |
 
 Alle Variablen sind in `src/env.ts` per `defineEnvVars` deklariert. Die ersten fünf tragen
 `static: true` und werden zur Build-Zeit eingebacken; `BREVO_API_URL` und

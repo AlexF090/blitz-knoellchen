@@ -23,3 +23,10 @@ test('setzt die Sicherheits-Header auch auf API-Antworten', async ({ request }) 
 	expect(headers['x-content-type-options']).toBe('nosniff');
 	expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
 });
+
+test('sperrt die Indexierung außerhalb der Produktion', async ({ request }) => {
+	// Der E2E-Server läuft ohne VERCEL_ENV=production.
+	const response = await request.get('/');
+
+	expect(response.headers()['x-robots-tag']).toBe('noindex');
+});

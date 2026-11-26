@@ -9,6 +9,8 @@
 	import InstallBanner from '#lib/components/InstallBanner.svelte';
 	import IosInstallBanner from '#lib/components/IosInstallBanner.svelte';
 	import PullToRefresh from '#lib/components/PullToRefresh.svelte';
+	import { buildPageMetadata } from '#lib/seo/pageMetadata.ts';
+	import { buildStructuredDataElement } from '#lib/seo/structuredData.ts';
 
 	// Nur im Production-Build: Das Skript liefert allein Vercel unter /_vercel aus, lokal gäbe es
 	// einen 404.
@@ -19,6 +21,10 @@
 
 	const siteName = 'Blitz-Knöllchen';
 	const description = 'Falschparker in rund 30 Sekunden an die Bußgeldstelle Köln melden.';
+	const metadata = $derived(buildPageMetadata(page.url.pathname));
+	// Ein JSON-LD-Block ist ein Datenblock, kein ausführbares Skript: `script-src` der CSP gilt für
+	// ihn nicht, er braucht weder Nonce noch Hash. buildStructuredDataElement maskiert `<`.
+	const structuredDataElement = buildStructuredDataElement();
 </script>
 
 <svelte:head>
@@ -30,19 +36,22 @@
 	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="oklch(20% 0.004 173.48)" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 	<meta name="description" content={description} />
-	<!-- Link-Vorschau in Messengern und sozialen Netzwerken. Crawler brauchen absolute URLs;
-	     die Origin der Anfrage passt auch auf Preview-Deployments. -->
+	<!-- Link-Vorschau in Messengern und sozialen Netzwerken. Crawler brauchen absolute URLs; sie
+	     kommen aus der festen Produktionsdomain, nicht aus der Origin der Anfrage. -->
+	<link rel="canonical" href={metadata.canonicalUrl} />
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content={siteName} />
 	<meta property="og:locale" content="de_DE" />
 	<meta property="og:title" content={siteName} />
 	<meta property="og:description" content={description} />
-	<meta property="og:url" content={`${page.url.origin}${page.url.pathname}`} />
-	<meta property="og:image" content={`${page.url.origin}/og-image.png`} />
+	<meta property="og:url" content={metadata.openGraphUrl} />
+	<meta property="og:image" content={metadata.openGraphImageUrl} />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
 	<meta property="og:image:alt" content="{siteName}: {description}" />
 	<meta name="twitter:card" content="summary_large_image" />
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -- feste, selbst erzeugte Daten ohne Nutzereingabe -->
+	{@html structuredDataElement}
 </svelte:head>
 
 <PullToRefresh>

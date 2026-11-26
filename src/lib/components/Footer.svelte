@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { IMPRESSUM_URL } from '#lib/site.ts';
 	import { installPrompt } from '#lib/pwa/installPrompt.svelte.ts';
 </script>
 
@@ -10,6 +11,17 @@
 		<a href={resolve('/faq')} class="inline-block px-2 py-2 underline">FAQ</a>
 		<span aria-hidden="true">·</span>
 		<a href={resolve('/datenschutz')} class="inline-block px-2 py-2 underline">Datenschutz</a>
+		<span aria-hidden="true">·</span>
+		<!-- eslint-disable svelte/no-navigation-without-resolve -- externe URL, kein App-Pfad -->
+		<a
+			href={IMPRESSUM_URL}
+			target="_blank"
+			rel="noopener noreferrer"
+			class="inline-block px-2 py-2 underline"
+		>
+			Impressum
+		</a>
+		<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		{#if installPrompt.canInstall}
 			<span aria-hidden="true">·</span>
 			<button
