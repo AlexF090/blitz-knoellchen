@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SITE_ORIGIN } from '#lib/site.ts';
 import { buildPageMetadata } from './pageMetadata.ts';
 
 describe('buildPageMetadata', () => {
@@ -19,12 +20,14 @@ describe('buildPageMetadata', () => {
 		);
 	});
 
-	it('hängt nicht von der Origin der Anfrage ab', () => {
-		// Die Funktion kennt nur den Pfad: Preview-Deployments und vercel.app-Aufrufe liefern
-		// dieselben Werte wie die Produktionsdomain.
-		const metadata = buildPageMetadata('/faq');
+	it.each(['/', '/faq', '/datenschutz', '/historie'])(
+		'beginnt jede ausgegebene URL für %s mit SITE_ORIGIN',
+		(pathname) => {
+			const metadata = buildPageMetadata(pathname);
 
-		expect(JSON.stringify(metadata)).not.toContain('vercel.app');
-		expect(JSON.stringify(metadata)).not.toContain('localhost');
-	});
+			for (const url of Object.values(metadata)) {
+				expect(url.startsWith(`${SITE_ORIGIN}/`)).toBe(true);
+			}
+		}
+	);
 });
