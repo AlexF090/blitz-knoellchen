@@ -64,14 +64,14 @@ Die App ist als installierbare PWA gebaut und verhält sich vom Homescreen aus w
 
 ## Tech-Stack
 
-| Bereich      | Technologie                                                              |
-| ------------ | ------------------------------------------------------------------------ |
-| Framework    | SvelteKit 3, Svelte 5 (Runes-Modus), TypeScript im `strict`-Modus        |
-| Styling      | Tailwind CSS 4, Design-Tokens ausschließlich in `oklch()`                |
-| Tests        | Vitest (Node- + echtes Browser-Projekt), Playwright (Desktop und Mobile) |
-| Daten        | IndexedDB über `idb` — keine serverseitige Datenhaltung                  |
-| Externe APIs | Brevo (E-Mail-Versand), LocationIQ mit BigDataCloud als Fallback         |
-| Build/Deploy | Vite 8, `@sveltejs/adapter-vercel`, PWA über `@vite-pwa/sveltekit`       |
+| Bereich      | Technologie                                                                                 |
+| ------------ | ------------------------------------------------------------------------------------------- |
+| Framework    | SvelteKit 3, Svelte 5 (Runes-Modus), TypeScript im `strict`-Modus                           |
+| Styling      | Tailwind CSS 4, Design-Tokens ausschließlich in `oklch()`                                   |
+| Tests        | Vitest (Node- + echtes Browser-Projekt), Playwright (Desktop und Mobile)                    |
+| Daten        | IndexedDB über `idb` — keine serverseitige Datenhaltung                                     |
+| Externe APIs | Brevo (E-Mail-Versand), LocationIQ mit BigDataCloud als Fallback                            |
+| Build/Deploy | Vite 8, `@sveltejs/adapter-cloudflare` (Cloudflare Workers), PWA über `@vite-pwa/sveltekit` |
 
 Sieben Runtime-Dependencies insgesamt — jede einzelne ist in den Architekturentscheidungen
 begründet. Die 12 ADRs, die Ordnerstruktur und die Coding-Konventionen stehen in
@@ -148,7 +148,7 @@ npm run test:unit   # Vitest (Unit- und Komponententests)
 npm run test:e2e    # Playwright (baut und startet die App automatisch)
 npm run test        # test:unit + test:e2e
 npm run build       # Production-Build
-npm run preview     # Production-Build lokal ansehen
+npm run preview     # gebauten Worker lokal in workerd starten (wrangler dev)
 ```
 
 Ein Husky-Pre-Commit-Hook lässt `lint-staged` laufen (Prettier, ESLint mit `--fix`, Typprüfung).
@@ -156,16 +156,22 @@ Der Pre-Push-Hook führt die Unit-Tests mit Coverage-Schwellen aus (`npm run tes
 Die README-Screenshots erzeugt `npm run screenshots` reproduzierbar aus dem Production-Build —
 gegen denselben Brevo-Mock wie die E2E-Tests, mit frei erfundenen Testdaten.
 
-## Deployment auf Vercel
+## Deployment auf Cloudflare Workers
 
-Das Projekt nutzt `@sveltejs/adapter-vercel` explizit statt `adapter-auto`.
+Das Projekt nutzt `@sveltejs/adapter-cloudflare` explizit statt `adapter-auto`. Worker-Name,
+Bindings (Rate-Limits) und Custom Domain stehen in `wrangler.jsonc`.
 
-1. Repository mit Vercel verbinden (SvelteKit wird automatisch erkannt).
-2. Unter „Environment Variables" die fünf Pflicht-Variablen aus der Tabelle unten eintragen.
-   `BREVO_API_URL` und `SEND_LIMIT_PER_HOUR` aus `.env.example` sind nur für E2E-Tests gedacht
-   und gehören nicht nach Vercel.
-3. Deploy auslösen — ein Push auf den verbundenen Branch reicht.
-4. Produktionsdomain ist `https://blitz-knoellchen.appool.de` (CNAME auf Vercel). Canonical,
+1. Repository im Cloudflare-Dashboard unter Workers Builds verbinden. Build-Befehl
+   `npm run build`, Deploy-Befehl `npx wrangler deploy`.
+2. Die fünf Pflicht-Variablen aus der Tabelle unten als Secrets am Worker setzen
+   (`npx wrangler secret put <NAME>` oder Dashboard → Settings → Variables and Secrets). Sie
+   werden zur Laufzeit gelesen, Build-Variablen braucht es nicht. `BREVO_API_URL` und
+   `SEND_LIMIT_PER_MINUTE` aus `.env.example` sind nur für E2E-Tests gedacht und gehören nicht
+   nach Cloudflare.
+3. Deploy auslösen — ein Push auf den verbundenen Branch reicht. Andere Branches bekommen eine
+   Preview-URL auf `*.workers.dev` mit `X-Robots-Tag: noindex`.
+4. Produktionsdomain ist `https://blitz-knoellchen.appool.de` (Custom Domain am Worker; die Zone
+   `appool.de` liegt bei Cloudflare). Canonical,
    `og:url`, JSON-LD und Sitemap nutzen diese feste Origin aus `src/lib/site.ts`, nicht den
    Hostnamen der Anfrage. `EMAIL_FROM` ist in Produktion `blitz-knoellchen@appool.de`; die Domain
    `appool.de` muss dafür in Brevo authentifiziert sein.

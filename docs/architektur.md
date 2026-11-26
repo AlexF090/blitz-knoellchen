@@ -37,10 +37,10 @@ Auto-Antwort nur einen Standardtext enthält. Das Postfach bewahrt Mails der Bu�
 nennen diese Frist.
 
 Weil die BCC-Kopie an eine Adresse vom Client geht, ließe sich der Endpunkt sonst als Relay
-nutzen. `/api/send` drosselt deshalb auf 20 Anfragen pro Stunde und IP
-(`src/lib/server/fixedWindowRateLimiter.ts`) und nimmt nur Anhänge an, die als `image/jpeg`
-deklariert sind und mit der JPEG-Signatur beginnen. Das Limit liegt im Speicher und gilt pro
-Serverless-Instanz; ein persistentes Limit oder ein CAPTCHA bräuchte einen externen Dienst.
+nutzen. `/api/send` drosselt deshalb auf 10 Anfragen pro Minute und IP und nimmt nur Anhänge an,
+die als `image/jpeg` deklariert sind und mit der JPEG-Signatur beginnen. Das Limit zählt das
+Cloudflare Rate Limiting Binding (s. ADR „Hosting auf Cloudflare Workers“); ein CAPTCHA bräuchte
+einen externen Dienst.
 
 **`EMAIL_FROM` muss eine in Brevo domain-authentifizierte Adresse sein, keine private
 Adresse eines fremden Großanbieters.** Ursprünglich stand hier testweise eine private
@@ -125,7 +125,8 @@ Adresse, E-Mail) liegt separat im Store `profile` derselben IndexedDB
 
 Vor dem Versand wird das Foto über `HTMLCanvasElement`/`toBlob` verkleinert
 (`src/lib/image/compress.ts`) — bewusst ohne zusätzliche Dependency, da Web-Standard-APIs
-ausreichen und das die Payload unter dem Vercel-Function-Limit hält.
+ausreichen. Kleine Fotos halten den Brevo-Body klein: Base64 und `JSON.stringify` kosten
+CPU-Zeit, und Cloudflare Workers Free erlaubt 10 ms CPU pro Anfrage.
 
 ### PWA über `@vite-pwa/sveltekit`
 
@@ -157,15 +158,37 @@ false`): Größere Dateien, vor allem der `heic-to`-Chunk (mehrere MB durch die 
   Muster und jede Datei steht doppelt im Precache. `globStrict: false`, weil das Plugin immer ein
   Muster für vorgerenderte Seiten ergänzt und die App keine hat.
 
-### Vercel Web Analytics ohne SDK
+### Hosting auf Cloudflare Workers
 
-`@vercel/analytics` erlaubt in der stabilen Version per Peer-Dependency kein SvelteKit 3.
-Stattdessen lädt `src/lib/analytics/vercelAnalytics.ts` Vercels eigenes Skript
-`/_vercel/insights/script.js` direkt, nur im Production-Build (`createVercelAnalytics(browser &&
-!dev)` in `+layout.svelte`). Das Skript zählt Seitenaufrufe nicht selbst
-(`data-disable-auto-track`); das Layout meldet sie mit Route-Muster, damit das Dashboard nach
-SvelteKit-Route statt nach einzelner Adresse gruppiert — wie zuvor das SDK. Same-origin, daher
-keine CSP-Änderung; eine Dependency weniger.
+Die App läuft als Cloudflare Worker (`@sveltejs/adapter-cloudflare`, Konfiguration in
+`wrangler.jsonc`) unter `blitz-knoellchen.appool.de`. Grund ist die Auftragsverarbeitung: Für den
+Free-Tarif bindet Cloudflare seinen DPA in das Self-Serve Subscription Agreement ein. Bei Vercel
+gilt der DPA nur für Pro und Enterprise.
+
+- **Laufzeit workerd, nicht Node.** Die Node-Version aus `.nvmrc` gilt nur für den Build. Ab
+  `compatibility_date` 2026-08-04 ist `nodejs_compat` Standard; der Code nutzt trotzdem
+  Web-APIs (`Uint8Array.prototype.toBase64()` statt `Buffer`).
+- **Umgebungsvariablen zur Laufzeit.** Keine Variable trägt `static: true`: Secrets stünden sonst
+  im Worker-Bundle. Auf Cloudflare kommen sie aus den Variablen und Secrets des Workers, lokal aus
+  `.env` oder `.dev.vars`.
+- **Rate-Limits über das Rate Limiting Binding** (`ratelimits` in `wrangler.jsonc`,
+  `src/lib/server/rateLimiters.ts`): `/api/send` 10, Geocoding 30 Anfragen pro Minute und IP. Das
+  Binding kennt nur Fenster von 10 oder 60 Sekunden und zählt pro Standort ungefähr. Ein Zähler
+  im Speicher gälte nur pro Isolate. Er dient deshalb nur als Ersatz für E2E-Tests
+  (`SEND_LIMIT_PER_MINUTE`) und für Umgebungen ohne Binding.
+- **`npm run preview` ist `wrangler dev`.** `vite preview` führt den Server in Node aus und kann
+  `cloudflare:workers` nicht laden. Die E2E-Tests laufen deshalb gegen den gebauten Worker in
+  workerd.
+- **CPU-Limit 10 ms pro Anfrage (Free).** Kritisch ist `/api/send`: Bis zu drei Fotos werden
+  Base64-kodiert und als JSON an Brevo geschickt.
+- **Indexierung:** Nur `SITE_ORIGIN` ist indexierbar (`applyIndexingPolicy`). `*.workers.dev`,
+  Preview-URLs und `localhost` bekommen `X-Robots-Tag: noindex`, ohne eigene Umgebungsvariable.
+
+### Keine Reichweitenmessung
+
+Die App misst keine Seitenaufrufe. Eine Reichweitenmessung wäre ein weiterer Dienstleister in
+der Datenschutzerklärung, ohne dass die Zahlen eine Entscheidung tragen. Die automatische
+Web-Analytics-Injektion von Cloudflare bleibt für die Zone ausgeschaltet.
 
 ### Branding-Assets über `@vite-pwa/assets-generator` statt eigenem Skript
 
@@ -196,7 +219,7 @@ Messenger und soziale Netzwerke bauen die Vorschau geteilter Links aus den `og:*
 aus der festen Origin `SITE_ORIGIN` (`src/lib/site.ts`, `https://blitz-knoellchen.appool.de`)
 und dem Pfad (`buildPageMetadata` in `src/lib/seo/pageMetadata.ts`), nicht mehr aus
 `page.url.origin`. Begründung: Mit der Origin der Anfrage zeigten `og:url` und `canonical` auf
-den jeweiligen Aufrufhost, also auch auf `*.vercel.app`-Preview-Deployments und alte Hostnamen;
+den jeweiligen Aufrufhost, also auch auf Preview-Deployments und alte Hostnamen;
 Suchmaschinen und Messenger sähen mehrere gleichwertige Adressen. Mit fester Origin bleibt die
 Produktionsdomain die einzige kanonische Adresse. Dazu kommen ein `<link rel="canonical">`,
 JSON-LD (`WebApplication`, `src/lib/seo/structuredData.ts`) und `/sitemap.xml` (vorgerendert,
@@ -321,8 +344,8 @@ er Tage alt ist oder aus einem früheren Vorgang stammt.
 Der Foto-Pool nimmt beliebig viele Fotos auf (`processPhotoQueue.ts` verarbeitet sie nacheinander
 mit Fortschrittsanzeige, ein gescheitertes Foto bricht die übrigen nicht ab). Pro Fahrzeug gelten
 höchstens drei Fotos (`MAX_PHOTOS_PER_VEHICLE` in `formSchema.ts`): Jedes Fahrzeug geht als
-eigener POST an `/api/send`, und Vercel begrenzt die Request-Größe auf 4,5 MB. Die Fotos werden
-vorher komprimiert, drei Fotos bleiben damit sicher darunter. Das erste Foto legt automatisch ein
+eigener POST an `/api/send`. Die Grenze schont das CPU-Budget des Workers (10 ms pro Anfrage
+im Free-Tarif), Brevos Anhangsgrenze und Mobilnetze. Die Fotos werden vorher komprimiert. Das erste Foto legt automatisch ein
 Fahrzeug an, weitere Fotos kommen so lange in dieses Fahrzeug, wie es nur eines gibt und Platz hat
 (`autoAssign.ts`); alle übrigen Fotos bleiben im Pool und werden dort als „nicht zugeordnet“ bzw.
 „voll“ gekennzeichnet. Nicht zugeordnete Fotos werden nicht mitgesendet.
@@ -561,20 +584,20 @@ nicht:
 
 ## Umgebungsvariablen
 
-| Variable               | Zweck                                                                                                                |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `BREVO_API_KEY`        | API-Key für den E-Mail-Versand über Brevo.                                                                           |
-| `EMAIL_FROM`           | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain). Produktion: `blitz-knoellchen@appool.de`. |
-| `RECIPIENT_EMAIL_DEMO` | Empfänger im Demo-Modus (interne Test-Adresse), s. ADR "Live-Modus als Standard" oben.                               |
-| `RECIPIENT_EMAIL_LIVE` | Empfänger im Live-Modus (Bußgeldstelle Köln, `bussgeldstelle@stadt-koeln.de`).                                       |
-| `LOCATIONIQ_API_KEY`   | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider), auch für Adress-Autocomplete.   |
-| `BREVO_API_URL`        | Optional, nur für E2E-Tests: leitet den Versand auf den lokalen Brevo-Mock um. Gehört nicht nach Vercel.             |
-| `SEND_LIMIT_PER_HOUR`  | Optional, nur für E2E-Tests: hebt das Rate-Limit von `/api/send` (Standard 20 pro Stunde und IP) an.                 |
+| Variable                | Zweck                                                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `BREVO_API_KEY`         | API-Key für den E-Mail-Versand über Brevo.                                                                           |
+| `EMAIL_FROM`            | Feste Absenderadresse (bei Brevo verifizierter Einzel-Sender oder Domain). Produktion: `blitz-knoellchen@appool.de`. |
+| `RECIPIENT_EMAIL_DEMO`  | Empfänger im Demo-Modus (interne Test-Adresse), s. ADR "Live-Modus als Standard" oben.                               |
+| `RECIPIENT_EMAIL_LIVE`  | Empfänger im Live-Modus (Bußgeldstelle Köln, `bussgeldstelle@stadt-koeln.de`).                                       |
+| `LOCATIONIQ_API_KEY`    | Access-Token für die LocationIQ Reverse-Geocoding-API (primärer Geocoding-Provider), auch für Adress-Autocomplete.   |
+| `BREVO_API_URL`         | Optional, nur für E2E-Tests: leitet den Versand auf den lokalen Brevo-Mock um. Gehört nicht nach Cloudflare.         |
+| `SEND_LIMIT_PER_MINUTE` | Optional, nur für E2E-Tests: ersetzt das Rate-Limit-Binding von `/api/send` durch einen Zähler im Speicher.          |
 
-Alle Variablen sind in `src/env.ts` per `defineEnvVars` deklariert. Die ersten fünf tragen
-`static: true` und werden zur Build-Zeit eingebacken; `BREVO_API_URL` und
-`SEND_LIMIT_PER_HOUR` werden beim Start gelesen und geprüft (ungültige Werte brechen den Start
-ab, statt still auf den Standard zurückzufallen). Ohne `schema` muss eine Variable gesetzt sein,
+Alle Variablen sind in `src/env.ts` per `defineEnvVars` deklariert und werden zur Laufzeit
+gelesen. In Produktion stehen sie als Secrets am Worker (`wrangler secret put`), lokal in `.env`
+oder `.dev.vars`. `BREVO_API_URL` und `SEND_LIMIT_PER_MINUTE` werden geprüft (ungültige Werte
+brechen den Start ab, statt still auf den Standard zurückzufallen). Ohne `schema` muss eine Variable gesetzt sein,
 darf aber leer sein.
 
 Immer über `.env.example` dokumentieren, echte Werte nie committen. Serverseitige Secrets

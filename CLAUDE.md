@@ -6,13 +6,14 @@ Kurzanleitung für Claude Code in diesem Repository. Vollständige Architekturen
 ## Kommandos
 
 Node-Version steht in `.nvmrc` (`nvm use`). `engines.node` ist auf `26.x` gepinnt, `engine-strict`
-bricht den Install mit jeder anderen Node-Major-Version ab. Ein Node-Upgrade ändert `.nvmrc`,
-`engines.node` und `runtime` in `vite.config.ts` gemeinsam.
+bricht den Install mit jeder anderen Node-Major-Version ab. Ein Node-Upgrade ändert `.nvmrc` und
+`engines.node` gemeinsam. Node gilt nur für den Build; der Worker läuft in workerd
+(`compatibility_date` in `wrangler.jsonc`).
 
 ```bash
 npm run dev                            # Dev-Server
 npm run build                          # Production-Build
-npm run preview                        # Production-Build lokal ansehen
+npm run preview                        # gebauten Worker lokal in workerd starten (wrangler dev)
 npm run check                          # svelte-check (Typprüfung)
 npm run lint                           # Prettier --check + ESLint
 npm run format                         # Prettier --write
@@ -60,10 +61,12 @@ npm run og-image                       # Link-Vorschaubild static/og-image.png n
 ## Fallstricke
 
 - Umgebungsvariablen sind in `src/env.ts` deklariert und werden über `$app/env/private`
-  importiert. Variablen mit `static: true` werden zur **Build-Zeit** in den Server-Code
-  eingebacken, nicht zur Laufzeit gelesen. Echte Werte aus der lokalen `.env` stecken damit in
-  jedem lokalen Build — so wäre fast eine private Adresse in den README-Screenshots gelandet.
-  Deshalb überschreibt `npm run screenshots` die Adressen schon beim Build.
+  importiert. Keine Variable trägt `static: true`, sonst stünde der Wert im Worker-Bundle.
+  `wrangler dev` (`npm run preview`) liest echte Werte aus der lokalen `.env` bzw. `.dev.vars`.
+  Darum übergibt `npm run screenshots` alle sichtbaren Werte per `--var`, das hat Vorrang.
+- `vite preview` funktioniert nicht: Es führt den Server in Node aus, und Node kann
+  `cloudflare:workers` nicht laden (`ERR_UNSUPPORTED_ESM_URL_SCHEME`). `npm run preview` ist
+  deshalb `wrangler dev`.
 - Imports aus `src/lib` laufen über `#lib/…` mit Dateiendung (`package.json` → `imports`), z. B.
   `#lib/validation/formSchema.ts`. Das frühere `$lib` gibt es seit SvelteKit 3 nicht mehr.
 - Der Service Worker ist in den E2E-Tests global blockiert (`playwright.config.ts`), weil
