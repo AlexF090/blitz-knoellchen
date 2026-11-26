@@ -95,9 +95,9 @@
 				geschehen. Schlägt die Anfrage fehl, erscheint einfach keine Vorschlagsliste.
 			</p>
 			<p class="mt-2">
-				Geoapify ist ein Anbieter mit Sitz in der EU; die App nutzt dessen EU-Endpunkt, die
-				Verarbeitung findet laut Auftragsverarbeitungsvertrag in der EU bzw. im EWR statt. Mit
-				Geoapify besteht ein Auftragsverarbeitungsvertrag nach Art. 28 DSGVO.
+				Anbieter von Geoapify ist die KEPTAGO Ltd., Paphos (Zypern). Die App nutzt den EU-Endpunkt;
+				die Verarbeitung findet laut Auftragsverarbeitungsvertrag ausschließlich in der EU statt.
+				Mit Geoapify besteht ein Auftragsverarbeitungsvertrag nach Art. 28 DSGVO.
 			</p>
 			<p class="mt-2">
 				Rechtsgrundlage für beide Funktionen ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse

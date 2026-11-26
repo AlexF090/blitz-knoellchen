@@ -48,6 +48,7 @@ describe('Datenschutz-Seite', () => {
 		expect(text).toContain('Mit Hetzner besteht ein Auftragsverarbeitungsvertrag');
 		expect(text).toContain('Cloudflare, Inc.');
 		expect(text).toContain('Geoapify');
+		expect(text).toContain('KEPTAGO Ltd., Paphos (Zypern)');
 	});
 
 	it('nennt Cloudflare mit Drittlandübermittlung und Auftragsverarbeitungsvertrag', async () => {
