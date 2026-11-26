@@ -178,8 +178,12 @@ gilt der DPA nur für Pro und Enterprise.
 - **`npm run preview` ist `wrangler dev`.** `vite preview` führt den Server in Node aus und kann
   `cloudflare:workers` nicht laden. Die E2E-Tests laufen deshalb gegen den gebauten Worker in
   workerd.
-- **CPU-Limit 10 ms pro Anfrage (Free).** Kritisch ist `/api/send`: Bis zu drei Fotos werden
-  Base64-kodiert und als JSON an Brevo geschickt.
+- **CPU-Limit 10 ms pro Anfrage (Free), bewusst in Kauf genommen.** `/api/send` braucht mit drei
+  Fotos in normaler Größe rund 27 ms CPU (gemessen per `wrangler tail`), weil Request-Annahme,
+  Base64 und der Upload zu Brevo mit der Bytezahl wachsen. Cloudflare duldet gelegentliche
+  Überschreitungen; bricht eine Anfrage doch mit Fehler 1102 ab, zeigt die App einen Fehler und der
+  Entwurf bleibt lokal erhalten. Tauchen in den Workers Logs regelmäßig `exceededCpu`-Einträge
+  auf, ist Workers Paid (5 USD/Monat, 30 s CPU) der Ausweg, ohne Codeänderung.
 - **Indexierung:** Nur `SITE_ORIGIN` ist indexierbar (`applyIndexingPolicy`). `*.workers.dev`,
   Preview-URLs und `localhost` bekommen `X-Robots-Tag: noindex`, ohne eigene Umgebungsvariable.
 
