@@ -36,4 +36,11 @@ describe('+layout.svelte', () => {
 		expect(metaContent('property="og:url"')?.startsWith(SITE_ORIGIN)).toBe(true);
 		expect(location.origin).not.toBe(SITE_ORIGIN);
 	});
+
+	it('bettet JSON-LD als WebApplication ein', async () => {
+		await render(Layout, { children });
+
+		const script = document.head.querySelector('script[type="application/ld+json"]');
+		expect(JSON.parse(script?.textContent ?? '{}')['@type']).toBe('WebApplication');
+	});
 });

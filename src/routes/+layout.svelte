@@ -10,6 +10,7 @@
 	import IosInstallBanner from '#lib/components/IosInstallBanner.svelte';
 	import PullToRefresh from '#lib/components/PullToRefresh.svelte';
 	import { buildPageMetadata } from '#lib/seo/pageMetadata.ts';
+	import { buildStructuredDataElement } from '#lib/seo/structuredData.ts';
 
 	// Nur im Production-Build: Das Skript liefert allein Vercel unter /_vercel aus, lokal gäbe es
 	// einen 404.
@@ -21,6 +22,9 @@
 	const siteName = 'Blitz-Knöllchen';
 	const description = 'Falschparker in rund 30 Sekunden an die Bußgeldstelle Köln melden.';
 	const metadata = $derived(buildPageMetadata(page.url.pathname));
+	// Ein JSON-LD-Block ist ein Datenblock, kein ausführbares Skript: `script-src` der CSP gilt für
+	// ihn nicht, er braucht weder Nonce noch Hash. buildStructuredDataElement maskiert `<`.
+	const structuredDataElement = buildStructuredDataElement();
 </script>
 
 <svelte:head>
@@ -46,6 +50,8 @@
 	<meta property="og:image:height" content="630" />
 	<meta property="og:image:alt" content="{siteName}: {description}" />
 	<meta name="twitter:card" content="summary_large_image" />
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -- feste, selbst erzeugte Daten ohne Nutzereingabe -->
+	{@html structuredDataElement}
 </svelte:head>
 
 <PullToRefresh>
