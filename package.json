@@ -19,6 +19,7 @@
 	},
 	"scripts": {
 		"dev": "vite dev --host",
+		"prebuild": "pwa-assets-generator --manifest false",
 		"build": "vite build",
 		"preview": "wrangler dev",
 		"prepare": "svelte-kit sync || echo '' && husky",

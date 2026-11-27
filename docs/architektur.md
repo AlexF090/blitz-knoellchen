@@ -196,10 +196,17 @@ Web-Analytics-Injektion von Cloudflare bleibt für die Zone ausgeschaltet.
 ### Branding-Assets über `@vite-pwa/assets-generator` statt eigenem Skript
 
 Icons/Favicons wurden ursprünglich über ein eigenes Skript (`scripts/generate-icons.mjs`)
-erzeugt; das ist entfallen. Stattdessen generiert `@vite-pwa/assets-generator` über die
-`pwaAssets`-Option von `withPwa` (`vite.config.ts`) alle benötigten Icon-Größen und
-Favicons zur Build-Zeit aus einer einzigen SVG-Quelle (`static/app-icon.svg`) — eine Quelle
-statt mehrerer manuell gepflegter PNG-Exporte, keine separat aufzurufende Skript-Pflicht mehr.
+erzeugt; das ist entfallen. Stattdessen erzeugt `@vite-pwa/assets-generator` alle benötigten
+Icon-Größen und Favicons zur Build-Zeit aus einer einzigen SVG-Quelle (`static/app-icon.svg`) —
+eine Quelle statt mehrerer manuell gepflegter PNG-Exporte. Bild und Preset stehen in
+`pwa-assets.config.ts`. Zwei Stellen lesen die Datei: Das Script `prebuild` ruft vor jedem
+`npm run build` die CLI `pwa-assets-generator` auf, die die PNGs und `favicon.ico` nach `static/`
+schreibt (in `.gitignore`, nicht eingecheckt). Die `pwaAssets`-Option von `withPwa`
+(`vite.config.ts`, `config: true`) setzt daraus die Icons ins Manifest und die `<link>`s in den
+`<head>`. Der Umweg über die CLI ist nötig, weil `withPwa` aus `@vite-pwa/sveltekit` 2.0.4 die
+Bilder beim Build nicht selbst erzeugt: Manifest und `<link>`s verwiesen auf Dateien, die mit 404
+antworteten (kein Icon auf dem iPhone-Home-Bildschirm). `e2e/pwa-icons.e2e.ts` prüft, dass jedes
+verlinkte Icon ausgeliefert wird.
 `static/app-icon.svg` muss direkt in `static/` liegen (SvelteKits Pendant zu Vites
 `publicDir`), nicht in einem Unterordner, da die generierten Dateinamen (`pwa-*.png`,
 `favicon.ico`, …) root-relativ ins Manifest geschrieben werden.

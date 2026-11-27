@@ -34,7 +34,7 @@ npm run og-image                       # Link-Vorschaubild static/og-image.png n
 - `interface` für Objektformen, `type` nur für Union/Intersection; `import type` für reine
   Typ-Importe; kein `any` ohne Begründung.
 - Farben ausschließlich als `oklch()` — kein `#hex`/`rgb()`/`hsl()`/benannte CSS-Farben. Einzige
-  Ausnahme sind die Hintergrundfarben der Icon-Erzeugung (`pwaAssets` in `vite.config.ts`): Sie
+  Ausnahme sind die Hintergrundfarben der Icon-Erzeugung (`pwa-assets.config.ts`): Sie
   sind Eingaben für die Bildverarbeitung, keine Styles.
 - Tailwind: `size-5` statt `h-5 w-5`, wenn Höhe und Breite gleich sind.
 - Jede zusätzliche Dependency muss begründet werden — vor dem Hinzufügen prüfen, ob

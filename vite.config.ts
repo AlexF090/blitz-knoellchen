@@ -79,32 +79,11 @@ export default defineConfig({
 					// (overrideManifestIcons).
 				},
 				pwaAssets: {
-					// Muss direkt in `static/` liegen (SvelteKits Pendant zu Vites `publicDir`) — die
-					// generierten Dateinamen werden root-relativ ins Manifest geschrieben.
-					image: 'static/app-icon.svg',
+					// Bild und Preset stehen in pwa-assets.config.ts, dort steht auch, wer die PNGs erzeugt.
+					config: true,
 					// theme-color wird bereits hell/dunkel-abhängig in +layout.svelte gesetzt.
 					injectThemeColor: false,
-					overrideManifestIcons: true,
-					// Eigenes Preset statt 'minimal-2023': Icon ist bereits randlos/quadratisch mit
-					// eigenem Innenabstand, Standard-Padding würde es zusätzlich verkleinern.
-					preset: {
-						transparent: {
-							sizes: [64, 192, 512],
-							favicons: [[48, 'favicon.ico']],
-							padding: 0,
-							resizeOptions: { background: 'transparent' }
-						},
-						maskable: {
-							sizes: [512],
-							padding: 0,
-							resizeOptions: { background: '#255a54' }
-						},
-						apple: {
-							sizes: [180],
-							padding: 0,
-							resizeOptions: { background: '#255a54' }
-						}
-					}
+					overrideManifestIcons: true
 				},
 				// Registriert wird in src/hooks.client.ts: SvelteKit rendert die Seiten selbst, eine
 				// Einbindung ins HTML greift dort nicht.

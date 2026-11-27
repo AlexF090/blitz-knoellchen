@@ -8,6 +8,12 @@ node_modules
 /.svelte-kit
 /build
 
+# PWA-Icons, erzeugt von `npm run build` (prebuild) aus static/app-icon.svg
+/static/pwa-*.png
+/static/maskable-icon-*.png
+/static/apple-touch-icon-*.png
+/static/favicon.ico
+
 # OS
 .DS_Store
 Thumbs.db
