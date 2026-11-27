@@ -3,9 +3,40 @@ import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-cloudflare';
 import { withPwa } from '@vite-pwa/sveltekit';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import type { Plugin } from 'vite';
 import pkg from './package.json' with { type: 'json' };
+import pwaAssetsConfig from './pwa-assets.config.ts';
+import { listGeneratedPwaAssets } from './src/lib/pwa/listGeneratedPwaAssets.ts';
 
 const appVersion = pkg.version;
+
+/**
+ * Bricht den Build ab, wenn eine von `pwa-assets-generator` erzeugte Datei in `static/` fehlt.
+ */
+const requireGeneratedPwaAssets = (): Plugin => ({
+	name: 'require-generated-pwa-assets',
+	apply: 'build',
+	buildStart() {
+		const { preset } = pwaAssetsConfig;
+		if (typeof preset !== 'object') {
+			this.error(
+				'pwa-assets.config.ts braucht ein eigenes Preset-Objekt, kein eingebautes Preset.'
+			);
+		}
+		const missingFiles = listGeneratedPwaAssets(preset).filter(
+			(fileName) => !existsSync(resolve('static', fileName))
+		);
+		if (missingFiles.length === 0) return;
+		// Ohne die Dateien verweisen Manifest und <link>s auf 404. `vite build` allein führt das
+		// Script prebuild nicht aus, nur `npm run build`.
+		this.error(
+			`PWA-Icons fehlen in static/: ${missingFiles.join(', ')}. Mit \`npm run build\` bauen, ` +
+				'das erzeugt sie vorher (Script prebuild).'
+		);
+	}
+});
 
 export default defineConfig({
 	define: {
@@ -13,6 +44,7 @@ export default defineConfig({
 	},
 	plugins: [
 		tailwindcss(),
+		requireGeneratedPwaAssets(),
 		// withPwa ruft sveltekit() selbst auf und verbindet Adapter und Service-Worker-Build.
 		...withPwa(
 			{
@@ -79,32 +111,11 @@ export default defineConfig({
 					// (overrideManifestIcons).
 				},
 				pwaAssets: {
-					// Muss direkt in `static/` liegen (SvelteKits Pendant zu Vites `publicDir`) — die
-					// generierten Dateinamen werden root-relativ ins Manifest geschrieben.
-					image: 'static/app-icon.svg',
+					// Bild und Preset stehen in pwa-assets.config.ts, dort steht auch, wer die PNGs erzeugt.
+					config: true,
 					// theme-color wird bereits hell/dunkel-abhängig in +layout.svelte gesetzt.
 					injectThemeColor: false,
-					overrideManifestIcons: true,
-					// Eigenes Preset statt 'minimal-2023': Icon ist bereits randlos/quadratisch mit
-					// eigenem Innenabstand, Standard-Padding würde es zusätzlich verkleinern.
-					preset: {
-						transparent: {
-							sizes: [64, 192, 512],
-							favicons: [[48, 'favicon.ico']],
-							padding: 0,
-							resizeOptions: { background: 'transparent' }
-						},
-						maskable: {
-							sizes: [512],
-							padding: 0,
-							resizeOptions: { background: '#255a54' }
-						},
-						apple: {
-							sizes: [180],
-							padding: 0,
-							resizeOptions: { background: '#255a54' }
-						}
-					}
+					overrideManifestIcons: true
 				},
 				// Registriert wird in src/hooks.client.ts: SvelteKit rendert die Seiten selbst, eine
 				// Einbindung ins HTML greift dort nicht.
