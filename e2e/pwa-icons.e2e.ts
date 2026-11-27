@@ -19,7 +19,9 @@ test('liefert jedes Icon aus Manifest und <head> als Bild aus', async ({ page, r
 	const manifestIconPaths = manifest.icons.map((icon) => new URL(icon.src, page.url()).pathname);
 
 	expect(headIconPaths).toContain('/apple-touch-icon-180x180.png');
-	expect(manifestIconPaths.length).toBeGreaterThan(0);
+	// 192 und 512 verlangen Browser für die Installierbarkeit.
+	expect(manifestIconPaths).toContain('/pwa-192x192.png');
+	expect(manifestIconPaths).toContain('/pwa-512x512.png');
 
 	for (const path of new Set([...headIconPaths, ...manifestIconPaths])) {
 		const response = await request.get(path);

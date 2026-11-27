@@ -1,11 +1,13 @@
 import { defineConfig } from '@vite-pwa/assets-generator/config';
 
-// Einzige Quelle für die PWA-Icons. Zwei Leser:
+// Einzige Quelle für die PWA-Icons. Drei Leser:
 // - `npm run build` erzeugt die PNGs vorher per CLI in `static/` (Script `prebuild`), von dort
 //   übernimmt SvelteKit sie in den Build. @vite-pwa/sveltekit 2.0.4 erzeugt sie mit `withPwa`
 //   beim Build nicht selbst: Es schreibt nur Manifest-Icons und <link>s.
 // - vite.config.ts (`pwaAssets.config: true`) setzt daraus die Icons ins Manifest und die
 //   <link>s in den <head>.
+// - Das Plugin requireGeneratedPwaAssets in vite.config.ts bricht den Build ab, wenn eine der
+//   erzeugten Dateien in `static/` fehlt.
 export default defineConfig({
 	// Muss direkt in `static/` liegen (SvelteKits Pendant zu Vites `publicDir`): Die erzeugten
 	// Dateien landen neben dem Bild und stehen root-relativ im Manifest.

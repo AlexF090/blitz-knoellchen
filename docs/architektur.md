@@ -204,9 +204,11 @@ eine Quelle statt mehrerer manuell gepflegter PNG-Exporte. Bild und Preset stehe
 schreibt (in `.gitignore`, nicht eingecheckt). Die `pwaAssets`-Option von `withPwa`
 (`vite.config.ts`, `config: true`) setzt daraus die Icons ins Manifest und die `<link>`s in den
 `<head>`. Der Umweg über die CLI ist nötig, weil `withPwa` aus `@vite-pwa/sveltekit` 2.0.4 die
-Bilder beim Build nicht selbst erzeugt: Manifest und `<link>`s verwiesen auf Dateien, die mit 404
-antworteten (kein Icon auf dem iPhone-Home-Bildschirm). `e2e/pwa-icons.e2e.ts` prüft, dass jedes
-verlinkte Icon ausgeliefert wird.
+Bilder beim Build nicht selbst erzeugt. Ein direkter Aufruf von `vite build` überspringt
+`prebuild`; das Plugin `requireGeneratedPwaAssets` in `vite.config.ts` bricht den Build dann ab,
+statt ihn mit fehlenden Icons durchlaufen zu lassen. Die erwarteten Dateinamen leitet
+`src/lib/pwa/listGeneratedPwaAssets.ts` aus dem Preset ab. `e2e/pwa-icons.e2e.ts` prüft, dass
+jedes verlinkte Icon ausgeliefert wird.
 `static/app-icon.svg` muss direkt in `static/` liegen (SvelteKits Pendant zu Vites
 `publicDir`), nicht in einem Unterordner, da die generierten Dateinamen (`pwa-*.png`,
 `favicon.ico`, …) root-relativ ins Manifest geschrieben werden.
@@ -527,6 +529,8 @@ und ließ jeden Commit `package.json` berühren. Der Hook führt jetzt nur noch 
 | `src/routes/impressum/+server.ts`                    | 301-Weiterleitung auf `https://appool.de/impressum`                                                                                                             |
 | `src/lib/site.ts`                                    | Feste Origin `SITE_ORIGIN`, Impressum-URL, Betreiberdaten für die Datenschutzerklärung                                                                          |
 | `static/app-icon.svg`                                | Icon-Quelle für `@vite-pwa/assets-generator`, s. ADR "Branding-Assets" oben                                                                                     |
+| `pwa-assets.config.ts`                               | Bild und Preset der PWA-Icons, gelesen vom Script `prebuild` und von `withPwa`, s. ADR "Branding-Assets" oben                                                   |
+| `src/lib/pwa/listGeneratedPwaAssets.ts`              | Reine Funktion: Dateinamen der erzeugten PWA-Icons zu einem Preset (Build-Guard in `vite.config.ts`)                                                            |
 | `e2e/`                                               | Playwright-Tests + `fixtures/photo-with-gps.jpg` bzw. `.heic` (EXIF-Testbilder)                                                                                 |
 | `scripts/generate-e2e-fixture.mjs`                   | Einmaliges Setup-Skript für das EXIF-Testbild — nicht Teil der App                                                                                              |
 | `scripts/generate-screenshots.mjs`                   | Erzeugt die README-Screenshots aus dem Production-Build (`npm run screenshots`)                                                                                 |
